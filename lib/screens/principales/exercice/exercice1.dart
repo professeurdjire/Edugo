@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-// --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal
+// --- CONSTANTES DE COULEURS ET STYLES --- // Violet principal
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const String _fontFamily = 'Roboto'; // Police principale
 
@@ -12,9 +11,6 @@ class ExerciseMatiereScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      // La barre de navigation inférieure est fixe
-      bottomNavigationBar: _buildBottomNavBar(),
 
       body: Column(
         children: [
@@ -128,33 +124,6 @@ class ExerciseMatiereScreen extends StatelessWidget {
       },
     );
   }
-
-  Widget _buildBottomNavBar() {
-    // Le code du BottomNavigationBar
-    return Container(
-      height: 70, 
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, -2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBarItem(icon: Icons.home, label: 'Accueil'),
-          _NavBarItem(icon: Icons.book, label: 'Bibliothèque'),
-          _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge'),
-          _NavBarItem(icon: Icons.checklist, label: 'Exercice', isSelected: true), // Exercice est actif
-          _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
-        ],
-      ),
-    );
-  }
 }
 
 // -------------------------------------------------------------------
@@ -206,33 +175,3 @@ class _MatiereListItem extends StatelessWidget {
   }
 }
 
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-
-  const _NavBarItem({required this.icon, required this.label, this.isSelected = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isSelected ? _purpleMain : _colorBlack,
-          size: 24,
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? _purpleMain : _colorBlack,
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            fontFamily: _fontFamily,
-          ),
-        ),
-      ],
-    );
-  }
-}

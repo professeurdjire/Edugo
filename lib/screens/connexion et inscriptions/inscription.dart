@@ -1,10 +1,11 @@
-import 'package:edugo/screens/principales/accueil/accueil.dart';
+
 import 'package:edugo/screens/principales/accueil/accueille.dart';
 import 'package:edugo/screens/principales/bibliotheque/bibliotheque.dart';
 import 'package:edugo/screens/principales/challenge/challenge.dart';
 import 'package:edugo/screens/principales/challenge/classement.dart';
 import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
 import 'package:edugo/screens/principales/accueil/partenaire.dart';
+import 'package:edugo/screens/principales/mainScreen.dart';
 import 'package:flutter/material.dart';
 
 // Constantes de style pour les couleurs
@@ -357,7 +358,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
           _buildNextButton(text: 'S\'inscrire', onPressed: () {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) =>  HomeScreen()),
+      MaterialPageRoute(builder: (context) =>  MainScreen()),
     );
   },),
           const SizedBox(height: 40),

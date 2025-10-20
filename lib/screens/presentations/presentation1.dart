@@ -1,4 +1,4 @@
-import 'package:edugo/screens/login.dart';
+import 'package:edugo/screens/connexion%20et%20inscriptions/login.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/core/constants/constant.dart';
 

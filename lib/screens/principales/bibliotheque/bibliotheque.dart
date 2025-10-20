@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES (Réutilisées de HomeScreen) ---
-
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (pour le BottomNav actif, filtres, etc.)
-const Color _backgroundLight = Color(0xFFF5F5F5); // Fond clair pour les cartes
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const String _fontFamily = 'Roboto'; // Police principale
 
@@ -14,9 +11,6 @@ class LibraryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      // La barre de navigation inférieure est fixe
-      bottomNavigationBar: _buildBottomNavBar(context),
 
       body: Column(
         children: [
@@ -116,32 +110,6 @@ class LibraryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNavBar(BuildContext context) {
-    // Le code du BottomNavigationBar est réutilisé de HomeScreen
-    return Container(
-      height: 70, 
-      decoration: const BoxDecoration(
-        color: Colors.white, // Utilisé blanc ou F5F5F5
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, -2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBarItem(icon: Icons.home, label: 'Accueil'),
-          _NavBarItem(icon: Icons.book, label: 'Bibliothèque', isSelected: true), // Bibliothèque est actif
-          _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge'),
-          _NavBarItem(icon: Icons.checklist, label: 'Exercice'),
-          _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
-        ],
-      ),
-    );
-  }
 
   // --- WIDGETS DE CONTENU ---
 
@@ -181,12 +149,12 @@ class LibraryScreen extends StatelessWidget {
   Widget _buildBookGrid() {
     // Données de livres simulées (basées sur l'image)
     final List<Map<String, String>> books = [
-      {'title': 'Le jardin invisible', 'author': 'Auteur : C.S.Lewis', 'image': 'book_garden_invisible.jpg'},
-      {'title': 'Le coeur se souvient', 'author': 'Auteur : C.S.Lewis', 'image': 'book_coeur_souvient.jpg'},
-      {'title': 'LIBRE COMME l\'ère', 'author': 'Auteur : C.S.Lewis', 'image': 'book_libre_ere.jpg'},
-      {'title': 'En apnée', 'author': 'Auteur : C.S.Lewis', 'image': 'book_en_apnee.jpg'},
-      {'title': 'LIBRE COMME l\'ère', 'author': 'Auteur : C.S.Lewis', 'image': 'book_libre_ere_2.jpg'},
-      {'title': 'En apnée', 'author': 'Auteur : C.S.Lewis', 'image': 'book_en_apnee_2.jpg'},
+      {'title': 'Le jardin invisible', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
+      {'title': 'Le coeur se souvient', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
+      {'title': 'LIBRE COMME l\'ère', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
+      {'title': 'En apnée', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
+      {'title': 'LIBRE COMME l\'ère', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
+      {'title': 'En apnée', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
     ];
     
     return GridView.builder(
@@ -311,37 +279,6 @@ class _BookCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-
-  const _NavBarItem({required this.icon, required this.label, this.isSelected = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isSelected ? _purpleMain : _colorBlack,
-          size: 24,
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? _purpleMain : _colorBlack,
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            fontFamily: _fontFamily,
-          ),
-        ),
-      ],
     );
   }
 }

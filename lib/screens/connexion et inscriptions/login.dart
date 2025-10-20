@@ -1,4 +1,4 @@
-import 'package:edugo/screens/inscriptions/inscription.dart';
+import 'package:edugo/screens/connexion%20et%20inscriptions/inscription.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatelessWidget {

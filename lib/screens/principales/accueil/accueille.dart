@@ -1,3 +1,6 @@
+import 'package:edugo/screens/principales/accueil/activiteRecente.dart';
+import 'package:edugo/screens/principales/accueil/partenaire.dart';
+import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
 import 'package:flutter/material.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
@@ -54,7 +57,7 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       
-      bottomNavigationBar: _buildBottomNavBar(),
+      // bottomNavigationBar: _buildBottomNavBar(),
 
       body: SingleChildScrollView(
         child: Column(
@@ -81,7 +84,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 30),
 
                   // 4. Activité Récentes
-                  _buildRecentActivitySection(),
+                  _buildRecentActivitySection(context),
                   
                   // --- NOUVELLES SECTIONS AJOUTÉES ---
 
@@ -93,12 +96,12 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 30),
 
                   // 6. Lectures (Progression)
-                  _buildCurrentReadingsSection(),
+                  _buildCurrentReadingsSection(context),
 
                   const SizedBox(height: 30),
 
                   // 7. Nos partenaires éducatifs
-                  _buildPartnersSection(),
+                  _buildPartnersSection(context),
 
                   const SizedBox(height: 80), 
                 ],
@@ -126,6 +129,17 @@ class HomeScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+        TextButton(
+              onPressed: () {},
+              child: const Text(
+                'Voir tout',
+                style: TextStyle(
+                  color: _purpleMain,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
         const SizedBox(height: 15),
         
         SizedBox(
@@ -155,7 +169,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCurrentReadingsSection() {
+  Widget _buildCurrentReadingsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -171,7 +185,14 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {},
+               onPressed: () {
+                // Action pour inscription
+                debugPrint('Inscription cliquée.');
+                 Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MyReadingsScreen()),
+            );
+              },
               child: const Text(
                 'Voir tout',
                 style: TextStyle(
@@ -193,7 +214,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPartnersSection() {
+  Widget _buildPartnersSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -209,7 +230,9 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context)=> const PartnersScreen()));
+              },
               child: const Text(
                 'Voir tout',
                 style: TextStyle(
@@ -459,7 +482,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentActivitySection() {
+  Widget _buildRecentActivitySection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -467,7 +490,9 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Activité Récentes', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
+            TextButton(onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const RecentActivitiesScreen()));
+            }, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
           ],
         ),
         const SizedBox(height: 15),
@@ -488,31 +513,31 @@ class HomeScreen extends StatelessWidget {
     );
   }
   
-  Widget _buildBottomNavBar() {
-    return Container(
-      height: 70, 
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, -2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBarItem(icon: Icons.home, label: 'Accueil', isSelected: true),
-          _NavBarItem(icon: Icons.book, label: 'Bibliothèque'),
-          _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge'),
-          _NavBarItem(icon: Icons.checklist, label: 'Exercice'),
-          _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
-        ],
-      ),
-    );
-  }
+  // Widget _buildBottomNavBar() {
+  //   return Container(
+  //     height: 70, 
+  //     decoration: const BoxDecoration(
+  //       color: Colors.white,
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black12,
+  //           offset: Offset(0, -2),
+  //           blurRadius: 5,
+  //         ),
+  //       ],
+  //     ),
+  //     child: const Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceAround,
+  //       children: [
+  //         _NavBarItem(icon: Icons.home, label: 'Accueil', isSelected: true),
+  //         _NavBarItem(icon: Icons.book, label: 'Bibliothèque'),
+  //         _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge'),
+  //         _NavBarItem(icon: Icons.checklist, label: 'Exercice'),
+  //         _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
+  //       ],
+  //     ),
+  //   );
+  // }
 }
 
 // -------------------------------------------------------------------
