@@ -374,12 +374,23 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
 
 // Widget pour les champs de saisie (commun à toutes les pages)
 Widget _buildInputField({
-  required String label, 
-  required String hint, 
-  bool isPassword = false, 
-  Widget? suffixIcon, 
+  required String label,
+  required String hint,
+  bool isPassword = false,
+  Widget? suffixIcon,
   TextInputType keyboardType = TextInputType.text,
 }) {
+  const Color borderColor = Color(0xFFD1C4E9); // Bordure douce violette
+  const Color fillColor = Color(0xFFF5F5F5);   // Fond gris clair
+
+  final OutlineInputBorder borderStyle = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12),
+    borderSide: const BorderSide(
+      color: borderColor,
+      width: 1.0,
+    ),
+  );
+
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -388,37 +399,39 @@ Widget _buildInputField({
         style: const TextStyle(
           color: Colors.black,
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           fontFamily: _fontFamily,
         ),
       ),
       const SizedBox(height: 8),
-      Container(
-        height: 55, 
-        decoration: BoxDecoration(
-          color: _purpleLight, // Fond violet très clair
-          borderRadius: BorderRadius.circular(10.0), 
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15.0),
-          child: TextFormField(
-            obscureText: isPassword, 
-            keyboardType: keyboardType,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 16),
-              border: InputBorder.none, 
-              suffixIcon: suffixIcon,
-            ),
-          ),
+      TextField(
+        obscureText: isPassword,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.grey),
+          filled: true,
+          fillColor: fillColor,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          suffixIcon: suffixIcon,
+          enabledBorder: borderStyle,
+          focusedBorder: borderStyle,
+          border: borderStyle,
         ),
       ),
     ],
   );
 }
 
+
 // Widget pour simuler le champ de sélection (Dropdown)
-Widget _buildDropdownField({required String label, required String hint}) {
+Widget _buildDropdownField({
+  required String label,
+  required String hint,
+}) {
+  const Color borderColor = Color(0xFFD1C4E9);
+  const Color fillColor = Color(0xFFF5F5F5);
+
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -427,34 +440,34 @@ Widget _buildDropdownField({required String label, required String hint}) {
         style: const TextStyle(
           color: Colors.black,
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           fontFamily: _fontFamily,
         ),
       ),
       const SizedBox(height: 8),
       Container(
-        height: 55, 
         decoration: BoxDecoration(
-          color: _purpleLight, // Fond violet très clair
-          borderRadius: BorderRadius.circular(10.0), 
+          color: fillColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: 1.0),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                hint,
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
-              ),
-              const Icon(Icons.keyboard_arrow_down, color: _purpleMain),
-            ],
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        height: 55,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              hint,
+              style: const TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+            const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+          ],
         ),
       ),
     ],
   );
 }
+
 
 // Widget pour le bouton "Suivant" ou "S'inscrire"
 Widget _buildNextButton({required String text, required VoidCallback onPressed}) {

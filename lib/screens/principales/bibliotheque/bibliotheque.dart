@@ -109,8 +109,6 @@ class LibraryScreen extends StatelessWidget {
       ),
     );
   }
-
-
   // --- WIDGETS DE CONTENU ---
 
   Widget _buildSearchBar() {
