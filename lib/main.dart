@@ -1,6 +1,6 @@
 import 'package:edugo/screens/presentations/presentation1.dart';
 import 'package:flutter/material.dart';
-import 'package:edugo/screens/conversionData/listeConversion.dart';
+import 'package:edugo/screens/main_navigation.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
         
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: PointExchangeScreen(),
+      home: MainNavigation(),
       debugShowCheckedModeBanner: false,
     );
   }

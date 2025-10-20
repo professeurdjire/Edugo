@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/screens/profil/modifierProfil.dart';
+import 'package:edugo/screens/profil/changerMotPasse.dart';
+import 'package:edugo/screens/profil/suggestion.dart';
+import 'package:edugo/screens/login.dart';
+
+
 
 class ProfilScreen extends StatelessWidget {
   const ProfilScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 🎨 Couleurs principales
-    const Color primaryPurple = Color(0xFF9B7DE4);
+    // Couleurs principales
+    const Color primaryPurple = Color(0xFFA885D8);
     const Color lightPurple = Color(0xFFF3EDFC);
     const Color buttonPurple = Color(0xFFD6C2FF);
     const Color logoutRed = Color(0xFFD65A5A);
@@ -14,12 +20,12 @@ class ProfilScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // ✅ AppBar
+      // AppBar
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -34,7 +40,7 @@ class ProfilScreen extends StatelessWidget {
         centerTitle: true,
       ),
 
-      // ✅ Corps de la page
+      // Corps de la page
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -48,7 +54,7 @@ class ProfilScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // 🧑‍🎨 Avatar
+                  // Avatar
                   CircleAvatar(
                     radius: 45,
                     backgroundColor: lightPurple,
@@ -106,19 +112,34 @@ class ProfilScreen extends StatelessWidget {
                   _ActionButton(
                     text: "Modifier le profil",
                     color: buttonPurple,
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                      );
+                    },
                   ),
                   const SizedBox(height: 10),
                   _ActionButton(
                     text: "Changer le mot de passe",
                     color: buttonPurple,
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
+                      );
+                    },
                   ),
                   const SizedBox(height: 10),
                   _ActionButton(
                     text: "Suggestion",
                     color: buttonPurple,
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SuggestionScreen()),
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
 
@@ -128,7 +149,12 @@ class ProfilScreen extends StatelessWidget {
                     color: logoutRed,
                     textColor: Colors.white,
                     icon: Icons.logout,
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -136,42 +162,11 @@ class ProfilScreen extends StatelessWidget {
           ],
         ),
       ),
-
-      // ✅ Barre de navigation inférieure
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: primaryPurple,
-        unselectedItemColor: Colors.grey,
-        currentIndex: 0,
-        onTap: (index) {},
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: "Accueil",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book_outlined),
-            label: "Bibliothèque",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events_outlined),
-            label: "Challenge",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center_outlined),
-            label: "Exercice",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.help_outline),
-            label: "Assistance",
-          ),
-        ],
-      ),
     );
   }
 }
 
-// 🔹 Widget Statistiques (badges, points, challenge)
+// Widget Statistiques (badges, points, challenge)
 class _StatItem extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -208,7 +203,7 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-// 🔹 Widget pour les boutons d’action
+// Widget pour les boutons d’action
 class _ActionButton extends StatelessWidget {
   final String text;
   final Color color;

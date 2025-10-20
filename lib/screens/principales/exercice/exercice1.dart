@@ -12,9 +12,6 @@ class ExerciseMatiereScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      // La barre de navigation inférieure est fixe
-      bottomNavigationBar: _buildBottomNavBar(),
 
       body: Column(
         children: [
@@ -126,33 +123,6 @@ class ExerciseMatiereScreen extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    // Le code du BottomNavigationBar
-    return Container(
-      height: 70, 
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, -2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBarItem(icon: Icons.home, label: 'Accueil'),
-          _NavBarItem(icon: Icons.book, label: 'Bibliothèque'),
-          _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge'),
-          _NavBarItem(icon: Icons.checklist, label: 'Exercice', isSelected: true), // Exercice est actif
-          _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
-        ],
-      ),
     );
   }
 }

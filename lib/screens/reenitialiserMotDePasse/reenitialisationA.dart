@@ -19,7 +19,7 @@ class MotPasseOublieA extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0, // Supprime l’ombre sous la barre
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
           onPressed: () {
             // Retour à l’écran précédent
             Navigator.pop(context);

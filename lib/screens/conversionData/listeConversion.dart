@@ -42,7 +42,7 @@ class _PointExchangeScreenState extends State<PointExchangeScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
           onPressed: () {
             Navigator.pop(context);
           },

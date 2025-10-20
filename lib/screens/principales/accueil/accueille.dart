@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/screens/profil/profil.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active/bouton)
@@ -22,11 +23,11 @@ class CurrentReading {
   final String? author;
   final double progress;
 
-  CurrentReading({required this.title, this.author, required this.progress});
+  const CurrentReading({required this.title, this.author, required this.progress});
 }
 
 class HomeScreen extends StatelessWidget {
-   HomeScreen({super.key});
+   const HomeScreen({super.key});
 
   // Données simulées (tirées des images précédentes)
   final String _userName = 'Haoua Haïdara';
@@ -43,7 +44,7 @@ class HomeScreen extends StatelessWidget {
   ];
   
   // Données manquantes ajoutées (tirées de image_e0b7ff.jpg)
-  final List<CurrentReading> _currentReadings =  [
+  final List<CurrentReading> _currentReadings = const [
     CurrentReading(title: 'Le Petit Prince', progress: 0.75),
     CurrentReading(title: 'Le jardin invisible', progress: 0.45),
     CurrentReading(title: 'Le coeur se souvient', progress: 0.25),
@@ -53,8 +54,6 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      bottomNavigationBar: _buildBottomNavBar(),
 
       body: SingleChildScrollView(
         child: Column(
@@ -281,11 +280,20 @@ class HomeScreen extends StatelessWidget {
 
             Row(
               children: [
-                const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: _colorWhite,
-                  child: Icon(Icons.person, color: _purpleMain, size: 40), 
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfilScreen()),
+                    );
+                  },
+                  child: const CircleAvatar(
+                    radius: 30,
+                    backgroundColor: _colorWhite,
+                    child: Icon(Icons.person, color: _purpleMain, size: 40),
+                  ),
                 ),
+
                 const SizedBox(width: 15),
                 Expanded(
                   child: Text(
@@ -467,7 +475,9 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Activité Récentes', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
+            TextButton(onPressed: () {
+
+            }, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
           ],
         ),
         const SizedBox(height: 15),
@@ -485,32 +495,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-  
-  Widget _buildBottomNavBar() {
-    return Container(
-      height: 70, 
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, -2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBarItem(icon: Icons.home, label: 'Accueil', isSelected: true),
-          _NavBarItem(icon: Icons.book, label: 'Bibliothèque'),
-          _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge'),
-          _NavBarItem(icon: Icons.checklist, label: 'Exercice'),
-          _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
-        ],
-      ),
     );
   }
 }
