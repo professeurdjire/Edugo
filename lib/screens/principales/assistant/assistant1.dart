@@ -12,10 +12,6 @@ class AssistanceScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-<<<<<<< HEAD
-=======
-
->>>>>>> 1f3c8d4b95d6887be0eec6e1914e33de24afc410
       body: Column(
         children: [
           // 1. App Bar personnalisé (avec barre de statut et titre)
