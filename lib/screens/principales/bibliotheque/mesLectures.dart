@@ -13,10 +13,6 @@ class MyReadingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      // La barre de navigation inférieure est fixe
-      bottomNavigationBar: _buildBottomNavBar(),
-
       body: Column(
         children: [
           // 1. App Bar personnalisé (avec barre de statut)
@@ -59,37 +55,13 @@ class MyReadingsScreen extends StatelessWidget {
         padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
         child: Column(
           children: [
-            // Barre de Statut (simulée comme dans les autres pages)
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '20 : 20',
-                  style: TextStyle(
-                    color: _colorBlack,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-                Icon(Icons.circle, color: _colorBlack, size: 10), // Caméra
-                Row(
-                  children: [
-                    Icon(Icons.wifi, color: _colorBlack, size: 20),
-                    SizedBox(width: 4),
-                    Icon(Icons.battery_full, color: _colorBlack, size: 20),
-                  ],
-                ),
-              ],
-            ),
-            
             const SizedBox(height: 20),
 
             // Titre de la page
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
+                  icon: const Icon(Icons.arrow_back_ios_sharp, color: _colorBlack),
                   onPressed: () => Navigator.pop(context), 
                 ),
                 const Expanded(
@@ -174,33 +146,6 @@ class MyReadingsScreen extends StatelessWidget {
       },
     );
   }
-
-  Widget _buildBottomNavBar() {
-    return Container(
-      height: 70, 
-      decoration: const BoxDecoration(
-        color: Colors.white, 
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, -2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBarItem(icon: Icons.home, label: 'Accueil'),
-          _NavBarItem(icon: Icons.book, label: 'Bibliothèque', isSelected: true), // On garde Bibliothèque actif si on considère qu'on est dans ce flux
-          _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge'),
-          _NavBarItem(icon: Icons.checklist, label: 'Exercice'),
-          _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
-        ],
-      ),
-    );
-  }
-}
 
 // --- WIDGETS DE COMPOSANTS RÉUTILISABLES ---
 
