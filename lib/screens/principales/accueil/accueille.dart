@@ -188,13 +188,8 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             TextButton(
-               onPressed: () {
-                // Action pour inscription
-                debugPrint('Inscription cliquée.');
-                 Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const MyReadingsScreen()),
-            );
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context)=> const MyReadingsScreen()));
               },
               child: const Text(
                 'Voir tout',
@@ -377,7 +372,7 @@ class HomeScreen extends StatelessWidget {
 
          // --- Carte du Défi du jour (chevauche le violet) ---
          Positioned(
-           bottom: -30, // 🔹 décale la carte pour qu’elle sorte du violet
+           bottom: -30, //  décale la carte pour qu’elle sorte du violet
            left: 20,
            right: 20,
            child: _buildDailyChallengeCard(),
