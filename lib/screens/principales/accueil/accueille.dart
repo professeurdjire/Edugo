@@ -82,7 +82,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 30),
 
                   // 3. Succès et Badges
-                  _buildBadgesSection(),
+                  _buildBadgesSection(context),
 
                   const SizedBox(height: 30),
 
@@ -106,7 +106,7 @@ class HomeScreen extends StatelessWidget {
                   // 7. Nos partenaires éducatifs
                   _buildPartnersSection(context),
 
-                  const SizedBox(height: 80), 
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -511,7 +511,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBadgesSection() {
+  Widget _buildBadgesSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -521,8 +521,7 @@ class HomeScreen extends StatelessWidget {
             const Text('Succès et Badges', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
             TextButton(onPressed: () {
               Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const BadgesScreen()),
+                context, MaterialPageRoute(builder: (context) => const BadgesScreen()),
               );
             }, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
           ],
@@ -549,8 +548,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             const Text('Activité Récentes', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
             TextButton(onPressed: () { Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const RecentActivitiesScreen()),
+              context, MaterialPageRoute(builder: (context) => const RecentActivitiesScreen()),
             );
 
             }, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
@@ -735,23 +733,6 @@ class _PartnerCard extends StatelessWidget {
           // Placeholder pour le bouton "Voir plus" ou logo si nécessaire
         ],
       ),
-    );
-  }
-}
-
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  const _NavBarItem({required this.icon, required this.label, this.isSelected = false});
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: isSelected ? _purpleMain : _colorBlack, size: 24),
-        Text(label, style: TextStyle(color: isSelected ? _purpleMain : _colorBlack, fontSize: 11, fontWeight: FontWeight.w400, fontFamily: _fontFamily)),
-      ],
     );
   }
 }

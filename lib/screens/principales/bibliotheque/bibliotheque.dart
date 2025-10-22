@@ -55,30 +55,6 @@ class LibraryScreen extends StatelessWidget {
         padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
         child: Column(
           children: [
-            // Barre de Statut (simulée)
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '20 : 20',
-                  style: TextStyle(
-                    color: _colorBlack,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-                Icon(Icons.circle, color: _colorBlack, size: 10), // Caméra
-                Row(
-                  children: [
-                    Icon(Icons.wifi, color: _colorBlack, size: 20),
-                    SizedBox(width: 4),
-                    Icon(Icons.battery_full, color: _colorBlack, size: 20),
-                  ],
-                ),
-              ],
-            ),
-            
             const SizedBox(height: 20),
 
             // Titre de la page

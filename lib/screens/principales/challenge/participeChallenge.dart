@@ -1,384 +1,495 @@
 import 'package:flutter/material.dart';
+import 'package:dotted_border/dotted_border.dart';
 
-// --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active/bouton)
-const Color _colorBlack = Color(0xFF000000); // Texte noir
-const Color _colorScore = Color(0xFFFF9800); // Orange pour le score
-const Color _colorGreyLight = Color(0xFFF0F0F0); // Fond de carte léger
-const String _fontFamily = 'Roboto'; // Police principale
-
-// Modèle pour un nouveau challenge
-class NewChallenge {
-  final String title;
-  final String description;
-  final String date;
-
-  NewChallenge({required this.title, required this.description, required this.date});
+void main() {
+  runApp(const MyApp());
 }
 
-// Modèle pour une participation passée
-class PastParticipation {
-  final String title;
-  final String classement;
-  final int score;
-  final String badgeStatus;
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-  PastParticipation({
-    required this.title,
-    required this.classement,
-    required this.score,
-    required this.badgeStatus,
-  });
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Challenge Demo Combiné',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.deepPurple,
+        useMaterial3: true,
+      ),
+      home: const ChallengeParticipeScreen(),
+    );
+  }
 }
 
-class ChallengeScreen extends StatelessWidget {
-   ChallengeScreen({super.key});
+// ---------------------------------------------------
+// COULEURS ET CONSTANTES HARMONISÉES
+// ---------------------------------------------------
+class AppColors {
+  static const Color primaryPurple = Color(0xFFA885D8);
+  static const Color lightPurple = Color(0xFFE1BEE7);
+  static const Color veryLightPurple = Color(0xFFF3E5F5);
+  static const Color lightGrey = Color(0xFFE0E0E0);
+}
 
-  // Données simulées pour les nouveaux challenges
-  final List<NewChallenge> _newChallenges =  [
-    NewChallenge(
-      title: 'Défi Mathématiques',
-      description: 'Améliorer vos compétences en mathématiques avec ce challenge stimulant.',
-      date: 'Date : 15 mai à 10 : 00',
-    ),
-    NewChallenge(
-      title: 'Défi Mathématiques',
-      description: 'Améliorer vos compétences en mathématiques avec ce challenge stimulant.',
-      date: 'Date : 15 mai à 10 : 00',
-    ),
-  ];
-
-  // Données simulées pour les participations passées
-  final List<PastParticipation> _pastParticipations =  [
-    PastParticipation(
-      title: 'Défi Mathématiques',
-      classement: '5ème',
-      score: 100,
-      badgeStatus: 'Pas de badge Obtenu',
-    ),
-    PastParticipation(
-      title: 'Défi Mathématiques',
-      classement: '8ème',
-      score: 80,
-      badgeStatus: 'Badge Bronze Obtenu',
-    ),
-  ];
+// ---------------------------------------------------
+// WIDGET PRINCIPAL
+// ---------------------------------------------------
+class ChallengeParticipeScreen extends StatelessWidget {
+  const ChallengeParticipeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      // La barre de navigation inférieure est fixe
-      bottomNavigationBar: _buildBottomNavBar(),
-
-      body: Column(
-        children: [
-          // 1. App Bar personnalisé
-          _buildCustomAppBar(context),
-
-          // 2. Le corps de la page (Défilement)
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-
-                  // Section Nouveaux Challenges
-                  _buildSectionTitle('Nouveaux Challenges'),
-                  ..._newChallenges.map((c) => Padding(
-                    padding: const EdgeInsets.only(bottom: 15.0),
-                    child: _NewChallengeCard(challenge: c),
-                  )).toList(),
-                  
-                  const SizedBox(height: 20),
-
-                  // Section Mes Participations
-                  _buildSectionTitle('Mes Participations'),
-                  ..._pastParticipations.map((p) => Padding(
-                    padding: const EdgeInsets.only(bottom: 15.0),
-                    child: _PastParticipationCard(participation: p),
-                  )).toList(),
-                  
-                  const SizedBox(height: 80), // Espace final
-                ],
-              ),
-            ),
+      appBar: AppBar(
+        title: const Text(
+          'Challenge : Défi Mathématiques',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
-        ],
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
       ),
-    );
-  }
-
-  // --- WIDGETS DE STRUCTURE PRINCIPALE ---
-
-  Widget _buildCustomAppBar(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
-              onPressed: () => Navigator.pop(context), 
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const TimeProgressIndicator(),
+            const SizedBox(height: 20),
+            const Text('Progression', style: TextStyle(fontSize: 16, color: Colors.black54)),
+            const SizedBox(height: 8),
+            ProgressIndicator(
+              current: 5,
+              total: 10,
+              label: '5/10 questions répondues',
             ),
-            const Expanded(
-              child: Center(
-                child: Text(
-                  'Challenges',
-                  style: TextStyle(
-                    color: _colorBlack,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: _fontFamily,
-                  ),
+            const SizedBox(height: 30),
+            const TrueFalseQuestionCard(
+              questionIndex: 1,
+              totalQuestions: 10,
+              questionText: 'La somme de 2 et 3 font 5 ?',
+            ),
+            const SizedBox(height: 20),
+            MultipleChoiceQuestionCard(
+              questionIndex: 2,
+              totalQuestions: 10,
+              questionText: 'La somme de 2 et 3 font ?',
+              options: ['4', '5', '10', '6'],
+              currentValue: '5',
+            ),
+            const SizedBox(height: 20),
+            const Text('6/10 questions', style: TextStyle(fontSize: 14, color: Colors.black54)),
+            const SizedBox(height: 20),
+            MatchingQuestionCard(
+              questionIndex: 3,
+              totalQuestions: 10,
+              questionText: 'Faites correspondre les pays à leurs capitales',
+              leftOptions: ['France', 'Japon', 'Mali'],
+              bottomOptions: ['Paris', 'Tokyo', 'Bamako'],
+            ),
+            const SizedBox(height: 20),
+            TextEntryQuestionCard(
+              questionIndex: 4,
+              totalQuestions: 10,
+              questionText: 'Quel est le résultat de 7 * 8 ?',
+            ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryPurple,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
+                child: const Text('Suivant', style: TextStyle(fontSize: 18, color: Colors.white)),
               ),
             ),
-            // Placeholder pour aligner le titre
-            const SizedBox(width: 48), 
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: _colorBlack,
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-          fontFamily: _fontFamily,
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildBottomNavBar() {
-    // Le code du BottomNavigationBar
-    return Container(
-      height: 70, 
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, -2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBarItem(icon: Icons.home, label: 'Accueil'),
-          _NavBarItem(icon: Icons.book, label: 'Bibliothèque'),
-          _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge', isSelected: true), // Challenge est actif
-          _NavBarItem(icon: Icons.checklist, label: 'Exercice'),
-          _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
-        ],
-      ),
-    );
-  }
 }
 
-// -------------------------------------------------------------------
-// --- WIDGETS DE COMPOSANTS ---
-// -------------------------------------------------------------------
-
-class _NewChallengeCard extends StatelessWidget {
-  final NewChallenge challenge;
-
-  const _NewChallengeCard({required this.challenge});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: _colorGreyLight,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            challenge.title,
-            style: const TextStyle(
-              color: _colorBlack,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            challenge.description,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            challenge.date,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 15),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                // Logique pour participer au challenge
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _purpleMain,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 15),
-              ),
-              child: const Text(
-                'Participer',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PastParticipationCard extends StatelessWidget {
-  final PastParticipation participation;
-
-  const _PastParticipationCard({required this.participation});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: _colorGreyLight,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  participation.title,
-                  style: const TextStyle(
-                    color: _colorBlack,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Classement : ${participation.classement}',
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  participation.badgeStatus,
-                  style: TextStyle(
-                    color: participation.badgeStatus.contains('Obtenu') ? _colorScore : Colors.grey,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // Score
-              Text(
-                'Score : ${participation.score}pts',
-                style: const TextStyle(
-                  color: _colorScore,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Bouton Détail
-              TextButton.icon(
-                onPressed: () {
-                  // Logique pour voir le détail de la participation
-                },
-                icon: const Icon(Icons.remove_red_eye_outlined, color: _purpleMain, size: 18),
-                label: const Text(
-                  'Détail',
-                  style: TextStyle(
-                    color: _purpleMain,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  alignment: Alignment.centerRight,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-
-  const _NavBarItem({required this.icon, required this.label, this.isSelected = false});
+// ---------------------------------------------------
+// WIDGETS COMMUNS
+// ---------------------------------------------------
+class TimeProgressIndicator extends StatelessWidget {
+  const TimeProgressIndicator({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          color: isSelected ? _purpleMain : _colorBlack,
-          size: 24,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: const [
+            Text('Temps restant', style: TextStyle(fontSize: 16, color: Colors.black54)),
+            Text('04 : 32', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryPurple)),
+          ],
         ),
-        Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? _purpleMain : _colorBlack,
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            fontFamily: _fontFamily,
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: LinearProgressIndicator(
+            value: 0.75,
+            backgroundColor: AppColors.lightPurple,
+            color: Colors.green,
+            minHeight: 8,
           ),
         ),
+
       ],
+    );
+  }
+}
+
+class ProgressIndicator extends StatelessWidget {
+  final int current;
+  final int total;
+  final String label;
+
+  const ProgressIndicator({super.key, required this.current, required this.total, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          LinearProgressIndicator(
+            value: current / total,
+            backgroundColor: AppColors.lightPurple,
+            color: AppColors.primaryPurple,
+            minHeight: 8,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(label, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------
+// QUESTION CARD DE BASE
+// ---------------------------------------------------
+class QuestionCard extends StatelessWidget {
+  final int questionIndex;
+  final int totalQuestions;
+  final String questionText;
+  final Widget child;
+  final double cardElevation;
+
+  const QuestionCard({
+    super.key,
+    required this.questionIndex,
+    required this.totalQuestions,
+    required this.questionText,
+    required this.child,
+    this.cardElevation = 4,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: cardElevation,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text('Question $questionIndex/$totalQuestions', style: const TextStyle(fontSize: 14, color: AppColors.primaryPurple, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 10),
+            Text(questionText, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------
+// 1. TRUE/FALSE
+// ---------------------------------------------------
+class TrueFalseQuestionCard extends StatelessWidget {
+  final int questionIndex;
+  final int totalQuestions;
+  final String questionText;
+
+  const TrueFalseQuestionCard({super.key, required this.questionIndex, required this.totalQuestions, required this.questionText});
+
+  @override
+  Widget build(BuildContext context) {
+    return QuestionCard(
+      questionIndex: questionIndex,
+      totalQuestions: totalQuestions,
+      questionText: questionText,
+      child: Row(
+        children: [
+          Expanded(child: TrueFalseButton(text: 'True', isSelected: true, onTap: () {})),
+          const SizedBox(width: 15),
+          Expanded(child: TrueFalseButton(text: 'False', isSelected: false, onTap: () {})),
+        ],
+      ),
+    );
+  }
+}
+
+class TrueFalseButton extends StatelessWidget {
+  final String text;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const TrueFalseButton({super.key, required this.text, required this.isSelected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 50,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.lightPurple : AppColors.veryLightPurple,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: isSelected ? AppColors.primaryPurple : Colors.transparent, width: 1),
+        ),
+        child: Text(text, style: TextStyle(fontSize: 16, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.primaryPurple : Colors.black54)),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------
+// 2. MULTIPLE CHOICE
+// ---------------------------------------------------
+class MultipleChoiceQuestionCard extends StatelessWidget {
+  final int questionIndex;
+  final int totalQuestions;
+  final String questionText;
+  final List<String> options;
+  final String? currentValue;
+
+  const MultipleChoiceQuestionCard({super.key, required this.questionIndex, required this.totalQuestions, required this.questionText, required this.options, this.currentValue});
+
+  @override
+  Widget build(BuildContext context) {
+    return QuestionCard(
+      questionIndex: questionIndex,
+      totalQuestions: totalQuestions,
+      questionText: questionText,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: options.map((option) {
+          return RadioListTile<String>(
+            title: Text(option, style: const TextStyle(fontSize: 16)),
+            value: option,
+            groupValue: currentValue,
+            onChanged: (String? value) {},
+            activeColor: AppColors.primaryPurple,
+            contentPadding: EdgeInsets.zero,
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------
+// 3. MATCHING QUESTION
+// ---------------------------------------------------
+class MatchingQuestionCard extends StatelessWidget {
+  final int questionIndex;
+  final int totalQuestions;
+  final String questionText;
+  final List<String> leftOptions;
+  final List<String> bottomOptions;
+
+  const MatchingQuestionCard({
+    super.key,
+    required this.questionIndex,
+    required this.totalQuestions,
+    required this.questionText,
+    required this.leftOptions,
+    required this.bottomOptions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return QuestionCard(
+      questionIndex: questionIndex,
+      totalQuestions: totalQuestions,
+      questionText: questionText,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Colonnes des pays (gauche)
+              Expanded(
+                child: Column(
+                  children: leftOptions
+                      .map((text) => Container(
+                    height: 50,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.veryLightPurple,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Colonnes des zones de réponse (droite)
+              Expanded(
+                child: Column(
+                  children: leftOptions
+                      .map((text) => DottedBorder(
+                    color: AppColors.primaryPurple,
+                    dashPattern: const [5, 3],
+                    borderType: BorderType.RRect,
+                    radius: const Radius.circular(10),
+                    child: Container(
+                      height: 50,
+                      alignment: Alignment.center,
+                      child: Text('Cliquez sur la réponse', style: TextStyle(fontSize: 14, color: AppColors.primaryPurple)),
+                    ),
+                  ))
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Chips des réponses possibles (en bas)
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: bottomOptions
+                .map((text) => Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Text(text, style: const TextStyle(fontSize: 14, color: Colors.black)),
+            ))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class MatchingOptionButton extends StatelessWidget {
+  final String text;
+  final bool isLeft;
+  final Color textColor;
+  final bool useDotted;
+
+  const MatchingOptionButton({super.key, required this.text, required this.isLeft, this.textColor = Colors.black, this.useDotted = false});
+
+  @override
+  Widget build(BuildContext context) {
+    if (useDotted) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10.0),
+        child: DottedBorder(
+          color: AppColors.lightGrey,
+          strokeWidth: 1.5,
+          dashPattern: const [5, 3],
+          borderType: BorderType.RRect,
+          radius: const Radius.circular(20),
+          child: Container(
+            height: 40,
+            alignment: Alignment.center,
+            width: double.infinity,
+            color: Colors.white,
+            child: Text(text, style: TextStyle(fontSize: 14, color: textColor)),
+          ),
+        ),
+      );
+    } else {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10.0),
+        child: Container(
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isLeft ? AppColors.veryLightPurple : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isLeft ? Colors.transparent : AppColors.lightGrey,
+              width: 1.5,
+            ),
+          ),
+          child: Text(text, style: TextStyle(fontSize: 14, color: textColor)),
+        ),
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------
+// WIDGET MatchingBottomChip
+// ---------------------------------------------------
+class MatchingBottomChip extends StatelessWidget {
+  final String text;
+  const MatchingBottomChip({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      label: Text(text, style: const TextStyle(color: Colors.white)),
+      backgroundColor: AppColors.primaryPurple,
+    );
+  }
+}
+
+// ---------------------------------------------------
+// 4. TEXT ENTRY QUESTION
+// ---------------------------------------------------
+class TextEntryQuestionCard extends StatelessWidget {
+  final int questionIndex;
+  final int totalQuestions;
+  final String questionText;
+
+  const TextEntryQuestionCard({super.key, required this.questionIndex, required this.totalQuestions, required this.questionText});
+
+  @override
+  Widget build(BuildContext context) {
+    return QuestionCard(
+      questionIndex: questionIndex,
+      totalQuestions: totalQuestions,
+      questionText: questionText,
+      child: TextField(
+        decoration: InputDecoration(
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          hintText: 'Votre réponse',
+        ),
+      ),
     );
   }
 }
