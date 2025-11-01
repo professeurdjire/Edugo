@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/screens/principales/challenge/classement.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active/bouton)
-const Color _colorBlack = Color(0xFF000000); // Texte noir
-const Color _colorScoreBackground = Color(0xFFFFF7E3); // Fond Jaune clair pour le score (comme un badge)
-const Color _colorTimeBackground = Color(0xFFF0F8FF); // Fond Bleu clair pour le temps
-const Color _colorCorrectBackground = Color(0xFFE8F5E9); // Fond Vert clair pour les bonnes
-const Color _colorIncorrectBackground = Color(0xFFFBE4E4); // Fond Rouge clair pour les mauvaises
-const Color _colorSuccess = Color(0xFF32C832); // Vert pour la validation
-const Color _colorFailure = Color(0xFFFF4500); // Rouge pour la croix
-const Color _colorOrange = Color(0xFFFF9800); // Orange pour la barre de score
-const String _fontFamily = 'Roboto'; // Police principale
+const Color _purpleMain = Color(0xFFA885D8);
+const Color _colorBlack = Color(0xFF000000);
+const Color _colorScoreBackground = Color(0xFFFFF7E3);
+const Color _colorTimeBackground = Color(0xFFF0F8FF);
+const Color _colorCorrectBackground = Color(0xFFE8F5E9);
+const Color _colorIncorrectBackground = Color(0xFFFBE4E4);
+const Color _colorSuccess = Color(0xFF32C832);
+const Color _colorFailure = Color(0xFFFF4500);
+const Color _colorOrange = Color(0xFFFF9800);
+const String _fontFamily = 'Roboto';
 
-// Modèle pour une question dans la correction
+// --- Modèle pour une question ---
 class ReviewQuestion {
   final String questionText;
   final String userAnswer;
@@ -20,66 +21,58 @@ class ReviewQuestion {
   final bool isCorrect;
 
   ReviewQuestion({
-    required this.questionText, 
-    required this.userAnswer, 
-    required this.correctAnswer, 
+    required this.questionText,
+    required this.userAnswer,
+    required this.correctAnswer,
     required this.isCorrect,
   });
 }
 
+// --- Écran principal des résultats ---
 class ChallengeResultScreen extends StatelessWidget {
-  // Données de performance simulées basées sur l'image
   final int score;
   final int correctAnswers;
   final int totalQuestions;
   final String timeTaken;
   final double scorePercentage;
 
-  // Correction des questions simulée
+  // Correction simulée
   final List<ReviewQuestion> reviewItems = [
     ReviewQuestion(
       questionText: 'La somme de 2 et 3 font 5 ?',
-      userAnswer: 'Votre Reponse : 5',
+      userAnswer: 'Votre Réponse : 5',
       correctAnswer: 'Bonne Réponse : 5',
       isCorrect: true,
     ),
     ReviewQuestion(
-      questionText: 'La somme de 2 et 3 font 5 ?',
-      userAnswer: 'Votre Reponse : 5',
-      correctAnswer: 'Bonne Réponse : 5',
+      questionText: 'La somme de 10 et 5 font 15 ?',
+      userAnswer: 'Votre Réponse : 12',
+      correctAnswer: 'Bonne Réponse : 15',
       isCorrect: false,
     ),
     ReviewQuestion(
-      questionText: 'La somme de 2 et 3 font 5 ?',
-      userAnswer: 'Votre Reponse : 5',
-      correctAnswer: 'Bonne Réponse : 5',
+      questionText: 'La somme de 6 et 4 font 10 ?',
+      userAnswer: 'Votre Réponse : 10',
+      correctAnswer: 'Bonne Réponse : 10',
       isCorrect: true,
     ),
   ];
 
   ChallengeResultScreen({
-    super.key, 
-    this.score = 150, 
-    this.correctAnswers = 8, 
+    super.key,
+    this.score = 150,
+    this.correctAnswers = 8,
     this.totalQuestions = 10,
     this.timeTaken = '5m 32s',
-    this.scorePercentage = 0.8, // 80%
+    this.scorePercentage = 0.8,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      // La barre de navigation inférieure est fixe
-      bottomNavigationBar: _buildBottomNavBar(),
-
       body: Column(
         children: [
-          // 1. App Bar personnalisé (avec barre de statut)
-          _buildCustomAppBar(),
-
-          // 2. Le corps de la page (Défilement)
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -87,21 +80,12 @@ class ChallengeResultScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  
-                  // 3. Résumé de la performance
                   _buildPerformanceSummary(),
-                  
                   const SizedBox(height: 25),
-                  
-                  // 4. Bouton Voir Classement
                   _buildViewLeaderboardButton(context),
-                  
                   const SizedBox(height: 25),
-
-                  // 5. Correction détaillée des questions
                   _buildReviewList(),
-
-                  const SizedBox(height: 80), // Espace final
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -111,43 +95,10 @@ class ChallengeResultScreen extends StatelessWidget {
     );
   }
 
-  // --- WIDGETS DE STRUCTURE PRINCIPALE ---
-
-  Widget _buildCustomAppBar() {
-    return const SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(top: 10.0, left: 20, right: 20, bottom: 10),
-        child: Column(
-          children: [
-            // Barre de Statut (simulée)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('20 : 20', style: TextStyle(color: _colorBlack, fontSize: 15, fontWeight: FontWeight.w700)),
-                Icon(Icons.circle, color: _colorBlack, size: 10),
-                Row(
-                  children: [
-                    Icon(Icons.wifi, color: _colorBlack, size: 20),
-                    SizedBox(width: 4),
-                    Icon(Icons.battery_full, color: _colorBlack, size: 20),
-                  ],
-                ),
-              ],
-            ),
-            
-            // Pas de flèche de retour ou de titre spécifique visible dans l'image
-            SizedBox(height: 10), 
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildPerformanceSummary() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Titre
         const Center(
           child: Text(
             'Résumé de votre Performance',
@@ -160,8 +111,6 @@ class ChallengeResultScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        
-        // Barre de Score (Progression)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -169,7 +118,7 @@ class ChallengeResultScreen extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(50),
                 child: LinearProgressIndicator(
-                  value: scorePercentage, // 0.8 pour 80%
+                  value: scorePercentage,
                   backgroundColor: Colors.grey.shade200,
                   valueColor: const AlwaysStoppedAnimation<Color>(_colorOrange),
                   minHeight: 10,
@@ -187,10 +136,7 @@ class ChallengeResultScreen extends StatelessWidget {
             ),
           ],
         ),
-        
         const SizedBox(height: 20),
-
-        // 3 Cartes d'Information
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -223,13 +169,16 @@ class ChallengeResultScreen extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
-          // Naviguer vers la page de classement (image_ec7abb.png)
+        Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ExerciseScreen()),
+                    );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Affichage du classement (simulé)')),
           );
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.amber, // Jaune (couleur du bouton dans l'image)
+          backgroundColor: Colors.amber,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -269,37 +218,10 @@ class ChallengeResultScreen extends StatelessWidget {
       }).toList(),
     );
   }
-
-  Widget _buildBottomNavBar() {
-    // Le code du BottomNavigationBar
-    return Container(
-      height: 70, 
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, -2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBarItem(icon: Icons.home, label: 'Accueil'),
-          _NavBarItem(icon: Icons.book, label: 'Bibliothèque'),
-          _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge', isSelected: true), // Challenge est actif
-          _NavBarItem(icon: Icons.checklist, label: 'Exercice'),
-          _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
-        ],
-      ),
-    );
-  }
 }
 
 // -------------------------------------------------------------------
-// --- WIDGETS DE COMPOSANTS ---
+// --- WIDGETS INDÉPENDANTS (déplacés hors de la classe) ---
 // -------------------------------------------------------------------
 
 class _SummaryCard extends StatelessWidget {
@@ -318,7 +240,7 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: MediaQuery.of(context).size.width / 3.8, // Taille relative
+      width: MediaQuery.of(context).size.width / 3.8,
       padding: const EdgeInsets.symmetric(vertical: 15),
       decoration: BoxDecoration(
         color: color,
@@ -354,9 +276,12 @@ class _QuestionReviewItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color itemColor = item.isCorrect ? _colorCorrectBackground : _colorIncorrectBackground;
-    final IconData icon = item.isCorrect ? Icons.check_circle : Icons.cancel;
-    final Color iconColor = item.isCorrect ? _colorSuccess : _colorFailure;
+    final Color itemColor =
+        item.isCorrect ? _colorCorrectBackground : _colorIncorrectBackground;
+    final IconData icon =
+        item.isCorrect ? Icons.check_circle : Icons.cancel;
+    final Color iconColor =
+        item.isCorrect ? _colorSuccess : _colorFailure;
 
     return Container(
       padding: const EdgeInsets.all(15),
@@ -370,14 +295,12 @@ class _QuestionReviewItem extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icône de validation/erreur
               Icon(icon, color: iconColor, size: 28),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Texte de la question
                     Text(
                       'Question $questionNumber : ${item.questionText}',
                       style: const TextStyle(
@@ -387,7 +310,6 @@ class _QuestionReviewItem extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 5),
-                    // Réponse de l'utilisateur
                     Text(
                       item.userAnswer,
                       style: const TextStyle(
@@ -400,14 +322,12 @@ class _QuestionReviewItem extends StatelessWidget {
               ),
             ],
           ),
-          
           const SizedBox(height: 10),
-          
-          // Bonne Réponse (toujours affichée dans la correction)
           Align(
             alignment: Alignment.centerRight,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: _colorSuccess,
                 borderRadius: BorderRadius.circular(8),
@@ -424,37 +344,6 @@ class _QuestionReviewItem extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-
-  const _NavBarItem({required this.icon, required this.label, this.isSelected = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isSelected ? _purpleMain : _colorBlack,
-          size: 24,
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? _purpleMain : _colorBlack,
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            fontFamily: _fontFamily,
-          ),
-        ),
-      ],
     );
   }
 }

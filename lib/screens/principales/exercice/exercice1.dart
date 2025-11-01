@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/screens/principales/exercice/exercice2.dart';
 
-// --- CONSTANTES DE COULEURS ET STYLES --- // Violet principal
+// --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const String _fontFamily = 'Roboto'; // Police principale
 
@@ -11,24 +12,46 @@ class ExerciseMatiereScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: Column(
         children: [
-          // 1. App Bar personnalisé (avec barre de statut et titre)
-          _buildCustomAppBar(context),
+          // --- BARRE D’EN-TÊTE ---
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'Exercices',
+                        style: TextStyle(
+                          color: _colorBlack,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: _fontFamily,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
+              ),
+            ),
+          ),
 
-          // 2. Le corps de la page (Défilement)
+          // --- CONTENU PRINCIPAL ---
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Column(
                 children: [
                   const SizedBox(height: 10),
-                  
-                  // 3. Liste des Matières
                   _buildMatiereList(context),
-                  
-                  const SizedBox(height: 80), 
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -38,74 +61,19 @@ class ExerciseMatiereScreen extends StatelessWidget {
     );
   }
 
-  // --- WIDGETS DE STRUCTURE PRINCIPALE ---
-
-  Widget _buildCustomAppBar(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
-        child: Column(
-          children: [
-            // Barre de Statut (simulée)
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('20 : 20', style: TextStyle(color: _colorBlack, fontSize: 15, fontWeight: FontWeight.w700)),
-                Icon(Icons.circle, color: _colorBlack, size: 10),
-                Row(
-                  children: [
-                    Icon(Icons.wifi, color: _colorBlack, size: 20),
-                    SizedBox(width: 4),
-                    Icon(Icons.battery_full, color: _colorBlack, size: 20),
-                  ],
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-
-            // Titre de la page
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
-                  onPressed: () => Navigator.pop(context), 
-                ),
-                const Expanded(
-                  child: Center(
-                    child: Text(
-                      'Exercices',
-                      style: TextStyle(
-                        color: _colorBlack,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: _fontFamily,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 48), 
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // --- LISTE DES MATIÈRES ---
   Widget _buildMatiereList(BuildContext context) {
-    // Données de matières simulées (basées sur l'image)
     const List<String> matieres = [
-      'Histoire', 
-      'Géographie', 
-      'Mathématique', 
-      'Français', 
-      'Physique', 
-      'Chimie', 
-      'Éducation Familiale', 
-      'Éducation physique et morale'
+      'Histoire',
+      'Géographie',
+      'Mathématique',
+      'Français',
+      'Physique',
+      'Chimie',
+      'Éducation Familiale',
+      'Éducation physique et morale',
     ];
-    
+
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -116,8 +84,15 @@ class ExerciseMatiereScreen extends StatelessWidget {
           child: _MatiereListItem(
             title: matieres[index],
             onTap: () {
-              // Simuler la navigation vers la liste des Quiz pour cette matière
-              // Navigator.push(context, MaterialPageRoute(builder: (c) => QuizzesScreen(matiere: matieres[index])));
+              // Navigation vers la liste des exercices pour la matière choisie
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ExerciseMatiereListScreen(
+                    matiere: matieres[index],
+                  ),
+                ),
+              );
             },
           ),
         );
@@ -127,7 +102,7 @@ class ExerciseMatiereScreen extends StatelessWidget {
 }
 
 // -------------------------------------------------------------------
-// --- WIDGETS DE COMPOSANTS ---
+// --- WIDGET D’UNE MATIÈRE (CARTE CLIQUABLE) ---
 // -------------------------------------------------------------------
 
 class _MatiereListItem extends StatelessWidget {
@@ -151,7 +126,7 @@ class _MatiereListItem extends StatelessWidget {
               color: Colors.grey.withOpacity(0.1),
               spreadRadius: 1,
               blurRadius: 3,
-              offset: const Offset(0, 2), 
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -174,4 +149,3 @@ class _MatiereListItem extends StatelessWidget {
     );
   }
 }
-

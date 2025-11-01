@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/screens/principales/challenge/participeChallenge.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _purpleMain = Color(0xFFA885D8); // Violet principal
@@ -213,7 +214,9 @@ class _NewChallengeCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context)=> const ChallengeParticipeScreen()));
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _purpleMain,
                 shape: RoundedRectangleBorder(
@@ -329,7 +332,9 @@ class _ParticipationCard extends StatelessWidget {
                 ],
               ),
               TextButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                 Navigator.push(context, MaterialPageRoute(builder: (context)=> const ChallengeParticipeScreen()));
+                },
                 icon: const Icon(Icons.remove_red_eye_outlined, size: 20, color: _purpleMain),
                 label: const Text(
                   'Détail',
