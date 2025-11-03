@@ -36,7 +36,6 @@ class LibraryScreen extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -95,7 +94,7 @@ class LibraryScreen extends StatelessWidget {
         _FilterChip(
           label: 'Mes Téléchargements',
           isPrimary: true,
-          showArrow: false, // plus de flèche pour ce bouton
+          showArrow: false, // pas de flèche pour ce bouton
           onTap: () {
             Navigator.push(
               context,
@@ -142,24 +141,6 @@ class LibraryScreen extends StatelessWidget {
       },
     );
   }
-
-  // --- BARRE DE NAVIGATION DU BAS ---
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: _purpleMain,
-      unselectedItemColor: Colors.black54,
-      showUnselectedLabels: true,
-      currentIndex: 1,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Accueil'),
-        BottomNavigationBarItem(icon: Icon(Icons.library_books), label: 'Bibliothèque'),
-        BottomNavigationBarItem(icon: Icon(Icons.emoji_events_outlined), label: 'Challenge'),
-        BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Exercice'),
-        BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: 'Assistance'),
-      ],
-    );
-  }
 }
 
 // --- WIDGET PERSONNALISÉ POUR LES FILTRES / BOUTONS ---
@@ -184,7 +165,7 @@ class _FilterChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         constraints: const BoxConstraints(minWidth: 80),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isPrimary ? _purpleMain : Colors.white,
           border: Border.all(
