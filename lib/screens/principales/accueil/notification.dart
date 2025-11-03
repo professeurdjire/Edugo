@@ -16,9 +16,6 @@ class NotificationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      // La barre de navigation inférieure est fixe
-      bottomNavigationBar: _buildBottomNavBar(),
 
       body: Column(
         children: [
@@ -77,7 +74,7 @@ class NotificationScreen extends StatelessWidget {
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
+                  icon: const Icon(Icons.arrow_back_ios_sharp, color: _colorBlack),
                   onPressed: () => Navigator.pop(context), // Retour à la page précédente
                 ),
                 const Expanded(
@@ -127,33 +124,6 @@ class NotificationScreen extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    // Le code du BottomNavigationBar
-    return Container(
-      height: 70, 
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, -2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBarItem(icon: Icons.home, label: 'Accueil', isSelected: true), // On garde Accueil actif car on vient de là
-          _NavBarItem(icon: Icons.book, label: 'Bibliothèque'),
-          _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge'),
-          _NavBarItem(icon: Icons.checklist, label: 'Exercice'),
-          _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
-        ],
-      ),
     );
   }
 }

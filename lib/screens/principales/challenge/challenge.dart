@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/screens/principales/challenge/participeChallenge.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _purpleMain = Color(0xFFA885D8); // Violet principal
@@ -54,21 +55,6 @@ class ChallengeScreen extends StatelessWidget {
         padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
         child: Column(
           children: [
-            // Barre de Statut (simulée)
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('20 : 20', style: TextStyle(color: _colorBlack, fontSize: 15, fontWeight: FontWeight.w700)),
-                Icon(Icons.circle, color: _colorBlack, size: 10),
-                Row(
-                  children: [
-                    Icon(Icons.wifi, color: _colorBlack, size: 20),
-                    SizedBox(width: 4),
-                    Icon(Icons.battery_full, color: _colorBlack, size: 20),
-                  ],
-                ),
-              ],
-            ),
             
             const SizedBox(height: 20),
 
@@ -228,7 +214,9 @@ class _NewChallengeCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context)=> const ChallengeParticipeScreen()));
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _purpleMain,
                 shape: RoundedRectangleBorder(
@@ -344,7 +332,9 @@ class _ParticipationCard extends StatelessWidget {
                 ],
               ),
               TextButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                 Navigator.push(context, MaterialPageRoute(builder: (context)=> const ChallengeParticipeScreen()));
+                },
                 icon: const Icon(Icons.remove_red_eye_outlined, size: 20, color: _purpleMain),
                 label: const Text(
                   'Détail',

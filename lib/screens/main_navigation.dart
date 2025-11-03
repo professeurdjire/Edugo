@@ -1,8 +1,8 @@
+import 'package:edugo/screens/principales/exercice/exercice1.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/principales/accueil/accueille.dart';
 import 'package:edugo/screens/principales/bibliotheque/bibliotheque.dart';
 import 'package:edugo/screens/principales/challenge/challenge.dart';
-import 'package:edugo/screens/principales/exercice/exercice1.dart';
 import 'package:edugo/screens/principales/assistant/assistant1.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -16,12 +16,12 @@ class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
   // Liste des écrans
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    LibraryScreen(),
-    ChallengeScreen(),
-    ExerciseMatiereScreen(),
-    AssistanceScreen(),
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const LibraryScreen(),
+    const ChallengeScreen(),
+    const MatiereListScreen(),
+    const AssistanceScreen(),
   ];
 
   void _onItemTapped(int index) {

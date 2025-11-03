@@ -1,121 +1,119 @@
 import 'package:flutter/material.dart';
+// Importation du QuizScreen (exercice3.dart)
+import 'package:edugo/screens/principales/exercice/exercice3.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active)
-const Color _colorBlack = Color(0xFF000000); // Texte noir
-const Color _colorEasy = Color(0xFFC0D99D);  // Vert clair pour Facile
-const Color _colorMedium = Color(0xFFB1A0D6); // Violet moyen pour Moyen
-const Color _colorHard = Color(0xFFD6A0A0);  // Rouge clair pour Difficile
-const Color _colorProgress = Color(0xFF5A4493); // Couleur foncée pour la progression
-const Color _colorCheck = Color(0xFF32C832);  // Vert pour icône de validation
-const String _fontFamily = 'Roboto'; // Police principale
+const Color _purpleAppbar = Color(0xFFA885D8);
+const Color _colorBlack = Color(0xFF000000);
+const Color _colorEasyTag = Color(0xFFC0D99D);
+const Color _colorMediumTag = Color(0xFFB1A0D6);
+const Color _colorHardTag = Color(0xFFD6A0A0);
+const Color _colorProgressEasy = Color(0xFF8DC63F);
+const Color _colorProgressMedium = Color(0xFF5D3BA5);
+const Color _colorProgressHard = Color(0xFFE4712F);
+const Color _colorCheck = Color(0xFF32C832);
+const String _fontFamily = 'Roboto';
+const Color _shadowColor = Color(0xFFEEEEEE);
+
+// -------------------------------------------------------------------
+// --- STRUCTURE DE DONNÉES ---
+// -------------------------------------------------------------------
+
+class ExerciseData {
+  final String title;
+  final String subtitle;
+  final int questions;
+  final String level;
+  final double progress;
+
+  ExerciseData({
+    required this.title,
+    required this.subtitle,
+    required this.questions,
+    required this.level,
+    required this.progress,
+  });
+}
+
+// ===================================================================
+// ÉCRAN 2 : LISTE DES EXERCICES PAR MATIÈRE
+// ===================================================================
 
 class ExerciseMatiereListScreen extends StatelessWidget {
   final String matiere;
 
-  // Le constructeur prend la matière en paramètre, ex: ExerciseMatiereListScreen(matiere: 'Mathématiques')
   const ExerciseMatiereListScreen({super.key, required this.matiere});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      
-      // La barre de navigation inférieure est fixe
-      bottomNavigationBar: _buildBottomNavBar(),
-
-      body: Column(
-        children: [
-          // 1. App Bar personnalisé (avec barre de statut et titre dynamique)
-          _buildCustomAppBar(context),
-
-          // 2. Le corps de la page (Défilement)
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  
-                  // 3. Liste des Exercices
-                  _buildExerciseList(),
-                  
-                  const SizedBox(height: 80), // Espace final pour la barre de navigation
-                ],
-              ),
-            ),
-          ),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(80.0),
+        child: _buildCustomAppBar(context),
       ),
-    );
-  }
-
-  // --- WIDGETS DE STRUCTURE PRINCIPALE ---
-
-  Widget _buildCustomAppBar(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 0.0),
         child: Column(
           children: [
-            // Barre de Statut (simulée)
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('20 : 20', style: TextStyle(color: _colorBlack, fontSize: 15, fontWeight: FontWeight.w700)),
-                Icon(Icons.circle, color: _colorBlack, size: 10),
-                Row(
-                  children: [
-                    Icon(Icons.wifi, color: _colorBlack, size: 20),
-                    SizedBox(width: 4),
-                    Icon(Icons.battery_full, color: _colorBlack, size: 20),
-                  ],
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-
-            // Titre de la page (dynamique)
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
-                  onPressed: () => Navigator.pop(context), 
-                ),
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      matiere, // Affiche "Mathématiques"
-                      style: const TextStyle(
-                        color: _colorBlack,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: _fontFamily,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 48), 
-              ],
-            ),
+            _buildExerciseList(context),
+            const SizedBox(height: 80),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildExerciseList() {
-    // Données d'exercices simulées (basées sur l'image)
-    final List<Map<String, dynamic>> exercises = [
-      {'title': 'Exercice 1', 'subtitle': 'Algèbre de base', 'questions': 10, 'level': 'Facile', 'progress': 1.0}, // Terminé
-      {'title': 'Exercice 2', 'subtitle': 'Géométrie des triangles', 'questions': 16, 'level': 'Moyen', 'progress': 0.75},
-      {'title': 'Exercice 3', 'subtitle': 'Calcul mentale et fractions', 'questions': 12, 'level': 'Difficile', 'progress': 0.20},
-      {'title': 'Exercice 4', 'subtitle': 'Problèmes de logique', 'questions': 13, 'level': 'Facile', 'progress': 0.0},
-      {'title': 'Exercice 5', 'subtitle': 'Introduction aux équations', 'questions': 12, 'level': 'Moyen', 'progress': 0.60},
-      {'title': 'Exercice 6', 'subtitle': 'Introduction aux équations', 'questions': 15, 'level': 'Difficile', 'progress': 0.0},
+  Widget _buildCustomAppBar(BuildContext context) {
+    return Container(
+      color: _purpleAppbar,
+      child: SafeArea(
+        bottom: false,
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.only(top: 10.0, left: 0, right: 20),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: _colorBlack),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        matiere,
+                        style: const TextStyle(
+                          color: _colorBlack,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- LISTE DES EXERCICES ---
+  Widget _buildExerciseList(BuildContext context) {
+    final List<ExerciseData> exercises = [
+      ExerciseData(title: 'Exercice 1', subtitle: 'Algèbre de base', questions: 10, level: 'Facile', progress: 1.0),
+      ExerciseData(title: 'Exercice 2', subtitle: 'Géométrie des triangles', questions: 16, level: 'Moyen', progress: 0.75),
+      ExerciseData(title: 'Exercice 3', subtitle: 'Calcul mentale et fractions', questions: 12, level: 'Difficile', progress: 0.20),
+      ExerciseData(title: 'Exercice 4', subtitle: 'Problèmes de logique', questions: 13, level: 'Facile', progress: 0.0),
+      ExerciseData(title: 'Exercice 5', subtitle: 'Introduction aux équations', questions: 12, level: 'Moyen', progress: 0.60),
+      ExerciseData(title: 'Exercice 6', subtitle: 'Équations complexes', questions: 15, level: 'Difficile', progress: 0.0),
     ];
-    
+
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -123,51 +121,32 @@ class ExerciseMatiereListScreen extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = exercises[index];
         return Padding(
-          padding: const EdgeInsets.only(bottom: 15.0),
-          child: _ExerciseListItem(
-            title: item['title']!,
-            subtitle: item['subtitle']!,
-            questions: item['questions']!,
-            level: item['level']!,
-            progress: item['progress']!,
+          padding: const EdgeInsets.only(bottom: 15.0, left: 20, right: 20),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(15),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QuizScreen(exerciseTitle: item.title),
+                ),
+              );
+            },
+            child: _ExerciseListItem( // L'erreur de portée est maintenant résolue
+              data: item,
+            ),
           ),
         );
       },
     );
   }
-
-  Widget _buildBottomNavBar() {
-    // Le code du BottomNavigationBar
-    return Container(
-      height: 70, 
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, -2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBarItem(icon: Icons.home, label: 'Accueil'),
-          _NavBarItem(icon: Icons.book, label: 'Bibliothèque'),
-          _NavBarItem(icon: Icons.emoji_events_outlined, label: 'Challenge'),
-          _NavBarItem(icon: Icons.checklist, label: 'Exercice', isSelected: true), // Exercice est actif
-          _NavBarItem(icon: Icons.chat_bubble_outline, label: 'Assistance'),
-        ],
-      ),
-    );
-  }
 }
 
 // -------------------------------------------------------------------
-// --- WIDGETS DE COMPOSANTS ---
+// --- COMPOSANTS AJOUTÉS (pour résoudre l'erreur de portée) ---
 // -------------------------------------------------------------------
 
+// --- COMPOSANT DE LA BALISE DE DIFFICULTÉ ---
 class _DifficultyTag extends StatelessWidget {
   final String level;
   final Color color;
@@ -195,38 +174,43 @@ class _DifficultyTag extends StatelessWidget {
   }
 }
 
+// --- COMPOSANT DE L'ÉLÉMENT DE LISTE D'EXERCICE ---
 class _ExerciseListItem extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final int questions;
-  final String level;
-  final double progress; // 0.0 à 1.0
+  final ExerciseData data;
 
-  const _ExerciseListItem({
-    required this.title,
-    required this.subtitle,
-    required this.questions,
-    required this.level,
-    required this.progress,
-  });
+  const _ExerciseListItem({required this.data});
 
-  Color _getLevelColor(String level) {
+  Color _getLevelTagColor(String level) {
     switch (level) {
       case 'Facile':
-        return _colorEasy;
+        return _colorEasyTag;
       case 'Moyen':
-        return _colorMedium;
+        return _colorMediumTag;
       case 'Difficile':
-        return _colorHard;
+        return _colorHardTag;
       default:
         return Colors.grey.shade300;
     }
   }
 
+  Color _getProgressColor(String level) {
+    switch (level) {
+      case 'Facile':
+        return _colorProgressEasy;
+      case 'Moyen':
+        return _colorProgressMedium;
+      case 'Difficile':
+        return _colorProgressHard;
+      default:
+        return _colorProgressMedium;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Color levelColor = _getLevelColor(level);
-    final bool isCompleted = progress >= 1.0;
+    final Color levelTagColor = _getLevelTagColor(data.level);
+    final Color progressColor = _getProgressColor(data.level);
+    final bool isCompleted = data.progress >= 1.0;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
@@ -235,22 +219,22 @@ class _ExerciseListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2), 
+            color: _shadowColor,
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Titre et icône de validation / Progression
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                title,
+                data.title,
                 style: const TextStyle(
                   color: _colorBlack,
                   fontSize: 16,
@@ -258,19 +242,45 @@ class _ExerciseListItem extends StatelessWidget {
                   fontFamily: _fontFamily,
                 ),
               ),
+              if (!isCompleted)
+                SizedBox(
+                  width: 50,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(50),
+                    child: LinearProgressIndicator(
+                      value: data.progress,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                      minHeight: 5,
+                    ),
+                  ),
+                ),
               if (isCompleted)
                 const Icon(Icons.check_circle, color: _colorCheck, size: 24),
             ],
           ),
           const SizedBox(height: 5),
+
+          // Sous-titre de l'exercice
+          Text(
+            data.subtitle,
+            style: const TextStyle(
+              color: _colorBlack,
+              fontSize: 15,
+              fontFamily: _fontFamily,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Niveau + nombre de questions
           Row(
             children: [
-              _DifficultyTag(level: level, color: levelColor),
+              _DifficultyTag(level: data.level, color: levelTagColor),
               const SizedBox(width: 8),
               const Icon(Icons.circle, size: 5, color: Colors.grey),
               const SizedBox(width: 5),
               Text(
-                '$questions questions',
+                '${data.questions} questions',
                 style: const TextStyle(
                   color: Colors.grey,
                   fontSize: 14,
@@ -279,50 +289,8 @@ class _ExerciseListItem extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          // Barre de progression
-          ClipRRect(
-            borderRadius: BorderRadius.circular(50),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation<Color>(_colorProgress),
-              minHeight: 5,
-            ),
-          ),
         ],
       ),
-    );
-  }
-}
-
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-
-  const _NavBarItem({required this.icon, required this.label, this.isSelected = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isSelected ? _purpleMain : _colorBlack,
-          size: 24,
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? _purpleMain : _colorBlack,
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            fontFamily: _fontFamily,
-          ),
-        ),
-      ],
     );
   }
 }

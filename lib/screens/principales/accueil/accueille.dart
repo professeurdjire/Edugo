@@ -3,6 +3,9 @@ import 'package:edugo/screens/principales/accueil/partenaire.dart';
 import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/profil/profil.dart';
+import 'package:edugo/screens/principales/accueil/badges.dart';
+import 'package:edugo/screens/principales/accueil/notification.dart';
+import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active/bouton)
@@ -10,7 +13,7 @@ const Color _purpleHeader = Color(0xFFA885D8); // Violet pour l'en-tête
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const Color _colorWhite = Color(0xFFFFFFFF);
 const Color _colorWarning = Color(0xFFFF9800); // Orange pour la barre de défi/score
-const Color _colorGold = Color(0xFFFFD700); // Or pour le badge
+const Color _colorGold = Color(0xFFFFD200); // Or pour le badge
 const Color _colorBronze = Color(0xFFCD7F32); // Bronze pour le badge
 const Color _colorSilver = Color(0xFFC0C0C0); // Argent pour le badge
 const Color _colorSuccessCheck = Color(0xFF32C832); // Vert pour la coche
@@ -64,6 +67,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             // 1. En-tête (Informations utilisateur et Défi du jour)
             _buildHeader(context),
+            const SizedBox(height: 40),
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -78,7 +82,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 30),
 
                   // 3. Succès et Badges
-                  _buildBadgesSection(),
+                  _buildBadgesSection(context),
 
                   const SizedBox(height: 30),
 
@@ -102,7 +106,7 @@ class HomeScreen extends StatelessWidget {
                   // 7. Nos partenaires éducatifs
                   _buildPartnersSection(context),
 
-                  const SizedBox(height: 80), 
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -184,13 +188,8 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             TextButton(
-               onPressed: () {
-                // Action pour inscription
-                debugPrint('Inscription cliquée.');
-                 Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const MyReadingsScreen()),
-            );
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context)=> const MyReadingsScreen()));
               },
               child: const Text(
                 'Voir tout',
@@ -274,92 +273,118 @@ class HomeScreen extends StatelessWidget {
   // --- WIDGETS DE STRUCTURE PRINCIPALE (Réutilisés/Simplifiés) ---
   // -------------------------------------------------------------------
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-      decoration: const BoxDecoration(
-        color: _purpleHeader,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 10.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Icon(Icons.wifi, color: _colorWhite, size: 20),
-                  SizedBox(width: 4),
-                  Icon(Icons.battery_full, color: _colorWhite, size: 20),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
+   Widget _buildHeader(BuildContext context) {
+     return Stack(
+       clipBehavior: Clip.none,
+       children: [
+         // --- Conteneur violet (fond) ---
+         Container(
+           padding: const EdgeInsets.only(left: 20, right: 20, bottom: 80), // 🔹 plus de bas pour laisser la place à la carte
+           decoration: const BoxDecoration(
+             color: _purpleHeader,
+             borderRadius: BorderRadius.only(
+               bottomLeft: Radius.circular(30),
+               bottomRight: Radius.circular(30),
+             ),
+           ),
+           child: SafeArea(
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 const SizedBox(height: 10),
+                 Row(
+                   children: [
+                     GestureDetector(
+                       onTap: () {
+                         Navigator.push(
+                           context,
+                           MaterialPageRoute(builder: (context) => const ProfilScreen()),
+                         );
+                       },
+                       child: const CircleAvatar(
+                         radius: 30,
+                         backgroundColor: _colorWhite,
+                         child: Icon(Icons.person, color: _purpleMain, size: 40),
+                       ),
+                     ),
+                     const SizedBox(width: 15),
+                     Expanded(
+                       child: Text(
+                         'Bienvenue\n$_userName',
+                         style: const TextStyle(
+                           color: _colorWhite,
+                           fontSize: 18,
+                           fontWeight: FontWeight.bold,
+                           fontFamily: _fontFamily,
+                         ),
+                       ),
+                     ),
+                     Column(
+                       crossAxisAlignment: CrossAxisAlignment.end,
+                       children: [
+                         Container(
+                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                           decoration: BoxDecoration(
+                             color: Colors.white.withOpacity(0.2),
+                             borderRadius: BorderRadius.circular(20),
+                             border: Border.all(
+                               color: Colors.black.withOpacity(0.2),
+                               width: 1,
+                             ),
+                           ),
+                           child: Row(
+                             children: [
+                               const Icon(Icons.star, color: _colorGold, size: 18),
+                               const SizedBox(width: 5),
+                               Text(
+                                 '$_userPoints',
+                                 style: const TextStyle(
+                                   color: _colorWhite,
+                                   fontSize: 14,
+                                   fontWeight: FontWeight.bold,
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                         const SizedBox(height: 8),
+                         GestureDetector(
+                           onTap: () {
+                             Navigator.push(
+                               context,
+                               MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                             );
+                           },
+                           child: const Icon(
+                             Icons.notifications,
+                             color: _colorGold,
+                             size: 26,
+                           ),
+                         ),
+                       ],
+                     ),
+                   ],
+                 ),
+               ],
+             ),
+           ),
+         ),
 
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ProfilScreen()),
-                    );
-                  },
-                  child: const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: _colorWhite,
-                    child: Icon(Icons.person, color: _purpleMain, size: 40),
-                  ),
-                ),
+         // --- Carte du Défi du jour (chevauche le violet) ---
+         Positioned(
+           bottom: -30, //  décale la carte pour qu’elle sorte du violet
+           left: 20,
+           right: 20,
+           child: _buildDailyChallengeCard(),
+         ),
+       ],
+     );
+   }
 
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Text(
-                    'Bienvenue\n$_userName',
-                    style: const TextStyle(
-                      color: _colorWhite,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: _fontFamily,
-                    ),
-                  ),
-                ),
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          '$_userPoints',
-                          style: const TextStyle(
-                            color: _colorWhite,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.star, color: _colorGold, size: 20),
-                        const SizedBox(width: 10),
-                      ],
-                    ),
-                    const Icon(Icons.notifications, color: _colorGold, size: 24),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildDailyChallengeCard(),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildDailyChallengeCard() {
+
+
+   Widget _buildDailyChallengeCard() {
     final String progressText = _dailyChallengeProgress == 1.0 ? 'Complété' : '5min restantes';
 
     return Container(
@@ -412,12 +437,32 @@ class HomeScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Objectifs de Lectures', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: const Text('Définir un objectif', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
+            const Expanded(
+              child: Text(
+                'Objectifs ',
+                style: TextStyle(
+                  color: _colorBlack,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis, // évite le dépassement
+              ),
+            ),
+            TextButton(
+              onPressed: () {},
+              child: const Text(
+                'Définir un objectif',
+                style: TextStyle(
+                  color: _purpleMain,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
           ],
         ),
+
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(15),
@@ -466,7 +511,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBadgesSection() {
+  Widget _buildBadgesSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -474,7 +519,11 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Succès et Badges', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
+            TextButton(onPressed: () {
+              Navigator.push(
+                context, MaterialPageRoute(builder: (context) => const BadgesScreen()),
+              );
+            }, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
           ],
         ),
         const SizedBox(height: 15),
@@ -498,7 +547,9 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Activité Récentes', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {
+            TextButton(onPressed: () { Navigator.push(
+              context, MaterialPageRoute(builder: (context) => const RecentActivitiesScreen()),
+            );
 
             }, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
           ],
@@ -682,23 +733,6 @@ class _PartnerCard extends StatelessWidget {
           // Placeholder pour le bouton "Voir plus" ou logo si nécessaire
         ],
       ),
-    );
-  }
-}
-
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  const _NavBarItem({required this.icon, required this.label, this.isSelected = false});
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: isSelected ? _purpleMain : _colorBlack, size: 24),
-        Text(label, style: TextStyle(color: isSelected ? _purpleMain : _colorBlack, fontSize: 11, fontWeight: FontWeight.w400, fontFamily: _fontFamily)),
-      ],
     );
   }
 }

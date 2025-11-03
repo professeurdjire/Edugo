@@ -6,6 +6,7 @@ import 'package:edugo/screens/principales/exercice/exercice1.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/core/constants/constant.dart';
 
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -20,7 +21,7 @@ class _MainScreenState extends State<MainScreen> {
     HomeScreen(),
     LibraryScreen(),
     ChallengeScreen(),
-    ExerciseMatiereScreen(),
+    MatiereListScreen(),
     AssistanceScreen(),
   ];
 
