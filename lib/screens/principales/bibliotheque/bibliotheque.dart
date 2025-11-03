@@ -82,6 +82,30 @@ class LibraryScreen extends StatelessWidget {
         ),
       );
     }
+  // --- WIDGET UTILITAIRE POUR L'EFFET DE DÉGRADÉ ---
+  Widget _buildFadingEdge({required Widget child, required BuildContext context}) {
+    return ShaderMask(
+      // Crée le masque de dégradé.
+      shaderCallback: (Rect bounds) {
+        return LinearGradient(
+          // Le dégradé va de la gauche (0.0) vers la droite (1.0).
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          // Les couleurs: transparent à 0% et 100%, opaque à 5% et 95%.
+          colors: [Colors.transparent, Colors.black, Colors.black, Colors.transparent],
+          stops: [
+            0.0,  // Dégradé transparent (début)
+            0.05, // Opaque (5% du chemin)
+            0.95, // Opaque (jusqu'à 95% du chemin)
+            1.0,  // Dégradé transparent (fin)
+          ],
+        ).createShader(bounds);
+      },
+      // Le mode de fusion de la couche ShaderMask.
+      blendMode: BlendMode.dstIn,
+      child: child,
+    );
+  }
 
   // --- BARRE DE RECHERCHE ---
   Widget _buildSearchBar() {
@@ -104,29 +128,44 @@ class LibraryScreen extends StatelessWidget {
     );
   }
 
-  // --- FILTRES (Mes Télé, Niveau, Matières, Classe) ---
+  // --- FILTRES (Mes Télé, Niveau, Matières, Classe) AVEC EFFET DE DÉGRADÉ ---
   Widget _buildFilters(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _FilterChip(
-          label: 'Mes Téléchargements',
-          isPrimary: true,
-          showArrow: false, // pas de flèche pour ce bouton
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const TelechargementsScreen(),
-              ),
-            );
-          },
+    // Le contenu défilable
+    final filtersRow = SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      // Note: un padding est nécessaire à l'intérieur de la Row pour que le dégradé soit visible
+      // sans rogner le contenu, surtout à gauche.
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5.0), // Padding pour le dégradé
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            _FilterChip(
+              label: 'Mes Téléchargements',
+              isPrimary: true,
+              showArrow: false,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TelechargementsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            const _FilterChip(label: 'Niveau', showArrow: true),
+            const SizedBox(width: 8),
+            const _FilterChip(label: 'Matières', showArrow: true),
+            const SizedBox(width: 8),
+            const _FilterChip(label: 'Classe', showArrow: true),
+          ],
         ),
-        const _FilterChip(label: 'Niveau', showArrow: true),
-        const _FilterChip(label: 'Matières', showArrow: true),
-        const _FilterChip(label: 'Classe', showArrow: true),
-      ],
+      ),
     );
+
+    // Enveloppe la rangée défilable dans le ShaderMask
+    return _buildFadingEdge(child: filtersRow, context: context);
   }
 
   // --- GRILLE DE LIVRES ---
