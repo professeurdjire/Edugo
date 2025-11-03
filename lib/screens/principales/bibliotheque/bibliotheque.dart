@@ -17,7 +17,7 @@ class LibraryScreen extends StatelessWidget {
       // Corps principal
       body: Column(
         children: [
-          _buildHeader(),
+          _buildCustomAppBar(context),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -39,31 +39,49 @@ class LibraryScreen extends StatelessWidget {
     );
   }
 
-  // --- HEADER PERSONNALISÉ ---
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.only(top: 40, bottom: 10),
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: _purpleMain,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(25),
-          bottomRight: Radius.circular(25),
-        ),
-      ),
-      child: const Center(
-        child: Text(
-          "Livres",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            fontFamily: _fontFamily,
+  // --- WIDGETS DE STRUCTURE ET EN-TÊTE ---
+
+    // Remplacement de _buildHeader par _buildCustomAppBar
+    Widget _buildCustomAppBar(BuildContext context) {
+      // Cette structure reproduit l'en-tête sans la barre colorée
+      return SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+
+              // Titre "Livres"
+              Row(
+                children: [
+                  // Icone de retour (absente de la capture Livres, mais souvent nécessaire)
+                  // Retiré pour coller à l'image fournie, mais vous pouvez le remettre si besoin.
+                  const SizedBox(width: 48), // Espace pour aligner le titre au centre
+
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'Livres',
+                        style: TextStyle(
+                          color: _colorBlack,
+                          fontSize: 24, // Ajusté pour coller au style de l'image
+                          fontWeight: FontWeight.bold,
+                          fontFamily: _fontFamily,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Placeholder pour aligner le titre
+                  const SizedBox(width: 48),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
   // --- BARRE DE RECHERCHE ---
   Widget _buildSearchBar() {
@@ -129,7 +147,7 @@ class LibraryScreen extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 15.0,
         mainAxisSpacing: 15.0,
-        childAspectRatio: 0.65,
+        childAspectRatio: 0.62, // réduit la zone blanche sous l'image
       ),
       itemCount: books.length,
       itemBuilder: (context, index) {
@@ -182,7 +200,7 @@ class _FilterChip extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
-                overflow: TextOverflow.ellipsis, // tronque le texte si trop long
+                overflow: TextOverflow.ellipsis, // tronque si trop long
                 maxLines: 1,
                 style: TextStyle(
                   color: isPrimary ? Colors.white : _colorBlack,
@@ -209,7 +227,11 @@ class _BookCard extends StatelessWidget {
   final String author;
   final String imagePath;
 
-  const _BookCard({required this.title, required this.author, required this.imagePath});
+  const _BookCard({
+    required this.title,
+    required this.author,
+    required this.imagePath,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -229,6 +251,7 @@ class _BookCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Image du livre
           ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(12),
@@ -236,41 +259,49 @@ class _BookCard extends StatelessWidget {
             ),
             child: Image.asset(
               imagePath,
-              height: 180,
+              height: 170,
               width: double.infinity,
               fit: BoxFit.cover,
             ),
           ),
+
+          // Zone blanche réduite
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                fontFamily: _fontFamily,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              author,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-                fontFamily: _fontFamily,
-              ),
-            ),
-          ),
-          const Spacer(),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 8, bottom: 8),
-              child: Icon(Icons.download, color: Colors.black87, size: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    fontFamily: _fontFamily,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  author,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                    fontFamily: _fontFamily,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Icon(
+                    Icons.download,
+                    color: Colors.black87,
+                    size: 18, // un peu plus petit
+                  ),
+                ),
+              ],
             ),
           ),
         ],
