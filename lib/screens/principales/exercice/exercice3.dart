@@ -1,32 +1,31 @@
 import 'package:flutter/material.dart';
+// Correction de l'importation de resultat.dart (suppression du '/')
 import 'package:edugo/screens/principales/exercice/resultat.dart';
-
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active)
 const Color _colorBlack = Color(0xFF000000); // Texte noir
-const Color _colorCheck = Color(0xFF32C832);  // Vert pour icône de validation
-const Color _colorUnselected = Color(0xFFE0E0E0); // Gris clair pour les bords non sélectionnés
+const Color _colorUnselected = Color(0xFFE0E0E0); // Gris clair
 const String _fontFamily = 'Roboto'; // Police principale
 
-// Modèle pour une question
+// Modèle pour une question (Ceci est la définition unique et fait autorité)
 class Question {
   final String text;
   final List<String> options;
-  // Index de la réponse sélectionnée par l'utilisateur (null si non sélectionné)
-  int? selectedOptionIndex; 
+  final int correctAnswerIndex; // AJOUTÉ : Index de la bonne réponse
+  int? selectedOptionIndex;
 
   Question({
-    required this.text, 
-    required this.options, 
+    required this.text,
+    required this.options,
+    required this.correctAnswerIndex,
     this.selectedOptionIndex,
   });
 }
 
 class QuizScreen extends StatefulWidget {
   final String exerciseTitle;
-  
-  // Constructeur, ex: QuizScreen(exerciseTitle: 'Algèbre de base')
+
   const QuizScreen({super.key, required this.exerciseTitle});
 
   @override
@@ -38,25 +37,26 @@ class _QuizScreenState extends State<QuizScreen> {
   final List<Question> _questions = [
     Question(
       text: "Quelle est la valeur de 'x' dans l'équation : 2x+3=12 ?",
-      options: ['X=3', 'X=4', 'X=5'],
-      selectedOptionIndex: 1, // Simule que X=4 est la réponse sélectionnée
+      options: ['X=4.5', 'X=3', 'X=5'],
+      correctAnswerIndex: 0, // X=4.5
+      selectedOptionIndex: null,
     ),
     Question(
       text: "Simplifiez l'expression : 3(x+2)-2x",
       options: ['x+6', '5x+6', 'x-6'],
-      selectedOptionIndex: 2, // Simule que x-6 est la réponse sélectionnée
+      correctAnswerIndex: 0, // x+6
+      selectedOptionIndex: null,
     ),
-    // Ajoutez d'autres questions si nécessaire
     Question(
-      text: "Question 3 : La racine carrée de 144 est :",
+      text: "La racine carrée de 144 est :",
       options: ['10', '12', '14'],
-      selectedOptionIndex: null, // Non sélectionné
+      correctAnswerIndex: 1, // 12
+      selectedOptionIndex: null,
     ),
   ];
-  
-  // Progression actuelle (simulée : 6/10 questions)
-  int _currentQuestionCount = 6;
-  final int _totalQuestionCount = 10;
+
+  int get _totalQuestionCount => _questions.length;
+  int get _answeredQuestionCount => _questions.where((q) => q.selectedOptionIndex != null).length;
 
   @override
   Widget build(BuildContext context) {
@@ -65,10 +65,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
       body: Column(
         children: [
-          // 1. App Bar personnalisé (avec titre dynamique)
           _buildCustomAppBar(context),
-
-          // 2. Le corps de la page (Défilement)
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -76,21 +73,12 @@ class _QuizScreenState extends State<QuizScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 10),
-                  
-                  // 3. Barre de Progression
                   _buildProgressionBar(),
-                  
                   const SizedBox(height: 20),
-                  
-                  // 4. Liste des Questions
-                  _buildQuestionsList(),
-                  
+                  _buildQuestionsList(), // Maintenant défini ci-dessous
                   const SizedBox(height: 30),
-
-                  // 5. Bouton Soumettre
                   _buildSubmitButton(context),
-                  
-                  const SizedBox(height: 80), 
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -100,83 +88,7 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
-  // --- WIDGETS DE STRUCTURE PRINCIPALE ---
-
-  Widget _buildCustomAppBar(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-
-            // Titre de la page (Nom de l'exercice ou de la matière)
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
-                  onPressed: () => Navigator.pop(context), 
-                ),
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      widget.exerciseTitle, // Titre de l'exercice
-                      style: const TextStyle(
-                        color: _colorBlack,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: _fontFamily,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 48), 
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildProgressionBar() {
-    double progressValue = _currentQuestionCount / _totalQuestionCount;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Progression',
-          style: const TextStyle(
-            color: _colorBlack,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            fontFamily: _fontFamily,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(50),
-          child: LinearProgressIndicator(
-            value: progressValue,
-            backgroundColor: _colorUnselected,
-            valueColor: const AlwaysStoppedAnimation<Color>(_purpleMain),
-            minHeight: 8,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '$_currentQuestionCount/$_totalQuestionCount questions',
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 14,
-            fontFamily: _fontFamily,
-          ),
-        ),
-      ],
-    );
-  }
-
+  // --- MISE À JOUR : Ajout de la méthode manquante ---
   Widget _buildQuestionsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -199,19 +111,112 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
+  // --- WIDGETS DE STRUCTURE PRINCIPALE (inchangés) ---
+
+  Widget _buildCustomAppBar(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      widget.exerciseTitle,
+                      style: const TextStyle(
+                        color: _colorBlack,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: _fontFamily,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 48),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressionBar() {
+    double progressValue = _answeredQuestionCount / _totalQuestionCount;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Progression',
+          style: TextStyle(
+            color: _colorBlack,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: _fontFamily,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(50),
+          child: LinearProgressIndicator(
+            value: progressValue,
+            backgroundColor: _colorUnselected,
+            valueColor: const AlwaysStoppedAnimation<Color>(_purpleMain),
+            minHeight: 8,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '$_answeredQuestionCount/$_totalQuestionCount questions répondues',
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 14,
+            fontFamily: _fontFamily,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- WIDGET BOUTON SOUMETTRE ---
   Widget _buildSubmitButton(BuildContext context) {
+    final bool allAnswered = _answeredQuestionCount == _totalQuestionCount;
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-         context,
-          MaterialPageRoute(builder: (context) => const QuizScreen()),
-           );
-          // Logique de soumission de l'exercice ici
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Exercice soumis !')),
-          );
-        },
+        onPressed: allAnswered
+            ? () {
+                int correctCount = 0;
+                for (var q in _questions) {
+                  if (q.selectedOptionIndex == q.correctAnswerIndex) {
+                    correctCount++;
+                  }
+                }
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    // L'erreur de type est résolue car ResultatScreen importe maintenant Question
+                    builder: (context) => ResultatScreen(
+                      totalQuestions: _totalQuestionCount,
+                      answeredCorrectly: correctCount,
+                      pointsGained: correctCount * 10,
+                      results: _questions,
+                    ),
+                  ),
+                );
+              }
+            : null,
+
         style: ElevatedButton.styleFrom(
           backgroundColor: _purpleMain,
           shape: RoundedRectangleBorder(
@@ -262,13 +267,13 @@ class _QuestionWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 15),
-        
+
         // Liste des options de réponse
         ...question.options.asMap().entries.map((entry) {
           int optionIndex = entry.key;
           String optionText = entry.value;
           bool isSelected = question.selectedOptionIndex == optionIndex;
-          
+
           return Padding(
             padding: const EdgeInsets.only(bottom: 10.0),
             child: InkWell(
@@ -309,7 +314,7 @@ class _QuestionWidget extends StatelessWidget {
                         ),
                         color: isSelected ? _purpleMain : Colors.white,
                       ),
-                      child: isSelected 
+                      child: isSelected
                         ? const Center(child: Icon(Icons.check, size: 12, color: Colors.white))
                         : null,
                     ),

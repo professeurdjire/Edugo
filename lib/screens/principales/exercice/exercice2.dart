@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
+// Importation du QuizScreen (exercice3.dart)
+import 'package:edugo/screens/principales/exercice/exercice3.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFF673AB7); // Un violet plus foncé pour l'AppBar et le fond
-const Color _purpleAppbar = Color(0xFFA885D8); // Le violet clair de l'AppBar
-const Color _colorBlack = Color(0xFF000000); // Texte noir
-const Color _colorEasyTag = Color(0xFFC0D99D); // Vert clair pour Facile
-const Color _colorMediumTag = Color(0xFFB1A0D6); // Violet moyen pour Moyen
-const Color _colorHardTag = Color(0xFFD6A0A0); // Rouge clair pour Difficile
-const Color _colorProgressEasy = Color(0xFF8DC63F); // Progression Facile (vert clair)
-const Color _colorProgressMedium = Color(0xFF5D3BA5); // Progression Moyen (violet foncé)
-const Color _colorProgressHard = Color(0xFFE4712F); // Progression Difficile (orange)
-const Color _colorCheck = Color(0xFF32C832); // Vert pour icône de validation
-const String _fontFamily = 'Roboto'; // Police principale
-const Color _shadowColor = Color(0xFFEEEEEE); // Couleur de l'ombre de la carte
+const Color _purpleAppbar = Color(0xFFA885D8);
+const Color _colorBlack = Color(0xFF000000);
+const Color _colorEasyTag = Color(0xFFC0D99D);
+const Color _colorMediumTag = Color(0xFFB1A0D6);
+const Color _colorHardTag = Color(0xFFD6A0A0);
+const Color _colorProgressEasy = Color(0xFF8DC63F);
+const Color _colorProgressMedium = Color(0xFF5D3BA5);
+const Color _colorProgressHard = Color(0xFFE4712F);
+const Color _colorCheck = Color(0xFF32C832);
+const String _fontFamily = 'Roboto';
+const Color _shadowColor = Color(0xFFEEEEEE);
 
+// -------------------------------------------------------------------
 // --- STRUCTURE DE DONNÉES ---
+// -------------------------------------------------------------------
+
 class ExerciseData {
   final String title;
   final String subtitle;
@@ -31,6 +35,10 @@ class ExerciseData {
   });
 }
 
+// ===================================================================
+// ÉCRAN 2 : LISTE DES EXERCICES PAR MATIÈRE
+// ===================================================================
+
 class ExerciseMatiereListScreen extends StatelessWidget {
   final String matiere;
 
@@ -38,68 +46,53 @@ class ExerciseMatiereListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Changement : Utilisation d'un Container pour le dégradé de couleur en haut
     return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(80.0),
+        child: _buildCustomAppBar(context),
+      ),
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // AppBar personnalisée
-          _buildCustomAppBar(context),
-
-          // Corps principal
-          Expanded(
-            child: SingleChildScrollView(
-              // Suppression du padding horizontal ici, il est dans l'item
-              padding: const EdgeInsets.symmetric(horizontal: 0.0),
-              child: Column(
-                children: [
-                  // Liste des exercices
-                  _buildExerciseList(context),
-
-                  const SizedBox(height: 80),
-                ],
-              ),
-            ),
-          ),
-        ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 0.0),
+        child: Column(
+          children: [
+            _buildExerciseList(context),
+            const SizedBox(height: 80),
+          ],
+        ),
       ),
     );
   }
 
-  // --- WIDGET APPBAR PERSONNALISÉE (Mise à jour) ---
   Widget _buildCustomAppBar(BuildContext context) {
-    // Changement : Couleur de fond pour correspondre à l'image (violet)
     return Container(
-      color: Colors.white, // Couleur de fond de l'AppBar
+      color: _purpleAppbar,
       child: SafeArea(
-        bottom: false, // Laissez l'ombre se répandre en bas
-        child: Padding(
+        bottom: false,
+        child: Container(
+          color: Colors.white,
           padding: const EdgeInsets.only(top: 10.0, left: 0, right: 20),
           child: Column(
             children: [
-              const SizedBox(height: 20),
               Row(
                 children: [
-                  // Icône de retour (changement de couleur en blanc)
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back, color: _colorBlack),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  // Changement : Centrer le texte et le mettre en blanc
                   Expanded(
                     child: Center(
                       child: Text(
                         matiere,
                         style: const TextStyle(
-                          color: Colors.white, // Couleur blanche pour le texte
-                          fontSize: 24, // Taille légèrement plus grande
+                          color: _colorBlack,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          fontFamily: _fontFamily,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48), // Pour aligner le titre au centre
+                  const SizedBox(width: 48),
                 ],
               ),
               const SizedBox(height: 10),
@@ -110,7 +103,7 @@ class ExerciseMatiereListScreen extends StatelessWidget {
     );
   }
 
-  // --- LISTE DES EXERCICES (Mise à jour avec la nouvelle structure) ---
+  // --- LISTE DES EXERCICES ---
   Widget _buildExerciseList(BuildContext context) {
     final List<ExerciseData> exercises = [
       ExerciseData(title: 'Exercice 1', subtitle: 'Algèbre de base', questions: 10, level: 'Facile', progress: 1.0),
@@ -118,7 +111,7 @@ class ExerciseMatiereListScreen extends StatelessWidget {
       ExerciseData(title: 'Exercice 3', subtitle: 'Calcul mentale et fractions', questions: 12, level: 'Difficile', progress: 0.20),
       ExerciseData(title: 'Exercice 4', subtitle: 'Problèmes de logique', questions: 13, level: 'Facile', progress: 0.0),
       ExerciseData(title: 'Exercice 5', subtitle: 'Introduction aux équations', questions: 12, level: 'Moyen', progress: 0.60),
-      ExerciseData(title: 'Exercice 6', subtitle: 'Introduction aux équations', questions: 15, level: 'Difficile', progress: 0.0), // Changement du sous-titre de l'exercice 6 pour correspondre à l'image
+      ExerciseData(title: 'Exercice 6', subtitle: 'Équations complexes', questions: 15, level: 'Difficile', progress: 0.0),
     ];
 
     return ListView.builder(
@@ -130,13 +123,17 @@ class ExerciseMatiereListScreen extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 15.0, left: 20, right: 20),
           child: InkWell(
-            // La carte elle-même est le bouton, InkWell ajoute l'effet visuel au clic
             borderRadius: BorderRadius.circular(15),
             onTap: () {
-              // Action de navigation
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QuizScreen(exerciseTitle: item.title),
+                ),
+              );
             },
-            child: _ExerciseListItem(
-              data: item, // Passe l'objet de données complètes
+            child: _ExerciseListItem( // L'erreur de portée est maintenant résolue
+              data: item,
             ),
           ),
         );
@@ -146,9 +143,10 @@ class ExerciseMatiereListScreen extends StatelessWidget {
 }
 
 // -------------------------------------------------------------------
-// --- COMPOSANTS DE LISTE ---
+// --- COMPOSANTS AJOUTÉS (pour résoudre l'erreur de portée) ---
 // -------------------------------------------------------------------
 
+// --- COMPOSANT DE LA BALISE DE DIFFICULTÉ ---
 class _DifficultyTag extends StatelessWidget {
   final String level;
   final Color color;
@@ -176,6 +174,7 @@ class _DifficultyTag extends StatelessWidget {
   }
 }
 
+// --- COMPOSANT DE L'ÉLÉMENT DE LISTE D'EXERCICE ---
 class _ExerciseListItem extends StatelessWidget {
   final ExerciseData data;
 
@@ -194,7 +193,6 @@ class _ExerciseListItem extends StatelessWidget {
     }
   }
 
-  // Fonction pour obtenir la couleur de la barre de progression
   Color _getProgressColor(String level) {
     switch (level) {
       case 'Facile':
@@ -218,11 +216,10 @@ class _ExerciseListItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15), // Coins plus arrondis
-        border: Border.all(color: Colors.grey.shade100, width: 1), // Léger contour
+        borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: _shadowColor, // Ombre très claire et subtile
+            color: _shadowColor,
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -232,7 +229,7 @@ class _ExerciseListItem extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Titre et icône de validation
+          // Titre et icône de validation / Progression
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -245,10 +242,9 @@ class _ExerciseListItem extends StatelessWidget {
                   fontFamily: _fontFamily,
                 ),
               ),
-              // Barre de progression à droite du titre (si non complété)
               if (!isCompleted)
                 SizedBox(
-                  width: 50, // Longueur de la barre de progression
+                  width: 50,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(50),
                     child: LinearProgressIndicator(
@@ -259,19 +255,18 @@ class _ExerciseListItem extends StatelessWidget {
                     ),
                   ),
                 ),
-              // Icône de validation (si complété)
               if (isCompleted)
                 const Icon(Icons.check_circle, color: _colorCheck, size: 24),
             ],
           ),
           const SizedBox(height: 5),
 
-          // Sous-titre de l'exercice (Algèbre de base)
+          // Sous-titre de l'exercice
           Text(
             data.subtitle,
             style: const TextStyle(
               color: _colorBlack,
-              fontSize: 15, // Plus grand que l'original
+              fontSize: 15,
               fontFamily: _fontFamily,
             ),
           ),
