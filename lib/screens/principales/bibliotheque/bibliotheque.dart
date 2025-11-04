@@ -1,123 +1,132 @@
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/principales/bibliotheque/telechargement.dart';
+import 'package:edugo/screens/principales/bibliotheque/lectureLivre.dart'; // <-- ajout import
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _purpleMain = Color(0xFFA885D8);
 const Color _colorBlack = Color(0xFF000000);
 const String _fontFamily = 'Roboto';
 
-class LibraryScreen extends StatelessWidget {
+class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
+
+  @override
+  _LibraryScreenState createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends State<LibraryScreen> {
+  // Liste des livres
+  final List<Map<String, String>> books = [
+    {'title': 'Le jardin invisible', 'author': 'C.S.Lewis', 'image': 'book1.png'},
+    {'title': 'Le cœur se souvient', 'author': 'C.S.Lewis', 'image': 'book1.png'},
+    {'title': 'Libre comme l\'ère', 'author': 'C.S.Lewis', 'image': 'book1.png'},
+    {'title': 'En apnée', 'author': 'C.S.Lewis', 'image': 'book1.png'},
+    {'title': 'Libre comme l\'ère', 'author': 'C.S.Lewis', 'image': 'book1.png'},
+    {'title': 'En apnée', 'author': 'C.S.Lewis', 'image': 'book1.png'},
+  ];
+
+  // Liste filtrée des livres (initialisée avec la liste complète des livres)
+  List<Map<String, String>> filteredBooks = [];
+
+  // Contrôleur de texte pour la barre de recherche
+  TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    filteredBooks = books; // Initialisation de filteredBooks avec la liste complète des livres
+    _searchController.addListener(_filterBooks); // Écoute des changements dans la recherche
+  }
+
+  // Fonction pour filtrer les livres en fonction du texte de recherche
+  void _filterBooks() {
+    String query = _searchController.text.toLowerCase();
+    setState(() {
+      filteredBooks = books.where((book) {
+        return book['title']!.toLowerCase().contains(query) ||
+            book['author']!.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      body: SafeArea(
+        top: true,
+        bottom: false,
+        child: Column(
+          children: [
+            // --- HEADER FIXE ---
+            _buildHeader(),
+            const SizedBox(height: 10),
 
-      // Corps principal
-      body: Column(
-        children: [
-          _buildCustomAppBar(context),
-          Expanded(
-            child: SingleChildScrollView(
+            // --- BARRE DE RECHERCHE FIXE ---
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 15),
-                  _buildSearchBar(),
-                  const SizedBox(height: 15),
-                  _buildFilters(context),
-                  const SizedBox(height: 15),
-                  _buildBookGrid(),
-                ],
+              child: _buildSearchBar(),
+            ),
+            const SizedBox(height: 10),
+
+            // --- FILTRES FIXES ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: _buildFilters(context),
+            ),
+            const SizedBox(height: 10),
+
+            // --- SEULE LA LISTE DES LIVRES DÉFILE ---
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: _buildBookGrid(context),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // --- WIDGETS DE STRUCTURE ET EN-TÊTE ---
-
-    // Remplacement de _buildHeader par _buildCustomAppBar
-    Widget _buildCustomAppBar(BuildContext context) {
-      // Cette structure reproduit l'en-tête sans la barre colorée
-      return SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-
-              // Titre "Livres"
-              Row(
-                children: [
-                  // Icone de retour (absente de la capture Livres, mais souvent nécessaire)
-                  // Retiré pour coller à l'image fournie, mais vous pouvez le remettre si besoin.
-                  const SizedBox(width: 48), // Espace pour aligner le titre au centre
-
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'Livres',
-                        style: TextStyle(
-                          color: _colorBlack,
-                          fontSize: 24, // Ajusté pour coller au style de l'image
-                          fontWeight: FontWeight.bold,
-                          fontFamily: _fontFamily,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Placeholder pour aligner le titre
-                  const SizedBox(width: 48),
-                ],
-              ),
-              const SizedBox(height: 10),
-            ],
+  // --- HEADER ---
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.only(top: 10, bottom: 10),
+      width: double.infinity,
+      child: const Center(
+        child: Text(
+          "Livres",
+          style: TextStyle(
+            color: Colors.black, // Remplacer par la couleur de ton choix
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            fontFamily: _fontFamily,
           ),
         ),
-      );
-    }
-  // --- WIDGET UTILITAIRE POUR L'EFFET DE DÉGRADÉ ---
-  Widget _buildFadingEdge({required Widget child, required BuildContext context}) {
-    return ShaderMask(
-      // Crée le masque de dégradé.
-      shaderCallback: (Rect bounds) {
-        return LinearGradient(
-          // Le dégradé va de la gauche (0.0) vers la droite (1.0).
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          // Les couleurs: transparent à 0% et 100%, opaque à 5% et 95%.
-          colors: [Colors.transparent, Colors.black, Colors.black, Colors.transparent],
-          stops: [
-            0.0,  // Dégradé transparent (début)
-            0.05, // Opaque (5% du chemin)
-            0.95, // Opaque (jusqu'à 95% du chemin)
-            1.0,  // Dégradé transparent (fin)
-          ],
-        ).createShader(bounds);
-      },
-      // Le mode de fusion de la couche ShaderMask.
-      blendMode: BlendMode.dstIn,
-      child: child,
+      ),
     );
   }
+
 
   // --- BARRE DE RECHERCHE ---
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Colors.white, // fond blanc
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade300),
       ),
-      child: const TextField(
-        decoration: InputDecoration(
+      child: TextField(
+        controller: _searchController,
+        decoration: const InputDecoration(
           hintText: "Rechercher un livre par nom ou auteur",
           hintStyle: TextStyle(color: Colors.grey),
           prefixIcon: Icon(Icons.search, color: Colors.grey),
@@ -128,57 +137,33 @@ class LibraryScreen extends StatelessWidget {
     );
   }
 
-  // --- FILTRES (Mes Télé, Niveau, Matières, Classe) AVEC EFFET DE DÉGRADÉ ---
+  // --- FILTRES ---
   Widget _buildFilters(BuildContext context) {
-    // Le contenu défilable
-    final filtersRow = SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      // Note: un padding est nécessaire à l'intérieur de la Row pour que le dégradé soit visible
-      // sans rogner le contenu, surtout à gauche.
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 5.0), // Padding pour le dégradé
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            _FilterChip(
-              label: 'Mes Téléchargements',
-              isPrimary: true,
-              showArrow: false,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TelechargementsScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(width: 8),
-            const _FilterChip(label: 'Niveau', showArrow: true),
-            const SizedBox(width: 8),
-            const _FilterChip(label: 'Matières', showArrow: true),
-            const SizedBox(width: 8),
-            const _FilterChip(label: 'Classe', showArrow: true),
-          ],
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _FilterChip(
+          label: 'Mes Téléchargements',
+          isPrimary: true,
+          showArrow: false,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const TelechargementsScreen(),
+              ),
+            );
+          },
         ),
-      ),
+        const _FilterChip(label: 'Niveau', showArrow: true),
+        const _FilterChip(label: 'Matières', showArrow: true),
+        const _FilterChip(label: 'Classe', showArrow: true),
+      ],
     );
-
-    // Enveloppe la rangée défilable dans le ShaderMask
-    return _buildFadingEdge(child: filtersRow, context: context);
   }
 
-  // --- GRILLE DE LIVRES ---
-  Widget _buildBookGrid() {
-    final List<Map<String, String>> books = [
-      {'title': 'Le jardin invisible', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
-      {'title': 'Le cœur se souvient', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
-      {'title': 'Libre comme l\'ère', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
-      {'title': 'En apnée', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
-      {'title': 'Libre comme l\'ère', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
-      {'title': 'En apnée', 'author': 'Auteur : C.S.Lewis', 'image': 'book1.png'},
-    ];
-
+  // --- GRILLE DES LIVRES FILTRÉE ---
+  Widget _buildBookGrid(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -186,21 +171,34 @@ class LibraryScreen extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 15.0,
         mainAxisSpacing: 15.0,
-        childAspectRatio: 0.62, // réduit la zone blanche sous l'image
+        childAspectRatio: 0.6, // Réduction de la taille des cartes de livres
       ),
-      itemCount: books.length,
+      itemCount: filteredBooks.length,
       itemBuilder: (context, index) {
-        return _BookCard(
-          title: books[index]['title']!,
-          author: books[index]['author']!,
-          imagePath: 'assets/images/${books[index]['image']!}',
+        return GestureDetector(
+          onTap: () {
+            // Lorsqu’on clique sur un livre → page de lecture
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BookReaderScreen(
+                  bookTitle: filteredBooks[index]['title']!,
+                ),
+              ),
+            );
+          },
+          child: _BookCard(
+            title: filteredBooks[index]['title']!,
+            author: filteredBooks[index]['author']!,
+            imagePath: 'assets/images/${filteredBooks[index]['image']!}',
+          ),
         );
       },
     );
   }
 }
 
-// --- WIDGET PERSONNALISÉ POUR LES FILTRES / BOUTONS ---
+// --- WIDGET POUR LES FILTRES ---
 class _FilterChip extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -221,7 +219,7 @@ class _FilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        constraints: const BoxConstraints(minWidth: 80),
+        constraints: const BoxConstraints(maxWidth: 120, minWidth: 80),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isPrimary ? _purpleMain : Colors.white,
@@ -239,7 +237,7 @@ class _FilterChip extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
-                overflow: TextOverflow.ellipsis, // tronque si trop long
+                overflow: TextOverflow.ellipsis,
                 maxLines: 1,
                 style: TextStyle(
                   color: isPrimary ? Colors.white : _colorBlack,
@@ -260,7 +258,7 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-// --- WIDGET PERSONNALISÉ POUR LES LIVRES ---
+// --- WIDGET POUR CHAQUE LIVRE ---
 class _BookCard extends StatelessWidget {
   final String title;
   final String author;
@@ -290,7 +288,6 @@ class _BookCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image du livre
           ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(12),
@@ -298,49 +295,41 @@ class _BookCard extends StatelessWidget {
             ),
             child: Image.asset(
               imagePath,
-              height: 170,
+              height: 180,
               width: double.infinity,
               fit: BoxFit.cover,
             ),
           ),
-
-          // Zone blanche réduite
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    fontFamily: _fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  author,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                    fontFamily: _fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Icon(
-                    Icons.download,
-                    color: Colors.black87,
-                    size: 18, // un peu plus petit
-                  ),
-                ),
-              ],
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                fontFamily: _fontFamily,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              author,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+                fontFamily: _fontFamily,
+              ),
+            ),
+          ),
+          const Spacer(),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8, bottom: 10), // Déplacement de l'icône
+              child: Icon(Icons.download, color: Colors.black87, size: 20),
             ),
           ),
         ],
