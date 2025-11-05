@@ -15,39 +15,52 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
   bool _isConfirmPasswordVisible = false;
 
   // Placeholder colors pour correspondre au design
-  final Color primaryPurple = const Color(0xFFA885D8);
+  final Color primaryPurple = const Color(0xFFA885D8); // Violet cohérent
   final Color lightPurple = const Color(0xFFF3EDFC);
   final Color iconColor = const Color(0xFF7042C9);
-  final Color inputFillColor = const Color(0xFFF8F8F8); // fond clair pour les champs
 
-  // Fonction de construction des champs de mot de passe
+  // NOUVELLES COULEURS POUR CORRESPONDRE À L'INSCRIPTION
+  final Color _borderColor = const Color(0xFFD1C4E9); // Bordure douce violette
+  final Color _fillColor = const Color(0xFFF5F5F5);   // Fond gris clair
+  final String _fontFamily = 'Roboto'; // Police par défaut
+
+  // Fonction de construction des champs de mot de passe - STYLE MODIFIÉ
   Widget _buildPasswordField({
     required String hintText,
     required bool isVisible,
     required VoidCallback onVisibilityToggle,
   }) {
+    final OutlineInputBorder borderStyle = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(
+        color: Color(0xFFD1C4E9),
+        width: 1.0,
+      ),
+    );
+
     return TextField(
       obscureText: !isVisible,
+      style: const TextStyle(
+        fontSize: 16,
+        color: Colors.black,
+        fontFamily: 'Roboto',
+      ),
       decoration: InputDecoration(
         hintText: hintText,
+        hintStyle: const TextStyle(color: Colors.grey),
         filled: true,
-        fillColor: inputFillColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        fillColor: _fillColor,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         suffixIcon: IconButton(
           icon: Icon(
-            isVisible ? Icons.visibility : Icons.visibility_off,
-            color: Colors.grey,
+            isVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            color: const Color(0xFFA582E5), // Violet cohérent avec l'inscription
           ),
           onPressed: onVisibilityToggle,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: primaryPurple, width: 1.5),
-        ),
+        enabledBorder: borderStyle,
+        focusedBorder: borderStyle,
+        border: borderStyle,
       ),
     );
   }
@@ -110,11 +123,12 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.black,
+                fontFamily: 'Roboto',
               ),
             ),
             const SizedBox(height: 8),
             _buildPasswordField(
-              hintText: '......',
+              hintText: 'Entrer votre nouveau mot de passe',
               isVisible: _isNewPasswordVisible,
               onVisibilityToggle: () {
                 setState(() {
@@ -122,7 +136,7 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
                 });
               },
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 25),
 
             // Champ : Confirmer le mot de passe
             const Text(
@@ -131,11 +145,12 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.black,
+                fontFamily: 'Roboto',
               ),
             ),
             const SizedBox(height: 8),
             _buildPasswordField(
-              hintText: '......',
+              hintText: 'Confirmer votre nouveau mot de passe',
               isVisible: _isConfirmPasswordVisible,
               onVisibilityToggle: () {
                 setState(() {
@@ -143,7 +158,7 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
                 });
               },
             ),
-            const SizedBox(height: 70),
+            const SizedBox(height: 40),
 
             // Bouton : Réinitialiser mot de passe
             SizedBox(
@@ -155,7 +170,7 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryPurple,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12), // Coins arrondis à 12px
                   ),
                   elevation: 0,
                 ),
@@ -165,6 +180,7 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
                     fontSize: 18,
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
+                    fontFamily: 'Roboto',
                   ),
                 ),
               ),

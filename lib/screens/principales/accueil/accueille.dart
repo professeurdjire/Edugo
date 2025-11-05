@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:edugo/screens/profil/profil.dart';
 import 'package:edugo/screens/principales/accueil/badges.dart';
 import 'package:edugo/screens/principales/accueil/notification.dart';
+import 'package:edugo/screens/conversionData/listeConversion.dart';
 
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
@@ -106,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverList(
             delegate: SliverChildListDelegate(
               [
-                const SizedBox(height: 20),
+                const SizedBox(height: 40),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: _buildReadingGoals(context),
@@ -212,29 +213,37 @@ class _HomeScreenState extends State<HomeScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.black.withOpacity(0.2),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.star, color: _colorGold, size: 18),
-                                const SizedBox(width: 5),
-                                Text(
-                                  '$_userPoints',
-                                  style: const TextStyle(
-                                    color: _colorWhite,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const PointExchangeScreen()),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.black.withOpacity(0.2),
+                                  width: 1,
                                 ),
-                              ],
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.star, color: _colorGold, size: 18),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    '$_userPoints',
+                                    style: const TextStyle(
+                                      color: _colorWhite,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),

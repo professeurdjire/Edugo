@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/screens/principales/bibliotheque/quizLivre.dart'; // Import de la page quiz
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur des icônes)
@@ -230,6 +231,18 @@ Il prend son crayon et commence un nouveau dessin : celui de son jardin intérie
     Navigator.of(context).pop();
   }
 
+  void _navigateToQuiz() {
+    setState(() {
+      _showCompletionOverlay = false;
+    });
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BookQuizScreen(quizTitle: '${widget.bookTitle} Quiz'),
+      ),
+    );
+  }
+
   Widget _buildCompletionOverlay() {
     return Positioned.fill(
       child: Container(
@@ -242,85 +255,209 @@ Il prend son crayon et commence un nouveau dessin : celui de son jardin intérie
   }
 
   Widget _buildCompletionDialog() {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20.0),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(24.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Titre "20:20"
-            const Text(
-              "20 : 20",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: _colorBlack,
-                fontFamily: _fontFamily,
-              ),
-            ),
-            const SizedBox(height: 20),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmallScreen = constraints.maxWidth < 600;
+        final bool isLargeScreen = constraints.maxWidth > 900;
 
-            // Message de félicitations
-            const Text(
-              "Vous venez de terminé un livre !",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: _colorBlack,
-                fontFamily: _fontFamily,
-              ),
-              textAlign: TextAlign.center,
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(isSmallScreen ? 20.0 : 25.0),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: isSmallScreen
+                ? MediaQuery.of(context).size.width * 0.9
+                : isLargeScreen
+                    ? MediaQuery.of(context).size.width * 0.5
+                    : MediaQuery.of(context).size.width * 0.75,
+            padding: const EdgeInsets.all(0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(isSmallScreen ? 20.0 : 25.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Text(
-              "Veillez répondre les quiz pour testez votre compréhension",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-                fontFamily: _fontFamily,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // En-tête avec dégradé
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(isSmallScreen ? 20 : 25),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [_purpleMain, Color(0xFF8A6DC5)],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(isSmallScreen ? 20 : 25),
+                      topRight: Radius.circular(isSmallScreen ? 20 : 25),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _purpleMain.withOpacity(0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Icône de check (succès)
+                      Container(
+                        padding: EdgeInsets.all(isSmallScreen ? 12 : 15),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.check_circle_rounded,
+                          color: Colors.white,
+                          size: isSmallScreen ? 35 : 40,
+                        ),
+                      ),
+                      SizedBox(height: isSmallScreen ? 12 : 15),
+                      Text(
+                        "Lecture Terminée !",
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 18 : 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontFamily: _fontFamily,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
 
-            // Bouton OK
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _purpleMain,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
+                // Corps du message
+                Container(
+                  padding: EdgeInsets.all(isSmallScreen ? 20 : 30),
+                  child: Column(
+                    children: [
+                      Text(
+                        "Félicitations !",
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 18 : 20,
+                          fontWeight: FontWeight.bold,
+                          color: _colorBlack,
+                          fontFamily: _fontFamily,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: isSmallScreen ? 8 : 10),
+                      Text(
+                        "Vous venez de terminer un livre",
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 15 : 16,
+                          color: _colorBlack,
+                          fontFamily: _fontFamily,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: isSmallScreen ? 12 : 15),
+                      Text(
+                        "Répondez au quiz pour tester votre compréhension et gagner des points !",
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 14 : 16,
+                          color: Colors.grey[700],
+                          fontFamily: _fontFamily,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: isSmallScreen ? 20 : 25),
+
+                      // Bouton principal
+                      Container(
+                        width: double.infinity,
+                        height: isSmallScreen ? 50 : 55,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [_purpleMain, Color(0xFF8A6DC5)],
+                          ),
+                          borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _purpleMain.withOpacity(0.4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 15),
+                            onTap: _navigateToQuiz,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "COMMENCER LE QUIZ",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: isSmallScreen ? 14 : 16,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: _fontFamily,
+                                  ),
+                                ),
+                                SizedBox(width: isSmallScreen ? 8 : 10),
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.arrow_forward_rounded,
+                                    color: Colors.white,
+                                    size: isSmallScreen ? 16 : 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Bouton secondaire pour fermer
+                      SizedBox(height: isSmallScreen ? 12 : 15),
+                      TextButton(
+                        onPressed: _closeCompletionOverlay,
+                        child: Text(
+                          "Plus tard",
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: isSmallScreen ? 13 : 14,
+                            fontFamily: _fontFamily,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
                 ),
-                onPressed: _closeCompletionOverlay,
-                child: const Text(
-                  "OK",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: _fontFamily,
-                  ),
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   // Widget pour afficher le texte avec coloration
-  Widget _buildColoredText(int pageIndex) {
+  Widget _buildColoredText(int pageIndex, bool isSmallScreen) {
     return Column(
       children: [
         RichText(
@@ -330,8 +467,8 @@ Il prend son crayon et commence un nouveau dessin : celui de son jardin intérie
                 text: word.text,
                 style: TextStyle(
                   color: word.isRead ? _readColor : _colorBlack,
-                  fontSize: 15,
-                  height: 1.6,
+                  fontSize: isSmallScreen ? 14 : 15,
+                  height: isSmallScreen ? 1.5 : 1.6,
                   fontFamily: _fontFamily,
                   fontWeight: word.isRead ? FontWeight.w500 : FontWeight.normal,
                 ),
@@ -342,23 +479,25 @@ Il prend son crayon et commence un nouveau dessin : celui de son jardin intérie
         ),
 
         // Bouton pour marquer la page comme lue (seulement en lecture manuelle)
-        // CACHÉ pendant la lecture audio
         if (!_isPlayingAudio && !_pageWords[pageIndex].every((word) => word.isRead)) ...[
-          const SizedBox(height: 20),
+          SizedBox(height: isSmallScreen ? 15 : 20),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: _purpleMain,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0),
+                borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 12.0),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 16 : 20,
+                vertical: isSmallScreen ? 10 : 12
+              ),
             ),
             onPressed: _markPageAsReadManually,
-            child: const Text(
+            child: Text(
               "Marquer cette page comme lue",
               style: TextStyle(
-                fontSize: 14,
+                fontSize: isSmallScreen ? 13 : 14,
                 fontFamily: _fontFamily,
               ),
             ),
@@ -370,76 +509,96 @@ Il prend son crayon et commence un nouveau dessin : celui de son jardin intérie
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // Contenu principal de la lecture
-          Column(
-            children: [
-              // App Bar personnalisé (avec barre de statut et titre)
-              _buildCustomAppBar(context),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmallScreen = constraints.maxWidth < 600;
+        final bool isLargeScreen = constraints.maxWidth > 900;
 
-              // Le corps de la page (PageView pour la pagination)
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: _bookPages.length,
-                  onPageChanged: (int page) {
-                    setState(() {
-                      _currentPage = page;
-                      _currentWordIndex = 0;
-                      _showCompletionOverlay = false;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                      child: _buildColoredText(index),
-                    );
-                  },
-                ),
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: Stack(
+            children: [
+              // Contenu principal de la lecture
+              Column(
+                children: [
+                  // App Bar personnalisé (avec barre de statut et titre)
+                  _buildCustomAppBar(context, isSmallScreen),
+
+                  // Le corps de la page (PageView pour la pagination)
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: _bookPages.length,
+                      onPageChanged: (int page) {
+                        setState(() {
+                          _currentPage = page;
+                          _currentWordIndex = 0;
+                          _showCompletionOverlay = false;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        return SingleChildScrollView(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isSmallScreen ? 16.0 : 20.0,
+                            vertical: isSmallScreen ? 8.0 : 10.0
+                          ),
+                          child: _buildColoredText(index, isSmallScreen),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Barre de pagination en bas
+                  _buildPaginationBar(isSmallScreen),
+                ],
               ),
 
-              // Barre de pagination en bas
-              _buildPaginationBar(),
+              // Popup de fin de lecture (s'affiche en overlay par-dessus tout)
+              if (_showCompletionOverlay) _buildCompletionOverlay(),
             ],
           ),
-
-          // Popup de fin de lecture (s'affiche en overlay par-dessus tout)
-          if (_showCompletionOverlay) _buildCompletionOverlay(),
-        ],
-      ),
+        );
+      },
     );
   }
 
   // --- WIDGETS DE STRUCTURE PRINCIPALE ---
 
-  Widget _buildCustomAppBar(BuildContext context) {
+  Widget _buildCustomAppBar(BuildContext context, bool isSmallScreen) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
+        padding: EdgeInsets.only(
+          top: 10.0,
+          left: isSmallScreen ? 8 : 10,
+          right: isSmallScreen ? 16 : 20
+        ),
         child: Column(
           children: [
-            const SizedBox(height: 20),
+            SizedBox(height: isSmallScreen ? 15 : 20),
 
             // Titre de la page et Icône de Lecture
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
+                  icon: Icon(
+                    Icons.arrow_back_ios,
+                    color: _colorBlack,
+                    size: isSmallScreen ? 20 : 24,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
                 Expanded(
                   child: Center(
                     child: Text(
                       widget.bookTitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _colorBlack,
-                        fontSize: 20,
+                        fontSize: isSmallScreen ? 18 : 20,
                         fontWeight: FontWeight.bold,
                         fontFamily: _fontFamily,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
@@ -447,7 +606,7 @@ Il prend son crayon et commence un nouveau dessin : celui de son jardin intérie
                   icon: Icon(
                     _isPlayingAudio ? Icons.pause_circle_outline : Icons.play_circle_outline,
                     color: _purpleMain,
-                    size: 30,
+                    size: isSmallScreen ? 26 : 30,
                   ),
                   onPressed: _toggleAudio,
                 ),
@@ -459,9 +618,12 @@ Il prend son crayon et commence un nouveau dessin : celui de son jardin intérie
     );
   }
 
-  Widget _buildPaginationBar() {
+  Widget _buildPaginationBar(bool isSmallScreen) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 16.0 : 20.0,
+        vertical: isSmallScreen ? 12.0 : 16.0
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -477,7 +639,10 @@ Il prend son crayon et commence un nouveau dessin : celui de son jardin intérie
         children: [
           // Bouton précédent
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios, size: 20),
+            icon: Icon(
+              Icons.arrow_back_ios,
+              size: isSmallScreen ? 18 : 20
+            ),
             onPressed: _currentPage > 0 ? _goToPreviousPage : null,
             color: _currentPage > 0 ? _purpleMain : Colors.grey,
           ),
@@ -485,9 +650,9 @@ Il prend son crayon et commence un nouveau dessin : celui de son jardin intérie
           // Indicateur de pagination
           Text(
             "${_currentPage + 1}/${_bookPages.length}",
-            style: const TextStyle(
+            style: TextStyle(
               color: _colorBlack,
-              fontSize: 16,
+              fontSize: isSmallScreen ? 14 : 16,
               fontWeight: FontWeight.bold,
               fontFamily: _fontFamily,
             ),
@@ -495,7 +660,10 @@ Il prend son crayon et commence un nouveau dessin : celui de son jardin intérie
 
           // Bouton suivant
           IconButton(
-            icon: const Icon(Icons.arrow_forward_ios, size: 20),
+            icon: Icon(
+              Icons.arrow_forward_ios,
+              size: isSmallScreen ? 18 : 20
+            ),
             onPressed: _currentPage < _bookPages.length - 1 ? _goToNextPageManual : () {
               // Si on est sur la dernière page, vérifier si elle est lue
               bool currentPageRead = _pageWords[_currentPage].every((word) => word.isRead);

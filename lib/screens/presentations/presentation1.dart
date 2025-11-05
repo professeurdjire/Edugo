@@ -38,49 +38,13 @@ class WelcomeScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 100.0), 
                     child: Image.asset(
                       // Assurez-vous d'avoir cette image dans votre dossier assets
-                      'assets/images/enfantlu.png', 
+                      'assets/images/lectureEnfant.png',
                       fit: BoxFit.contain,
                       height: screenHeight * 0.35, // Taille ajustée
                     ),
                   ),
                 ),
-                
-                // 1.2. Barre d'état (Heure, WiFi, Batterie) - Simulée pour être fidèle au PNG
-                // La barre d'état du PNG (20:20, icônes) n'est pas gérée par Flutter par défaut
-                // mais est ici recréée pour une fidélité visuelle maximale.
-                Padding(
-                  padding: const EdgeInsets.only(top: 40.0, left: 20.0, right: 20.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Heure
-                      Text(
-                        '20 : 20',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppConst.fontFamily
-                        ),
-                      ),
-                      
-                      // Icônes de statut (simulées)
-                      const Row(
-                        children: [
-                          Icon(Icons.wifi, color: Colors.black, size: 16),
-                          SizedBox(width: 4),
-                          Icon(Icons.battery_full, color: Colors.black, size: 16),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // 1.3. Le "trou" de la caméra avant (simulé)
-                const Positioned(
-                  top: 16,
-                  child: Icon(Icons.circle, color: Colors.black, size: 8),
-                ),
+
               ],
             ),
           ),
@@ -112,7 +76,7 @@ class WelcomeScreen extends StatelessWidget {
                     'Votre bibliothèque digitale pour les élèves du primaire '
                     'et du secondaire. Accédez à des livres électroniques, '
                     'des quiz interactifs et gagnez des récompenses.',
-                    textAlign: TextAlign.left,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.black54, // Couleur du texte plus discrète
                       fontSize: 16,
