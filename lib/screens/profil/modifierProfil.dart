@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 // Définition de la classe pour l'écran de modification de profil
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -42,10 +41,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   static const Color _primaryColor = Color(0xFFA885D8);
   // Couleur de fond de l'AppBar
   static const Color _appBarColor = Color(0xFFFFFFFF);
-  // Couleur de fond des champs de texte
-  static const Color _inputFillColor = Color(0xFFF5F5F5);
-  // Nouvelle couleur de bordure (Orange: #FF9800)
-  static const Color _borderColor = Color(0xFFD1C4E9);
+
+  // NOUVELLES COULEURS POUR CORRESPONDRE À L'INSCRIPTION
+  static const Color _borderColor = Color(0xFFD1C4E9); // Bordure douce violette
+  static const Color _fillColor = Color(0xFFF5F5F5);   // Fond gris clair
+  static const String _fontFamily = 'Roboto'; // Police par défaut
 
   @override
   Widget build(BuildContext context) {
@@ -144,35 +144,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(height: 30),
 
           // Champ Nom
-          const Text('Nom', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('Nom', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: _fontFamily)),
           const SizedBox(height: 8),
           _buildTextField(
             hint: 'Entrer votre nom',
             icon: null,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
 
           // Champ Prenom
-          const Text('Prenom', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('Prenom', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: _fontFamily)),
           const SizedBox(height: 8),
           _buildTextField(
             hint: 'Entrer votre prenom',
             icon: null,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
 
           // Champ Téléphone
-          const Text('Téléphone', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('Téléphone', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: _fontFamily)),
           const SizedBox(height: 8),
           _buildTextField(
             hint: 'Votre numéro de téléphone',
             icon: null,
             keyboardType: TextInputType.phone,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
 
           // Champ Ville
-          const Text('Ville', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('Ville', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: _fontFamily)),
           const SizedBox(height: 8),
           _buildTextField(
             hint: 'Entrez votre ville',
@@ -198,23 +198,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(height: 30),
 
           // Champ Adresse Email
-          const Text('Adresse Email', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('Adresse Email', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: _fontFamily)),
           const SizedBox(height: 8),
           _buildTextField(
             hint: 'Entrer votre email',
-            icon: Icons.mail_outline,
+            icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
 
           // Champ Niveau
-          const Text('Niveau', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('Niveau', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: _fontFamily)),
           const SizedBox(height: 8),
           _buildDropdownField(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
 
           // Champ Classe
-          const Text('Classe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('Classe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: _fontFamily)),
           const SizedBox(height: 8),
           _buildTextField(
             hint: 'Précisez votre classe',
@@ -248,18 +248,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-
+  // WIDGET CHAMP DE SAISIE - STYLE MODIFIÉ POUR CORRESPONDRE À L'INSCRIPTION
   Widget _buildTextField({
     required String hint,
     IconData? icon,
     TextInputType keyboardType = TextInputType.text,
   }) {
-    // Définition de la bordure commune
     final OutlineInputBorder borderStyle = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: const BorderSide(
-        color: _borderColor, // Couleur orange
-        width: 1.0,           // Épaisseur de 1
+        color: _borderColor,
+        width: 1.0,
       ),
     );
 
@@ -268,64 +267,60 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.grey),
-
-        // Ajout du fond et du padding
         filled: true,
-        fillColor: _inputFillColor,
+        fillColor: _fillColor,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-
-        // Applique la bordure à l'état normal
+        suffixIcon: icon != null ? Icon(icon, color: _primaryColor) : null,
         enabledBorder: borderStyle,
-
-        // Applique la bordure à l'état de focus (pour la cohérence, on garde la même couleur)
         focusedBorder: borderStyle,
-
-        // Applique la bordure par défaut (fallback)
         border: borderStyle,
-
-        suffixIcon: icon != null ? Icon(icon, color: Colors.grey) : null,
+      ),
+      style: const TextStyle(
+        fontFamily: _fontFamily,
+        fontSize: 16,
+        color: Colors.black,
       ),
     );
   }
 
+  // WIDGET DROPDOWN - STYLE MODIFIÉ POUR CORRESPONDRE À L'INSCRIPTION
   Widget _buildDropdownField() {
-    // Définition de la bordure pour le Dropdown (pour la cohérence)
-    final OutlineInputBorder borderStyle = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(
-        color: _borderColor, // Couleur orange
-        width: 1.0,           // Épaisseur de 1
-      ),
-    );
-
-    return Container(
-      decoration: BoxDecoration(
-        color: _inputFillColor,
-        borderRadius: BorderRadius.circular(12),
-        // Ajout de la bordure autour du Container pour le Dropdown
-        border: Border.all(color: _borderColor, width: 1.0),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedNiveau,
-          hint: const Text('Choisir votre niveau d\'etude', style: TextStyle(color: Colors.grey)),
-          isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-          style: const TextStyle(fontSize: 16, color: Colors.black),
-          items: _niveaux.map((String niveau) {
-            return DropdownMenuItem<String>(
-              value: niveau,
-              child: Text(niveau),
-            );
-          }).toList(),
-          onChanged: (String? newValue) {
-            setState(() {
-              _selectedNiveau = newValue;
-            });
-          },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: _fillColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _borderColor, width: 1.0),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: 55,
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedNiveau,
+              hint: const Text(
+                'Choisir votre niveau d\'etude',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+              isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+              style: const TextStyle(fontSize: 16, color: Colors.black, fontFamily: _fontFamily),
+              items: _niveaux.map((String niveau) {
+                return DropdownMenuItem<String>(
+                  value: niveau,
+                  child: Text(niveau),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedNiveau = newValue;
+                });
+              },
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -352,6 +347,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           fontSize: 16,
           fontWeight: FontWeight.bold,
           color: isPrimary ? Colors.white : Colors.black87,
+          fontFamily: _fontFamily,
         ),
       ),
     );

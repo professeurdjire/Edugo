@@ -9,7 +9,7 @@ import 'package:edugo/screens/principales/mainScreen.dart';
 import 'package:flutter/material.dart';
 
 // Constantes de style pour les couleurs
-const Color _purpleMain = Color(0xFFA582E5); // Violet principal (logo, bouton, étape active)
+const Color _purpleMain = Color(0xFFA885D8); // Violet principal (logo, bouton, étape active)
 const Color _purpleLight = Color(0xFFF1EFFE); // Violet très clair (fond des champs)
 const Color _purpleStepInactive = Color(0xFFE8E8E8); // Gris clair pour les étapes inactives
 const String _fontFamily = 'Roboto'; // Police par défaut
@@ -112,25 +112,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
     return Column(
       children: [
         SizedBox(height: MediaQuery.of(context).size.height * 0.08),
-        
-        // Simulation de la barre de statut (20:20, icônes) - Réutilisé de la page de Connexion
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('20 : 20', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
-              const Row(
-                children: [
-                  Icon(Icons.wifi, color: Colors.black, size: 16),
-                  SizedBox(width: 4),
-                  Icon(Icons.battery_full, color: Colors.black, size: 16),
-                ],
-              ),
-            ],
-          ),
-        ),
-        
+
         // Logo
         const SizedBox(height: 10),
         Image.asset(

@@ -2,40 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:edugo/screens/principales/challenge/resumeChallenge.dart';
 
+// --- CONSTANTES DE COULEURS ET STYLES ---
+const Color _purpleMain = Color(0xFFA885D8);
+const Color _colorBlack = Color(0xFF000000);
+const Color _colorSuccess = Color(0xFF32C832);
+const Color _colorError = Color(0xFFE74C3C);
+const Color _colorUnselected = Color(0xFFE0E0E0);
+const Color _colorLightPurple = Color(0xFFF3E5F5);
+const String _fontFamily = 'Roboto';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Challenge Demo Combiné',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        useMaterial3: true,
-      ),
-      home: const ChallengeParticipeScreen(),
-    );
-  }
-}
-
-// ---------------------
-// COULEURS
-// ---------------------
-class AppColors {
-  static const Color primaryPurple = Color(0xFFA885D8);
-  static const Color lightPurple = Color(0xFFE1BEE7);
-  static const Color veryLightPurple = Color(0xFFF3E5F5);
-  static const Color lightGrey = Color(0xFFE0E0E0);
-}
-
-// ---------------------
-// SCREEN PRINCIPAL (STATEFUL)
-// ---------------------
 class ChallengeParticipeScreen extends StatefulWidget {
   const ChallengeParticipeScreen({super.key});
 
@@ -44,18 +19,14 @@ class ChallengeParticipeScreen extends StatefulWidget {
 }
 
 class _ChallengeParticipeScreenState extends State<ChallengeParticipeScreen> {
-  // Définit ici combien de questions il y a sur la page.
-  // Si tu ajoutes/retire des question cards, mets à jour cette valeur.
   final int totalQuestions = 4;
-
-  // Map questionIndex -> answered (true/false)
   final Map<int, bool> answeredByIndex = {};
+  int _currentQuestionIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    // initialise toutes les questions à non répondues
-    for (int i = 1; i <= totalQuestions; i++) {
+    for (int i = 0; i < totalQuestions; i++) {
       answeredByIndex[i] = false;
     }
   }
@@ -66,8 +37,68 @@ class _ChallengeParticipeScreenState extends State<ChallengeParticipeScreen> {
     });
   }
 
+  void _nextQuestion() {
+    if (_currentQuestionIndex < totalQuestions - 1) {
+      setState(() {
+        _currentQuestionIndex++;
+      });
+    } else {
+      // All questions answered, navigate to summary
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ChallengeSummaryScreen()),
+      );
+    }
+  }
+
+  void _previousQuestion() {
+    if (_currentQuestionIndex > 0) {
+      setState(() {
+        _currentQuestionIndex--;
+      });
+    }
+  }
+
   int get answeredCount => answeredByIndex.values.where((v) => v).length;
   double get progress => totalQuestions == 0 ? 0.0 : (answeredCount / totalQuestions);
+
+  Widget _buildCurrentQuestion() {
+    switch (_currentQuestionIndex) {
+      case 0:
+        return TrueFalseQuestionCard(
+          questionIndex: _currentQuestionIndex + 1,
+          totalQuestions: totalQuestions,
+          questionText: 'La somme de 2 et 3 font 5 ?',
+          onAnsweredChanged: (isAnswered) => _onAnsweredChanged(_currentQuestionIndex, isAnswered),
+        );
+      case 1:
+        return MultipleChoiceQuestionCard(
+          questionIndex: _currentQuestionIndex + 1,
+          totalQuestions: totalQuestions,
+          questionText: 'La somme de 2 et 3 font ?',
+          options: const ['4', '5', '10', '6'],
+          onAnsweredChanged: (isAnswered) => _onAnsweredChanged(_currentQuestionIndex, isAnswered),
+        );
+      case 2:
+        return MatchingQuestionCard(
+          questionIndex: _currentQuestionIndex + 1,
+          totalQuestions: totalQuestions,
+          questionText: 'Faites correspondre les pays à leurs capitales',
+          leftOptions: const ['France', 'Japon', 'Mali'],
+          bottomOptions: const ['Paris', 'Tokyo', 'Bamako'],
+          onAnsweredChanged: (isAnswered) => _onAnsweredChanged(_currentQuestionIndex, isAnswered),
+        );
+      case 3:
+        return TextEntryQuestionCard(
+          questionIndex: _currentQuestionIndex + 1,
+          totalQuestions: totalQuestions,
+          questionText: 'Quel est le résultat de 7 * 8 ?',
+          onAnsweredChanged: (isAnswered) => _onAnsweredChanged(_currentQuestionIndex, isAnswered),
+        );
+      default:
+        return Container();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,88 +116,107 @@ class _ChallengeParticipeScreenState extends State<ChallengeParticipeScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const TimeProgressIndicator(), // temps (garde son timer interne)
-            const SizedBox(height: 20),
-            const Text('Progression', style: TextStyle(fontSize: 16, color: Colors.black54)),
-            const SizedBox(height: 8),
-            AnimatedProgressIndicator(
-              progress: progress,
-              answeredCount: answeredCount,
-              total: totalQuestions,
-              label: '${answeredCount}/${totalQuestions} questions répondues',
+      body: Column(
+        children: [
+          // Timer et progression en haut
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                const TimeProgressIndicator(),
+                const SizedBox(height: 20),
+                _buildProgressionBar(totalQuestions),
+              ],
             ),
-            const SizedBox(height: 30),
+          ),
 
-            // 1) True/False (index 1)
-            TrueFalseQuestionCard(
-              questionIndex: 1,
-              totalQuestions: totalQuestions,
-              questionText: 'La somme de 2 et 3 font 5 ?',
-              onAnsweredChanged: (isAnswered) => _onAnsweredChanged(1, isAnswered),
+          // Question actuelle au centre
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: _buildCurrentQuestion(),
             ),
-            const SizedBox(height: 20),
+          ),
 
-            // 2) Multiple choice (index 2)
-            MultipleChoiceQuestionCard(
-              questionIndex: 2,
-              totalQuestions: totalQuestions,
-              questionText: 'La somme de 2 et 3 font ?',
-              options: const ['4', '5', '10', '6'],
-              onAnsweredChanged: (isAnswered) => _onAnsweredChanged(2, isAnswered),
-            ),
-            const SizedBox(height: 20),
+          // Boutons de navigation en bas
+          _buildNavigationButtons(),
+        ],
+      ),
+    );
+  }
 
-            // 3) Matching (index 3)
-            MatchingQuestionCard(
-              questionIndex: 3,
-              totalQuestions: totalQuestions,
-              questionText: 'Faites correspondre les pays à leurs capitales',
-              leftOptions: const ['France', 'Japon', 'Mali'],
-              bottomOptions: const ['Paris', 'Tokyo', 'Bamako'],
-              onAnsweredChanged: (isAnswered) => _onAnsweredChanged(3, isAnswered),
-            ),
-            const SizedBox(height: 20),
+  Widget _buildProgressionBar(int totalQuestions) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Progression', style: TextStyle(fontSize: 16, color: Colors.black54)),
+        const SizedBox(height: 8),
+        AnimatedProgressIndicator(
+          progress: progress,
+          answeredCount: answeredCount,
+          total: totalQuestions,
+          label: '${answeredCount}/${totalQuestions} questions répondues',
+        ),
+      ],
+    );
+  }
 
-            // 4) Text entry (index 4)
-            TextEntryQuestionCard(
-              questionIndex: 4,
-              totalQuestions: totalQuestions,
-              questionText: 'Quel est le résultat de 7 * 8 ?',
-              onAnsweredChanged: (isAnswered) => _onAnsweredChanged(4, isAnswered),
-            ),
-
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=> ChallengeSummaryScreen()));
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryPurple,
+  Widget _buildNavigationButtons() {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          if (_currentQuestionIndex > 0)
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _previousQuestion,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _purpleMain,
+                  side: const BorderSide(color: _purpleMain),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('Suivant', style: TextStyle(fontSize: 18, color: Colors.white)),
+                child: const Text('Précédent'),
               ),
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
+          if (_currentQuestionIndex > 0) const SizedBox(width: 10),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: answeredByIndex[_currentQuestionIndex] == true ? _nextQuestion : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _purpleMain,
+                disabledBackgroundColor: _purpleMain.withOpacity(0.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 15),
+              ),
+              child: Text(
+                _currentQuestionIndex == totalQuestions - 1 ? 'Voir le Résumé' : 'Suivant',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ---------------------
-// TIME INDICATOR (avec bordure)
-// ---------------------
+// --- TIME INDICATOR ---
 class TimeProgressIndicator extends StatefulWidget {
   const TimeProgressIndicator({super.key});
 
@@ -174,9 +224,9 @@ class TimeProgressIndicator extends StatefulWidget {
   State<TimeProgressIndicator> createState() => _TimeProgressIndicatorState();
 }
 
-class _TimeProgressIndicatorState extends State<TimeProgressIndicator> with TickerProviderStateMixin {
-  double progress = 1.0; // 100%
-  int secondsRemaining = 60 * 5; // 5 minutes
+class _TimeProgressIndicatorState extends State<TimeProgressIndicator> {
+  double progress = 1.0;
+  int secondsRemaining = 60 * 5;
   late final Duration totalDuration;
 
   @override
@@ -189,7 +239,7 @@ class _TimeProgressIndicatorState extends State<TimeProgressIndicator> with Tick
   void _startTimer() {
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 1));
-      if (secondsRemaining > 0) {
+      if (mounted && secondsRemaining > 0) {
         setState(() {
           secondsRemaining--;
           progress = secondsRemaining / totalDuration.inSeconds;
@@ -209,11 +259,18 @@ class _TimeProgressIndicatorState extends State<TimeProgressIndicator> with Tick
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade400, width: 1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,20 +278,20 @@ class _TimeProgressIndicatorState extends State<TimeProgressIndicator> with Tick
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Temps restant', style: TextStyle(fontSize: 16, color: Colors.black54)),
+              const Text('Temps restant', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
               Text(
                 formatTime(secondsRemaining),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryPurple),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _purpleMain),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: Colors.grey.shade200,
-              color: Colors.green,
+              color: progress > 0.3 ? Colors.green : Colors.orange,
               minHeight: 8,
             ),
           ),
@@ -244,11 +301,9 @@ class _TimeProgressIndicatorState extends State<TimeProgressIndicator> with Tick
   }
 }
 
-// ---------------------
-// AnimatedProgressIndicator (visuel seulement)
-// ---------------------
+// --- ANIMATED PROGRESS INDICATOR ---
 class AnimatedProgressIndicator extends StatelessWidget {
-  final double progress; // 0.0 .. 1.0
+  final double progress;
   final int answeredCount;
   final int total;
   final String label;
@@ -264,26 +319,32 @@ class AnimatedProgressIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade400, width: 1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Animated Linear progress (smooth)
           TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0.0, end: progress),
-            duration: const Duration(milliseconds: 400),
+            duration: const Duration(milliseconds: 600),
             builder: (context, value, child) {
               return ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: value,
                   backgroundColor: Colors.grey.shade200,
-                  color: AppColors.primaryPurple,
+                  color: _purpleMain,
                   minHeight: 8,
                 ),
               );
@@ -294,7 +355,10 @@ class AnimatedProgressIndicator extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(label, style: const TextStyle(fontSize: 14, color: Colors.black54)),
-              Text('${(progress * 100).round()}%', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryPurple)),
+              Text(
+                '${(progress * 100).round()}%',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _purpleMain),
+              ),
             ],
           ),
         ],
@@ -303,15 +367,12 @@ class AnimatedProgressIndicator extends StatelessWidget {
   }
 }
 
-// ---------------------
-// QuestionCard de base
-// ---------------------
+// --- QUESTION CARD BASE ---
 class QuestionCard extends StatelessWidget {
   final int questionIndex;
   final int totalQuestions;
   final String questionText;
   final Widget child;
-  final double cardElevation;
 
   const QuestionCard({
     super.key,
@@ -319,32 +380,56 @@ class QuestionCard extends StatelessWidget {
     required this.totalQuestions,
     required this.questionText,
     required this.child,
-    this.cardElevation = 4,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      elevation: cardElevation,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-          Text('Question $questionIndex/$totalQuestions', style: const TextStyle(fontSize: 14, color: AppColors.primaryPurple, fontWeight: FontWeight.w600)),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Question $questionIndex/$totalQuestions',
+            style: const TextStyle(
+              color: _purpleMain,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              fontFamily: _fontFamily,
+            ),
+          ),
           const SizedBox(height: 10),
-          Text(questionText, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            questionText,
+            style: const TextStyle(
+              color: _colorBlack,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              fontFamily: _fontFamily,
+            ),
+          ),
           const SizedBox(height: 20),
           child,
-        ]),
+        ],
       ),
     );
   }
 }
 
-// ---------------------
-// True/False (notifie parent avec onAnsweredChanged)
-// ---------------------
+// --- TRUE/FALSE QUESTION ---
 class TrueFalseQuestionCard extends StatefulWidget {
   final int questionIndex;
   final int totalQuestions;
@@ -364,15 +449,11 @@ class TrueFalseQuestionCard extends StatefulWidget {
 }
 
 class _TrueFalseQuestionCardState extends State<TrueFalseQuestionCard> {
-  String? selection; // 'True' / 'False' / null
+  String? selection;
 
   void _toggle(String value) {
     setState(() {
-      if (selection == value) {
-        selection = null; // désélection (mode dynamique)
-      } else {
-        selection = value;
-      }
+      selection = selection == value ? null : value;
       widget.onAnsweredChanged(selection != null);
     });
   }
@@ -385,43 +466,68 @@ class _TrueFalseQuestionCardState extends State<TrueFalseQuestionCard> {
       questionText: widget.questionText,
       child: Row(
         children: [
-          Expanded(child: TrueFalseButton(text: 'True', isSelected: selection == 'True', onTap: () => _toggle('True'))),
+          Expanded(
+            child: _TrueFalseButton(
+              text: 'Vrai',
+              isSelected: selection == 'Vrai',
+              onTap: () => _toggle('Vrai'),
+            ),
+          ),
           const SizedBox(width: 15),
-          Expanded(child: TrueFalseButton(text: 'False', isSelected: selection == 'False', onTap: () => _toggle('False'))),
+          Expanded(
+            child: _TrueFalseButton(
+              text: 'Faux',
+              isSelected: selection == 'Faux',
+              onTap: () => _toggle('Faux'),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class TrueFalseButton extends StatelessWidget {
+class _TrueFalseButton extends StatelessWidget {
   final String text;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const TrueFalseButton({super.key, required this.text, required this.isSelected, required this.onTap});
+  const _TrueFalseButton({
+    required this.text,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
       child: Container(
         height: 50,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.lightPurple : AppColors.veryLightPurple,
+          color: isSelected ? _purpleMain.withOpacity(0.2) : _colorLightPurple,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: isSelected ? AppColors.primaryPurple : Colors.transparent, width: 1),
+          border: Border.all(
+            color: isSelected ? _purpleMain : Colors.transparent,
+            width: 2,
+          ),
         ),
-        child: Text(text, style: TextStyle(fontSize: 16, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.primaryPurple : Colors.black54)),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: isSelected ? _purpleMain : Colors.grey.shade700,
+          ),
+        ),
       ),
     );
   }
 }
 
-// ---------------------
-// Multiple choice (notifie parent)
-// ---------------------
+// --- MULTIPLE CHOICE QUESTION ---
 class MultipleChoiceQuestionCard extends StatefulWidget {
   final int questionIndex;
   final int totalQuestions;
@@ -447,12 +553,7 @@ class _MultipleChoiceQuestionCardState extends State<MultipleChoiceQuestionCard>
 
   void _onTapOption(String option) {
     setState(() {
-      if (selectedOption == option) {
-        // désélectionne si on tape la même option
-        selectedOption = null;
-      } else {
-        selectedOption = option;
-      }
+      selectedOption = selectedOption == option ? null : option;
       widget.onAnsweredChanged(selectedOption != null);
     });
   }
@@ -464,26 +565,14 @@ class _MultipleChoiceQuestionCardState extends State<MultipleChoiceQuestionCard>
       totalQuestions: widget.totalQuestions,
       questionText: widget.questionText,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: widget.options.map((option) {
           final bool isSelected = option == selectedOption;
-          return GestureDetector(
-            onTap: () => _onTapOption(option),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.lightPurple : AppColors.veryLightPurple,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: isSelected ? AppColors.primaryPurple : Colors.transparent, width: 1.5),
-              ),
-              child: Row(
-                children: [
-                  Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_off, color: isSelected ? AppColors.primaryPurple : Colors.grey),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(option, style: TextStyle(fontSize: 16, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.primaryPurple : Colors.black))),
-                ],
-              ),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10.0),
+            child: _QuizOption(
+              text: option,
+              isSelected: isSelected,
+              onTap: () => _onTapOption(option),
             ),
           );
         }).toList(),
@@ -492,9 +581,67 @@ class _MultipleChoiceQuestionCardState extends State<MultipleChoiceQuestionCard>
   }
 }
 
-// ---------------------
-// Matching question (notifie parent une fois toutes les cases remplies, dynamique si on efface une case)
-// ---------------------
+class _QuizOption extends StatelessWidget {
+  final String text;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _QuizOption({
+    required this.text,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+        decoration: BoxDecoration(
+          color: isSelected ? _purpleMain.withOpacity(0.1) : Colors.white,
+          border: Border.all(
+            color: isSelected ? _purpleMain : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: _colorBlack,
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? _purpleMain : Colors.grey,
+                  width: 2,
+                ),
+                color: isSelected ? _purpleMain : Colors.white,
+              ),
+              child: isSelected
+                  ? const Center(child: Icon(Icons.check, size: 12, color: Colors.white))
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// --- MATCHING QUESTION ---
 class MatchingQuestionCard extends StatefulWidget {
   final int questionIndex;
   final int totalQuestions;
@@ -531,8 +678,6 @@ class _MatchingQuestionCardState extends State<MatchingQuestionCard> {
       final firstEmpty = selectedAnswers.indexWhere((e) => e == null);
       if (firstEmpty != -1) {
         selectedAnswers[firstEmpty] = value;
-      } else {
-        // si tout est plein, on peut remplacer la dernière ou ignorer — ici on ignore
       }
       widget.onAnsweredChanged(!selectedAnswers.contains(null));
     });
@@ -551,91 +696,105 @@ class _MatchingQuestionCardState extends State<MatchingQuestionCard> {
       questionIndex: widget.questionIndex,
       totalQuestions: widget.totalQuestions,
       questionText: widget.questionText,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // gauche
-              Expanded(
-                child: Column(
-                  children: widget.leftOptions.map((text) {
-                    return Column(
-                      children: [
-                        Container(
-                          height: 50,
-                          margin: const EdgeInsets.only(bottom: 10),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(color: AppColors.veryLightPurple, borderRadius: BorderRadius.circular(10)),
-                          child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: widget.leftOptions.asMap().entries.map((entry) {
+              int index = entry.key;
+              String leftItem = entry.value;
+              String? selectedMatch = selectedAnswers[index];
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 15.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
+                        decoration: BoxDecoration(
+                          color: _purpleMain.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        // spacing handled below in map
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(width: 10),
-              // droite (slots) : cliquable pour effacer
-              Expanded(
-                child: Column(
-                  children: List.generate(widget.leftOptions.length, (index) {
-                    return Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            if (selectedAnswers[index] != null) {
-                              _clearSlot(index);
-                            }
-                          },
-                          child: DottedBorder(
-                            color: AppColors.primaryPurple,
-                            dashPattern: const [5, 3],
-                            borderType: BorderType.RRect,
-                            radius: const Radius.circular(10),
-                            child: Container(
-                              height: 45,
-                              alignment: Alignment.center,
-                              color: Colors.white,
-                              child: Text(
-                                selectedAnswers[index] ?? 'Cliquez sur la réponse',
-                                style: TextStyle(fontSize: 14, color: selectedAnswers[index] != null ? Colors.black : AppColors.primaryPurple),
-                              ),
+                        child: Text(
+                          leftItem,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (selectedMatch != null) {
+                            _clearSlot(index);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: selectedMatch != null ? _purpleMain : Colors.grey.shade300,
+                              width: selectedMatch != null ? 2 : 1,
+                            ),
+                          ),
+                          child: Text(
+                            selectedMatch ?? 'Sélectionnez',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: selectedMatch != null ? _colorBlack : Colors.grey,
+                              fontWeight: selectedMatch != null ? FontWeight.w500 : FontWeight.normal,
                             ),
                           ),
                         ),
-                        if (index != widget.leftOptions.length - 1) const SizedBox(height: 12),
-                      ],
-                    );
-                  }),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              );
+            }).toList(),
           ),
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: widget.bottomOptions.map((text) {
-            return GestureDetector(
-              onTap: () => _selectBottom(text),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade300)),
-                child: Text(text, style: const TextStyle(fontSize: 14, color: Colors.black)),
-              ),
-            );
-          }).toList(),
-        ),
-      ]),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: widget.bottomOptions.map((text) {
+              bool isUsed = selectedAnswers.contains(text);
+              return GestureDetector(
+                onTap: isUsed ? null : () => _selectBottom(text),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                  decoration: BoxDecoration(
+                    color: isUsed ? Colors.grey.shade200 : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isUsed ? Colors.grey.shade400 : _purpleMain,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isUsed ? Colors.grey : _colorBlack,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 }
 
-// ---------------------
-// TextEntry (notifie parent selon contenu présent / vide)
-// ---------------------
+// --- TEXT ENTRY QUESTION ---
 class TextEntryQuestionCard extends StatefulWidget {
   final int questionIndex;
   final int totalQuestions;
@@ -687,7 +846,17 @@ class _TextEntryQuestionCardState extends State<TextEntryQuestionCard> {
       questionText: widget.questionText,
       child: TextField(
         controller: _ctrl,
-        decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), hintText: 'Votre réponse'),
+        decoration: InputDecoration(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _purpleMain),
+          ),
+          hintText: 'Votre réponse',
+        ),
       ),
     );
   }

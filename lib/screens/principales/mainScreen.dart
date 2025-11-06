@@ -6,7 +6,6 @@ import 'package:edugo/screens/principales/exercice/exercice1.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/core/constants/constant.dart';
 
-
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -72,23 +71,19 @@ class _MainScreenState extends State<MainScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: isSelected ? Color(0xFFA885D8) : Colors.grey),
+          Icon(
+            icon,
+            color: isSelected ? Color(0xFFA885D8) : Colors.black, // Changé de Colors.black12 à Colors.black
+          ),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              color: isSelected ? Color(0xFFA885D8) : Colors.grey,
+              color: isSelected ? Color(0xFFA885D8) : Colors.black, // Changé de Colors.black12 à Colors.black
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
-          // if (isSelected)
-            // Container(
-            //   margin: const EdgeInsets.only(top: 4),
-            //   height: 2,
-            //   width: 20,
-            //   color: Colors.deepPurple,
-            // ),
         ],
       ),
     );

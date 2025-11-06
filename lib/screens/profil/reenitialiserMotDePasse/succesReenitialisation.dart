@@ -6,7 +6,7 @@ class SuccesReenitialisation extends StatelessWidget {
   const SuccesReenitialisation({super.key});
 
   // Placeholder colors for a close visual match
-  final Color primaryPurple = const Color(0xFF9B7DE4);
+  final Color primaryPurple = const Color(0xFFA885D8);
   final Color lightPurple = const Color(0xFFF3EDFC);
   final Color checkMarkColor = const Color(0xFF9B7DE4); // Checkmark color matches the button/circle border
 

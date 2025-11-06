@@ -4,28 +4,28 @@ import 'package:edugo/screens/profil/modifierProfil.dart';
 import 'package:edugo/screens/profil/changerMotPasse.dart';
 import 'package:edugo/screens/profil/suggestion.dart';
 
-
-
 class ProfilScreen extends StatelessWidget {
   const ProfilScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Couleurs principales
+    // Couleurs principales cohérentes avec votre thème
     const Color primaryPurple = Color(0xFFA885D8);
     const Color lightPurple = Color(0xFFF3EDFC);
-    const Color buttonPurple = Color(0xFFD6C2FF);
-    const Color logoutRed = Color(0xFFD65A5A);
+    const Color cardBackground = Color(0xFFF8F9FA);
+    const Color logoutRed = Color(0xFFFF6B6B);
+    const Color textDark = Color(0xFF2D3748);
+    const Color textLight = Color(0xFF718096);
 
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // AppBar
+      // AppBar améliorée
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black, size: 20),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -35,6 +35,8 @@ class ProfilScreen extends StatelessWidget {
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
+            fontSize: 20,
+            fontFamily: 'Roboto',
           ),
         ),
         centerTitle: true,
@@ -42,76 +44,150 @@ class ProfilScreen extends StatelessWidget {
 
       // Corps de la page
       body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
           children: [
-            // --- Section Profil ---
+            // --- Carte Profil Principale ---
             Container(
-              margin: const EdgeInsets.all(20),
-              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 16),
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: primaryPurple,
-                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [primaryPurple.withOpacity(0.9), primaryPurple],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryPurple.withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
-                  // Avatar
-                  CircleAvatar(
-                    radius: 45,
-                    backgroundColor: lightPurple,
-                    backgroundImage: const AssetImage('assets/avatar.png'),
+                  // Avatar SANS icône de modification
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      backgroundColor: lightPurple,
+                      backgroundImage: const AssetImage('assets/avatar.png'),
+                    ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
 
-                  // 👤 Nom et email
+                  // Nom et email
                   const Text(
                     "Haoua Haïdara",
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'Roboto',
                     ),
                   ),
                   const SizedBox(height: 4),
                   const Text(
                     "haidarahaoua@gmail.com",
-                    style: TextStyle(color: Colors.white70),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontFamily: 'Roboto',
+                    ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
-                  // --- Statistiques ---
+                  // --- Statistiques améliorées ---
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: const [
                         _StatItem(
-                          icon: Icons.workspace_premium_outlined,
+                          icon: Icons.workspace_premium,
                           value: "5",
-                          label: "badges",
+                          label: "Badges",
+                          color: Color(0xFFFFD700),
                         ),
                         _StatItem(
-                          icon: Icons.star,
+                          icon: Icons.star_rounded,
                           value: "1000",
-                          label: "points",
+                          label: "Points",
+                          color: Color(0xFFFFA500),
                         ),
                         _StatItem(
-                          icon: Icons.emoji_events_outlined,
+                          icon: Icons.emoji_events_rounded,
                           value: "7",
-                          label: "challenge",
+                          label: "Challenges",
+                          color: Color(0xFF4CAF50),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 25),
+                ],
+              ),
+            ),
 
-                  // --- Boutons d’action ---
+            const SizedBox(height: 24),
+
+            // --- Section Actions ---
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: cardBackground,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Paramètres",
+                    style: TextStyle(
+                      color: textDark,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Roboto',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
                   _ActionButton(
                     text: "Modifier le profil",
-                    color: buttonPurple,
+                    icon: Icons.person_outline,
+                    color: Colors.white,
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -119,10 +195,11 @@ class ProfilScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   _ActionButton(
                     text: "Changer le mot de passe",
-                    color: buttonPurple,
+                    icon: Icons.lock_outline,
+                    color: Colors.white,
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -130,10 +207,11 @@ class ProfilScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   _ActionButton(
                     text: "Suggestion",
-                    color: buttonPurple,
+                    icon: Icons.lightbulb_outline,
+                    color: Colors.white,
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -141,61 +219,166 @@ class ProfilScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 20),
-
-                  // --- Bouton Déconnexion ---
-                  _ActionButton(
-                    text: "Déconnexion",
-                    color: logoutRed,
-                    textColor: Colors.white,
-                    icon: Icons.logout,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
-                      );
-                    },
-                  ),
                 ],
               ),
             ),
+
+            const SizedBox(height: 20),
+
+            // --- Bouton Déconnexion ---
+            Container(
+              width: double.infinity,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: logoutRed.withOpacity(0.3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: logoutRed.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TextButton(
+                onPressed: () {
+                  _showLogoutDialog(context);
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: logoutRed,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.logout, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      "Déconnexion",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Roboto',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            "Déconnexion",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Roboto',
+            ),
+          ),
+          content: const Text(
+            "Êtes-vous sûr de vouloir vous déconnecter ?",
+            style: TextStyle(
+              fontFamily: 'Roboto',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                "Annuler",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontFamily: 'Roboto',
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
+              child: const Text(
+                "Déconnexion",
+                style: TextStyle(
+                  color: Color(0xFFFF6B6B),
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Roboto',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
-// Widget Statistiques (badges, points, challenge)
+// Widget Statistiques amélioré
 class _StatItem extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
+  final Color color;
 
   const _StatItem({
     required this.icon,
     required this.value,
     required this.label,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: Colors.orange, size: 26),
-        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+        ),
+        const SizedBox(height: 8),
         Text(
           value,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            fontSize: 16,
+            color: Color(0xFF2D3748),
+            fontFamily: 'Roboto',
           ),
         ),
+        const SizedBox(height: 4),
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
-            color: Colors.grey,
+            fontSize: 12,
+            color: Color(0xFF718096),
+            fontFamily: 'Roboto',
           ),
         ),
       ],
@@ -203,53 +386,70 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-// Widget pour les boutons d’action
+// Widget pour les boutons d'action amélioré
 class _ActionButton extends StatelessWidget {
   final String text;
   final Color color;
-  final Color textColor;
-  final IconData? icon;
+  final IconData icon;
   final VoidCallback onPressed;
 
   const _ActionButton({
     required this.text,
     required this.color,
+    required this.icon,
     required this.onPressed,
-    this.textColor = Colors.black,
-    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+    return Container(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-          elevation: 0,
+        ],
+      ),
+      child: ListTile(
+        onTap: onPressed,
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFA582E5).withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: const Color(0xFFA582E5),
+            size: 20,
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              text,
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.w500,
-                fontSize: 15,
-              ),
-            ),
-            Icon(
-              icon ?? Icons.arrow_right_alt,
-              color: textColor,
-            ),
-          ],
+        title: Text(
+          text,
+          style: const TextStyle(
+            color: Color(0xFF2D3748),
+            fontWeight: FontWeight.w500,
+            fontSize: 15,
+            fontFamily: 'Roboto',
+          ),
         ),
+        trailing: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFA582E5).withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: Color(0xFFA582E5),
+            size: 14,
+          ),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       ),
     );
   }
