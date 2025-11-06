@@ -1,7 +1,7 @@
 import 'package:edugo/screens/connexion%20et%20inscriptions/inscription.dart';
-import 'package:flutter/material.dart';
 import 'package:edugo/screens/principales/mainScreen.dart';
-import 'package:edugo/screens/principales/profil/reenitialiserMotDePasse/reenitialisationA.dart';
+import 'package:edugo/screens/profil/reenitialiserMotDePasse/reenitialisationA.dart';
+import 'package:flutter/material.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -88,7 +88,7 @@ class LoginScreen extends StatelessWidget {
             const SizedBox(height: 40),
 
             // 5. Bouton "Se Connecter"
-            _buildLoginButton(),
+            _buildLoginButton(context),
 
             const SizedBox(height: 20),
 
@@ -198,7 +198,7 @@ class LoginScreen extends StatelessWidget {
   }
 
   // Widget pour le bouton de connexion
-  Widget _buildLoginButton() {
+  Widget _buildLoginButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       height: 55,
