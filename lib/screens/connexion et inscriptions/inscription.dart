@@ -7,6 +7,8 @@ import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
 import 'package:edugo/screens/principales/accueil/partenaire.dart';
 import 'package:edugo/screens/principales/mainScreen.dart';
 import 'package:flutter/material.dart';
+import 'package:edugo/services/auth_service.dart';
+import 'package:edugo/models/auth_models.dart';
 
 // Constantes de style pour les couleurs
 const Color _purpleMain = Color(0xFFA885D8); // Violet principal (logo, bouton, étape active)
@@ -24,6 +26,16 @@ class RegistrationStepperScreen extends StatefulWidget {
 class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
   int _currentStep = 0;
   late PageController _pageController;
+  
+  // User data collected across steps
+  String _userFirstName = '';
+  String _userLastName = '';
+  String _userPhone = '';
+  String _userCity = '';
+  String _userEmail = '';
+  String _userPassword = '';
+  String _userSchoolLevel = '';
+  String _userClass = '';
 
   @override
   void initState() {
@@ -71,9 +83,37 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
   // Liste des étapes (Pages)
   List<Widget> get _steps {
     return [
-      RegistrationStep1(onNext: _nextStep), // Inscription1.png
-      RegistrationStep2(onNext: _nextStep, onPrevious: _previousStep), // Inscription2.png
-      RegistrationStep3(onNext: _nextStep, onPrevious: _previousStep), // Inscription3.png
+      RegistrationStep1(
+        onNext: _nextStep,
+        onFirstNameChanged: (value) => setState(() => _userFirstName = value),
+        onLastNameChanged: (value) => setState(() => _userLastName = value),
+        onPhoneChanged: (value) => setState(() => _userPhone = value),
+        onCityChanged: (value) => setState(() => _userCity = value),
+        firstName: _userFirstName,
+        lastName: _userLastName,
+        phone: _userPhone,
+        city: _userCity,
+      ), // Inscription1.png
+      RegistrationStep2(
+        onNext: _nextStep, 
+        onPrevious: _previousStep,
+        onEmailChanged: (value) => setState(() => _userEmail = value),
+        onPasswordChanged: (value) => setState(() => _userPassword = value),
+        onSchoolLevelChanged: (value) => setState(() => _userSchoolLevel = value),
+        onClassChanged: (value) => setState(() => _userClass = value),
+        email: _userEmail,
+        password: _userPassword,
+        schoolLevel: _userSchoolLevel,
+        className: _userClass,
+      ), // Inscription2.png
+      RegistrationStep3(
+        onNext: _nextStep, 
+        onPrevious: _previousStep,
+        userEmail: _userEmail,
+        userPassword: _userPassword,
+        userFirstName: _userFirstName,
+        userLastName: _userLastName,
+      ), // Inscription3.png
     ];
   }
 
@@ -177,9 +217,74 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
 // ----------------------------------------------------
 // 2. ÉTAPE 1: Informations Personnelles (Inscription1.png)
 // ----------------------------------------------------
-class RegistrationStep1 extends StatelessWidget {
+class RegistrationStep1 extends StatefulWidget {
   final VoidCallback onNext;
-  const RegistrationStep1({super.key, required this.onNext});
+  final Function(String) onFirstNameChanged;
+  final Function(String) onLastNameChanged;
+  final Function(String) onPhoneChanged;
+  final Function(String) onCityChanged;
+  final String firstName;
+  final String lastName;
+  final String phone;
+  final String city;
+  
+  const RegistrationStep1({
+    super.key, 
+    required this.onNext,
+    required this.onFirstNameChanged,
+    required this.onLastNameChanged,
+    required this.onPhoneChanged,
+    required this.onCityChanged,
+    required this.firstName,
+    required this.lastName,
+    required this.phone,
+    required this.city,
+  });
+
+  @override
+  State<RegistrationStep1> createState() => _RegistrationStep1State();
+}
+
+class _RegistrationStep1State extends State<RegistrationStep1> {
+  late TextEditingController _firstNameController;
+  late TextEditingController _lastNameController;
+  late TextEditingController _phoneController;
+  late TextEditingController _cityController;
+
+  @override
+  void initState() {
+    super.initState();
+    _firstNameController = TextEditingController(text: widget.firstName);
+    _lastNameController = TextEditingController(text: widget.lastName);
+    _phoneController = TextEditingController(text: widget.phone);
+    _cityController = TextEditingController(text: widget.city);
+  }
+
+  @override
+  void didUpdateWidget(covariant RegistrationStep1 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.firstName != widget.firstName) {
+      _firstNameController.text = widget.firstName;
+    }
+    if (oldWidget.lastName != widget.lastName) {
+      _lastNameController.text = widget.lastName;
+    }
+    if (oldWidget.phone != widget.phone) {
+      _phoneController.text = widget.phone;
+    }
+    if (oldWidget.city != widget.city) {
+      _cityController.text = widget.city;
+    }
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _phoneController.dispose();
+    _cityController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -188,16 +293,37 @@ class RegistrationStep1 extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInputField(label: 'Nom de l\'enfant', hint: 'Entrer votre nom'),
+          _buildInputField(
+            label: 'Nom de l\'enfant', 
+            hint: 'Entrer votre nom',
+            controller: _firstNameController,
+            onChanged: widget.onFirstNameChanged,
+          ),
           const SizedBox(height: 25),
-          _buildInputField(label: 'Prenom de l\'enfant', hint: 'Entrer votre prenom'),
+          _buildInputField(
+            label: 'Prenom de l\'enfant', 
+            hint: 'Entrer votre prenom',
+            controller: _lastNameController,
+            onChanged: widget.onLastNameChanged,
+          ),
           const SizedBox(height: 25),
-          _buildInputField(label: 'Téléphone', hint: 'Votre numéro de téléphone', keyboardType: TextInputType.phone),
+          _buildInputField(
+            label: 'Téléphone', 
+            hint: 'Votre numéro de téléphone', 
+            keyboardType: TextInputType.phone,
+            controller: _phoneController,
+            onChanged: widget.onPhoneChanged,
+          ),
           const SizedBox(height: 25),
-          _buildInputField(label: 'Ville', hint: 'Précisez votre ville'),
+          _buildInputField(
+            label: 'Ville', 
+            hint: 'Précisez votre ville',
+            controller: _cityController,
+            onChanged: widget.onCityChanged,
+          ),
           
           const SizedBox(height: 60),
-          _buildNextButton(text: 'Suivant', onPressed: onNext),
+          _buildNextButton(text: 'Suivant', onPressed: widget.onNext),
           const SizedBox(height: 40),
         ],
       ),
@@ -208,10 +334,76 @@ class RegistrationStep1 extends StatelessWidget {
 // ----------------------------------------------------
 // 3. ÉTAPE 2: Détails du Compte (Inscription2.png)
 // ----------------------------------------------------
-class RegistrationStep2 extends StatelessWidget {
+class RegistrationStep2 extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onPrevious;
-  const RegistrationStep2({super.key, required this.onNext, required this.onPrevious});
+  final Function(String) onEmailChanged;
+  final Function(String) onPasswordChanged;
+  final Function(String) onSchoolLevelChanged;
+  final Function(String) onClassChanged;
+  final String email;
+  final String password;
+  final String schoolLevel;
+  final String className;
+  
+  const RegistrationStep2({
+    super.key, 
+    required this.onNext,
+    required this.onPrevious,
+    required this.onEmailChanged,
+    required this.onPasswordChanged,
+    required this.onSchoolLevelChanged,
+    required this.onClassChanged,
+    required this.email,
+    required this.password,
+    required this.schoolLevel,
+    required this.className,
+  });
+
+  @override
+  State<RegistrationStep2> createState() => _RegistrationStep2State();
+}
+
+class _RegistrationStep2State extends State<RegistrationStep2> {
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+  late TextEditingController _schoolLevelController;
+  late TextEditingController _classController;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController(text: widget.email);
+    _passwordController = TextEditingController(text: widget.password);
+    _schoolLevelController = TextEditingController(text: widget.schoolLevel);
+    _classController = TextEditingController(text: widget.className);
+  }
+
+  @override
+  void didUpdateWidget(covariant RegistrationStep2 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.email != widget.email) {
+      _emailController.text = widget.email;
+    }
+    if (oldWidget.password != widget.password) {
+      _passwordController.text = widget.password;
+    }
+    if (oldWidget.schoolLevel != widget.schoolLevel) {
+      _schoolLevelController.text = widget.schoolLevel;
+    }
+    if (oldWidget.className != widget.className) {
+      _classController.text = widget.className;
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _schoolLevelController.dispose();
+    _classController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,6 +417,8 @@ class RegistrationStep2 extends StatelessWidget {
             hint: 'Entrer votre email',
             suffixIcon: const Icon(Icons.email_outlined, color: _purpleMain), // Icône email
             keyboardType: TextInputType.emailAddress,
+            controller: _emailController,
+            onChanged: widget.onEmailChanged,
           ),
           const SizedBox(height: 25),
           _buildInputField(
@@ -232,18 +426,30 @@ class RegistrationStep2 extends StatelessWidget {
             hint: 'Entrer votre mot de passe', 
             isPassword: true,
             suffixIcon: const Icon(Icons.visibility_outlined, color: _purpleMain), // Icône œil
+            controller: _passwordController,
+            onChanged: widget.onPasswordChanged,
           ),
           const SizedBox(height: 25),
           
           // Niveau Scolaire (Simulé par un champ de texte simple pour l'aspect visuel)
-          _buildDropdownField(label: 'Niveau Scolaire de l\'enfant', hint: 'Choisir votre niveau d\'etude'),
+          _buildInputField(
+            label: 'Niveau Scolaire de l\'enfant', 
+            hint: 'Choisir votre niveau d\'etude',
+            controller: _schoolLevelController,
+            onChanged: widget.onSchoolLevelChanged,
+          ),
           const SizedBox(height: 25),
           
           // Classe Actuelle
-          _buildInputField(label: 'Classe actuelle de l\'enfant', hint: 'Précisez votre classe'),
+          _buildInputField(
+            label: 'Classe actuelle de l\'enfant', 
+            hint: 'Précisez votre classe',
+            controller: _classController,
+            onChanged: widget.onClassChanged,
+          ),
           
           const SizedBox(height: 60),
-          _buildNextButton(text: 'Suivant', onPressed: onNext),
+          _buildNextButton(text: 'Suivant', onPressed: widget.onNext),
           
           // Optionnel : Bouton précédent pour plus de flexibilité
           // TextButton(onPressed: onPrevious, child: const Text('Précédent')), 
@@ -260,14 +466,30 @@ class RegistrationStep2 extends StatelessWidget {
 class RegistrationStep3 extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onPrevious;
-  const RegistrationStep3({super.key, required this.onNext, required this.onPrevious});
+  final String userEmail;
+  final String userPassword;
+  final String userFirstName;
+  final String userLastName;
+  
+  const RegistrationStep3({
+    super.key, 
+    required this.onNext, 
+    required this.onPrevious,
+    required this.userEmail,
+    required this.userPassword,
+    required this.userFirstName,
+    required this.userLastName,
+  });
 
   @override
   State<RegistrationStep3> createState() => _RegistrationStep3State();
 }
 
 class _RegistrationStep3State extends State<RegistrationStep3> {
+  final AuthService _authService = AuthService();
   int? _selectedAvatarIndex;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   // Liste des images d'avatars (Assurez-vous qu'elles sont dans les assets)
   final List<String> _avatars = [
@@ -278,6 +500,52 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
     'assets/images/avatar5.png', // Avatar femme tresse
     'assets/images/avatar6.png', // Avatar homme lunettes jaune
   ];
+
+
+
+  Future<void> _registerUser() async {
+    if (_selectedAvatarIndex == null) {
+      setState(() {
+        _errorMessage = 'Veuillez sélectionner un avatar';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await _authService.register(
+        email: widget.userEmail,
+        password: widget.userPassword,
+        nom: widget.userLastName,
+        prenom: widget.userFirstName,
+      );
+
+      if (response != null && response.token != null) {
+        // Registration successful, save token and navigate to main screen
+        _authService.setAuthToken(response.token!);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+        );
+      } else {
+        setState(() {
+          _errorMessage = 'Erreur lors de l\'inscription. Veuillez réessayer.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -296,6 +564,16 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
             ),
           ),
           const SizedBox(height: 25),
+          
+          // Affichage des erreurs
+          if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red, fontSize: 14),
+              ),
+            ),
           
           // Grille des Avatars
           Expanded(
@@ -337,12 +615,12 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
           ),
           
           // Bouton "S'inscrire"
-          _buildNextButton(text: 'S\'inscrire', onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) =>  MainScreen()),
-    );
-  },),
+          _buildNextButton(
+            text: _isLoading ? 'Inscription...' : 'S\'inscrire',
+            onPressed: _isLoading ? () {} : () async {
+              await _registerUser();
+            },
+          ),
           const SizedBox(height: 40),
         ],
       ),
@@ -361,6 +639,8 @@ Widget _buildInputField({
   bool isPassword = false,
   Widget? suffixIcon,
   TextInputType keyboardType = TextInputType.text,
+  TextEditingController? controller,
+  Function(String)? onChanged,
 }) {
   const Color borderColor = Color(0xFFD1C4E9); // Bordure douce violette
   const Color fillColor = Color(0xFFF5F5F5);   // Fond gris clair
@@ -387,8 +667,10 @@ Widget _buildInputField({
       ),
       const SizedBox(height: 8),
       TextField(
+        controller: controller,
         obscureText: isPassword,
         keyboardType: keyboardType,
+        onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.grey),

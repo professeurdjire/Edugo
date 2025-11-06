@@ -3,22 +3,14 @@
 //
 
 // ignore_for_file: unused_element
-import 'package:edugo/models/classe.dart';
-import 'package:edugo/models/progression.dart';
-import 'package:edugo/models/reponse_eleve.dart';
 import 'package:built_collection/built_collection.dart';
-import 'package:edugo/models/conversion_eleve.dart';
 import 'package:edugo/models/granted_authority.dart';
-import 'package:edugo/models/participation.dart';
-import 'package:edugo/models/eleve_defi.dart';
-import 'package:edugo/models/faire_exercice.dart';
-import 'package:edugo/models/suggestion.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
-part 'eleve.g.dart';
+part 'user.g.dart';
 
-/// Eleve
+/// User
 ///
 /// Properties:
 /// * [id] 
@@ -31,16 +23,6 @@ part 'eleve.g.dart';
 /// * [dateModification] 
 /// * [estActive] 
 /// * [photoProfil] 
-/// * [dateNaissance] 
-/// * [classe] 
-/// * [pointAccumule] 
-/// * [participations] 
-/// * [progressions] 
-/// * [eleveDefis] 
-/// * [faireExercices] 
-/// * [reponsesUtilisateurs] 
-/// * [conversions] 
-/// * [suggestions] 
 /// * [enabled] 
 /// * [authorities] 
 /// * [password] 
@@ -49,7 +31,7 @@ part 'eleve.g.dart';
 /// * [accountNonExpired] 
 /// * [accountNonLocked] 
 @BuiltValue()
-abstract class Eleve implements Built<Eleve, EleveBuilder> {
+abstract class User implements Built<User, UserBuilder> {
   @BuiltValueField(wireName: r'id')
   int? get id;
 
@@ -66,7 +48,7 @@ abstract class Eleve implements Built<Eleve, EleveBuilder> {
   String? get motDePasse;
 
   @BuiltValueField(wireName: r'role')
-  EleveRoleEnum? get role;
+  UserRoleEnum? get role;
   // enum roleEnum {  ADMIN,  ELEVE,  };
 
   @BuiltValueField(wireName: r'dateCreation')
@@ -80,36 +62,6 @@ abstract class Eleve implements Built<Eleve, EleveBuilder> {
 
   @BuiltValueField(wireName: r'photoProfil')
   String? get photoProfil;
-
-  @BuiltValueField(wireName: r'dateNaissance')
-  String? get dateNaissance;
-
-  @BuiltValueField(wireName: r'classe')
-  Classe? get classe;
-
-  @BuiltValueField(wireName: r'pointAccumule')
-  int? get pointAccumule;
-
-  @BuiltValueField(wireName: r'participations')
-  BuiltList<Participation>? get participations;
-
-  @BuiltValueField(wireName: r'progressions')
-  BuiltList<Progression>? get progressions;
-
-  @BuiltValueField(wireName: r'eleveDefis')
-  BuiltList<EleveDefi>? get eleveDefis;
-
-  @BuiltValueField(wireName: r'faireExercices')
-  BuiltList<FaireExercice>? get faireExercices;
-
-  @BuiltValueField(wireName: r'reponsesUtilisateurs')
-  BuiltList<ReponseEleve>? get reponsesUtilisateurs;
-
-  @BuiltValueField(wireName: r'conversions')
-  BuiltList<ConversionEleve>? get conversions;
-
-  @BuiltValueField(wireName: r'suggestions')
-  BuiltList<Suggestion>? get suggestions;
 
   @BuiltValueField(wireName: r'enabled')
   bool? get enabled;
@@ -132,27 +84,27 @@ abstract class Eleve implements Built<Eleve, EleveBuilder> {
   @BuiltValueField(wireName: r'accountNonLocked')
   bool? get accountNonLocked;
 
-  Eleve._();
+  User._();
 
-  factory Eleve([void updates(EleveBuilder b)]) = _$Eleve;
+  factory User([void updates(UserBuilder b)]) = _$User;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(EleveBuilder b) => b;
+  static void _defaults(UserBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<Eleve> get serializer => _$EleveSerializer();
+  static Serializer<User> get serializer => _$UserSerializer();
 }
 
-class _$EleveSerializer implements PrimitiveSerializer<Eleve> {
+class _$UserSerializer implements PrimitiveSerializer<User> {
   @override
-  final Iterable<Type> types = const [Eleve, _$Eleve];
+  final Iterable<Type> types = const [User, _$User];
 
   @override
-  final String wireName = r'Eleve';
+  final String wireName = r'User';
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    Eleve object, {
+    User object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
     if (object.id != null) {
@@ -194,7 +146,7 @@ class _$EleveSerializer implements PrimitiveSerializer<Eleve> {
       yield r'role';
       yield serializers.serialize(
         object.role,
-        specifiedType: const FullType(EleveRoleEnum),
+        specifiedType: const FullType(UserRoleEnum),
       );
     }
     if (object.dateCreation != null) {
@@ -223,76 +175,6 @@ class _$EleveSerializer implements PrimitiveSerializer<Eleve> {
       yield serializers.serialize(
         object.photoProfil,
         specifiedType: const FullType(String),
-      );
-    }
-    if (object.dateNaissance != null) {
-      yield r'dateNaissance';
-      yield serializers.serialize(
-        object.dateNaissance,
-        specifiedType: const FullType(String),
-      );
-    }
-    if (object.classe != null) {
-      yield r'classe';
-      yield serializers.serialize(
-        object.classe,
-        specifiedType: const FullType(Classe),
-      );
-    }
-    if (object.pointAccumule != null) {
-      yield r'pointAccumule';
-      yield serializers.serialize(
-        object.pointAccumule,
-        specifiedType: const FullType(int),
-      );
-    }
-    if (object.participations != null) {
-      yield r'participations';
-      yield serializers.serialize(
-        object.participations,
-        specifiedType: const FullType(BuiltList, [FullType(Participation)]),
-      );
-    }
-    if (object.progressions != null) {
-      yield r'progressions';
-      yield serializers.serialize(
-        object.progressions,
-        specifiedType: const FullType(BuiltList, [FullType(Progression)]),
-      );
-    }
-    if (object.eleveDefis != null) {
-      yield r'eleveDefis';
-      yield serializers.serialize(
-        object.eleveDefis,
-        specifiedType: const FullType(BuiltList, [FullType(EleveDefi)]),
-      );
-    }
-    if (object.faireExercices != null) {
-      yield r'faireExercices';
-      yield serializers.serialize(
-        object.faireExercices,
-        specifiedType: const FullType(BuiltList, [FullType(FaireExercice)]),
-      );
-    }
-    if (object.reponsesUtilisateurs != null) {
-      yield r'reponsesUtilisateurs';
-      yield serializers.serialize(
-        object.reponsesUtilisateurs,
-        specifiedType: const FullType(BuiltList, [FullType(ReponseEleve)]),
-      );
-    }
-    if (object.conversions != null) {
-      yield r'conversions';
-      yield serializers.serialize(
-        object.conversions,
-        specifiedType: const FullType(BuiltList, [FullType(ConversionEleve)]),
-      );
-    }
-    if (object.suggestions != null) {
-      yield r'suggestions';
-      yield serializers.serialize(
-        object.suggestions,
-        specifiedType: const FullType(BuiltList, [FullType(Suggestion)]),
       );
     }
     if (object.enabled != null) {
@@ -349,7 +231,7 @@ class _$EleveSerializer implements PrimitiveSerializer<Eleve> {
   @override
   Object serialize(
     Serializers serializers,
-    Eleve object, {
+    User object, {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
@@ -360,7 +242,7 @@ class _$EleveSerializer implements PrimitiveSerializer<Eleve> {
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
     required List<Object?> serializedList,
-    required EleveBuilder result,
+    required UserBuilder result,
     required List<Object?> unhandled,
   }) {
     for (var i = 0; i < serializedList.length; i += 2) {
@@ -405,8 +287,8 @@ class _$EleveSerializer implements PrimitiveSerializer<Eleve> {
         case r'role':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(EleveRoleEnum),
-          ) as EleveRoleEnum;
+            specifiedType: const FullType(UserRoleEnum),
+          ) as UserRoleEnum;
           result.role = valueDes;
           break;
         case r'dateCreation':
@@ -436,76 +318,6 @@ class _$EleveSerializer implements PrimitiveSerializer<Eleve> {
             specifiedType: const FullType(String),
           ) as String;
           result.photoProfil = valueDes;
-          break;
-        case r'dateNaissance':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.dateNaissance = valueDes;
-          break;
-        case r'classe':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(Classe),
-          ) as Classe;
-          result.classe.replace(valueDes);
-          break;
-        case r'pointAccumule':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(int),
-          ) as int;
-          result.pointAccumule = valueDes;
-          break;
-        case r'participations':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(BuiltList, [FullType(Participation)]),
-          ) as BuiltList<Participation>;
-          result.participations.replace(valueDes);
-          break;
-        case r'progressions':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(BuiltList, [FullType(Progression)]),
-          ) as BuiltList<Progression>;
-          result.progressions.replace(valueDes);
-          break;
-        case r'eleveDefis':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(BuiltList, [FullType(EleveDefi)]),
-          ) as BuiltList<EleveDefi>;
-          result.eleveDefis.replace(valueDes);
-          break;
-        case r'faireExercices':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(BuiltList, [FullType(FaireExercice)]),
-          ) as BuiltList<FaireExercice>;
-          result.faireExercices.replace(valueDes);
-          break;
-        case r'reponsesUtilisateurs':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(BuiltList, [FullType(ReponseEleve)]),
-          ) as BuiltList<ReponseEleve>;
-          result.reponsesUtilisateurs.replace(valueDes);
-          break;
-        case r'conversions':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(BuiltList, [FullType(ConversionEleve)]),
-          ) as BuiltList<ConversionEleve>;
-          result.conversions.replace(valueDes);
-          break;
-        case r'suggestions':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(BuiltList, [FullType(Suggestion)]),
-          ) as BuiltList<Suggestion>;
-          result.suggestions.replace(valueDes);
           break;
         case r'enabled':
           final valueDes = serializers.deserialize(
@@ -565,12 +377,12 @@ class _$EleveSerializer implements PrimitiveSerializer<Eleve> {
   }
 
   @override
-  Eleve deserialize(
+  User deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = EleveBuilder();
+    final result = UserBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -585,18 +397,18 @@ class _$EleveSerializer implements PrimitiveSerializer<Eleve> {
   }
 }
 
-class EleveRoleEnum extends EnumClass {
+class UserRoleEnum extends EnumClass {
 
   @BuiltValueEnumConst(wireName: r'ADMIN')
-  static const EleveRoleEnum ADMIN = _$eleveRoleEnum_ADMIN;
+  static const UserRoleEnum ADMIN = _$userRoleEnum_ADMIN;
   @BuiltValueEnumConst(wireName: r'ELEVE')
-  static const EleveRoleEnum ELEVE = _$eleveRoleEnum_ELEVE;
+  static const UserRoleEnum ELEVE = _$userRoleEnum_ELEVE;
 
-  static Serializer<EleveRoleEnum> get serializer => _$eleveRoleEnumSerializer;
+  static Serializer<UserRoleEnum> get serializer => _$userRoleEnumSerializer;
 
-  const EleveRoleEnum._(String name): super(name);
+  const UserRoleEnum._(String name): super(name);
 
-  static BuiltSet<EleveRoleEnum> get values => _$eleveRoleEnumValues;
-  static EleveRoleEnum valueOf(String name) => _$eleveRoleEnumValueOf(name);
+  static BuiltSet<UserRoleEnum> get values => _$userRoleEnumValues;
+  static UserRoleEnum valueOf(String name) => _$userRoleEnumValueOf(name);
 }
 

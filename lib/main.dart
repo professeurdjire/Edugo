@@ -1,8 +1,10 @@
-import 'package:edugo/screens/presentations/presentation1.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/presentations/presentation1.dart';
+import 'package:edugo/services/api_client/api_client.dart';
 
 void main() {
+  // Initialize the API client
+  ApiClient();
   runApp(const MyApp());
 }
 

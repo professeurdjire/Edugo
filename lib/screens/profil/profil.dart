@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:edugo/screens/profil/modifierProfil.dart';
 import 'package:edugo/screens/profil/changerMotPasse.dart';
 import 'package:edugo/screens/profil/suggestion.dart';
+import 'package:edugo/services/auth_service.dart';
 
 class ProfilScreen extends StatelessWidget {
   const ProfilScreen({super.key});
@@ -308,8 +309,10 @@ class ProfilScreen extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
+                final authService = AuthService();
+                await authService.logout();
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const LoginScreen()),
