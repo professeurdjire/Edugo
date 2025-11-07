@@ -138,3 +138,38 @@ class AssistanceScreen extends StatelessWidget {
     );
   }
 }
+
+// -------------------------------------------------------------------
+// --- WIDGET DE NAVIGATION (COMPOSANT) ---
+// -------------------------------------------------------------------
+
+class _NavBarItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+
+  const _NavBarItem({required this.icon, required this.label, this.isSelected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: isSelected ? _purpleMain : _colorBlack,
+          size: 24,
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? _purpleMain : _colorBlack,
+            fontSize: 11,
+            fontWeight: FontWeight.w400,
+            fontFamily: _fontFamily,
+          ),
+        ),
+      ],
+    );
+  }
+}
