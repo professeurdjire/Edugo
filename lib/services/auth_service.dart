@@ -16,7 +16,7 @@ class AuthService {
   
   AuthService._internal() {
     _dio = Dio();
-    _dio.options.baseUrl = 'http://localhost:8080'; // Update with your actual API URL
+    _dio.options.baseUrl = 'http://localhost:8089'; // Update with your actual API URL
     _dio.options.contentType = 'application/json';
   }
   

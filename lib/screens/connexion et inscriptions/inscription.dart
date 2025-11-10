@@ -241,6 +241,7 @@ class RegistrationStep2 extends StatefulWidget {
 class _RegistrationStep2State extends State<RegistrationStep2> {
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
+  bool _obscurePassword = true;
 
   List<Map<String, dynamic>> niveaux = [];
   List<Map<String, dynamic>> classes = [];
@@ -248,12 +249,16 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
   int? selectedNiveau;
   int? selectedClasse;
 
+  late TextEditingController _niveauController;
+  late TextEditingController _classeController;
+
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController(text: widget.email);
     _passwordController = TextEditingController(text: widget.password);
-
+    _niveauController = TextEditingController();
+    _classeController = TextEditingController();
     _loadNiveaux();
   }
 
@@ -267,6 +272,34 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
     setState(() {});
   }
 
+  Future<void> _showSelectionList({
+    required List<Map<String, dynamic>> items,
+    required Function(int, String) onSelected,
+  }) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return SizedBox(
+          height: 300,
+          child: ListView.separated(
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (_, index) {
+              final item = items[index];
+              return ListTile(
+                title: Text(item['nom']),
+                onTap: () {
+                  onSelected(item['id'], item['nom']);
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -274,29 +307,70 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInputField(label: 'Email', hint: 'Entrer votre email', controller: _emailController, onChanged: widget.onEmailChanged, keyboardType: TextInputType.emailAddress),
-          const SizedBox(height: 25),
-          _buildInputField(label: 'Mot de passe', hint: 'Entrer votre mot de passe', isPassword: true, controller: _passwordController, onChanged: widget.onPasswordChanged),
-          const SizedBox(height: 25),
-          DropdownButtonFormField<int>(
-            value: selectedNiveau,
-            hint: const Text('Sélectionnez le niveau scolaire'),
-            items: niveaux.map((niv) => DropdownMenuItem<int>(value: niv['id'], child: Text(niv['nom']))).toList(),
-            onChanged: (val) {
-              selectedNiveau = val;
-              widget.onSchoolLevelChanged(val);
-              _loadClasses(val!);
-            },
+          _buildInputField(
+            label: 'Email',
+            hint: 'Entrer votre email',
+            controller: _emailController,
+            onChanged: widget.onEmailChanged,
+            keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: 25),
-          DropdownButtonFormField<int>(
-            value: selectedClasse,
-            hint: const Text('Sélectionnez la classe'),
-            items: classes.map((cls) => DropdownMenuItem<int>(value: cls['id'], child: Text(cls['nom']))).toList(),
-            onChanged: (val) {
-              selectedClasse = val;
-              widget.onClassChanged(val);
-            },
+          Text('Mot de passe', style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            keyboardType: TextInputType.text,
+            onChanged: widget.onPasswordChanged,
+            textDirection: TextDirection.ltr,
+            decoration: InputDecoration(
+              hintText: 'Entrer votre mot de passe',
+              filled: true,
+              fillColor: _purpleLight,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+            ),
+          ),
+          const SizedBox(height: 25),
+
+          _buildCustomDropdownField(
+            label: 'Niveau scolaire',
+            controller: _niveauController,
+            hint: 'Sélectionnez le niveau',
+            onTap: () => _showSelectionList(
+              items: niveaux,
+              onSelected: (id, nom) {
+                setState(() {
+                  selectedNiveau = id;
+                  _niveauController.text = nom;
+                  widget.onSchoolLevelChanged(id);
+                  selectedClasse = null;
+                  _classeController.text = '';
+                  _loadClasses(id);
+                });
+              },
+            ),
+          ),
+          const SizedBox(height: 25),
+
+          _buildCustomDropdownField(
+            label: 'Classe',
+            controller: _classeController,
+            hint: 'Sélectionnez la classe',
+            onTap: () => _showSelectionList(
+              items: classes,
+              onSelected: (id, nom) {
+                setState(() {
+                  selectedClasse = id;
+                  _classeController.text = nom;
+                  widget.onClassChanged(id);
+                });
+              },
+            ),
           ),
           const SizedBox(height: 60),
           _buildNextButton(text: 'Suivant', onPressed: widget.onNext),
@@ -307,7 +381,36 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
   }
 }
 
-// ------------------ STEP 3 (Avatar + Inscription) ------------------
+Widget _buildCustomDropdownField({
+  required String label,
+  required TextEditingController controller,
+  required String hint,
+  required VoidCallback onTap,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      TextField(
+        controller: controller,
+        readOnly: true,
+        onTap: onTap,
+        textDirection: TextDirection.ltr,
+        decoration: InputDecoration(
+          hintText: hint,
+          filled: true,
+          fillColor: _purpleLight,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          suffixIcon: const Icon(Icons.arrow_drop_down),
+        ),
+      ),
+    ],
+  );
+}
+
+// ------------------ STEP 3 ------------------
 class RegistrationStep3 extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onPrevious;
@@ -344,14 +447,13 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Liste dynamique de 100 avatars via Pravatar
-  late final List<String> _avatarUrls = List.generate(100, (index) => 'https://i.pravatar.cc/150?img=${index + 1}');
+  // Liste dynamique de 100 avatars DiceBear
+  late final List<String> _avatarUrls = List.generate(100, (index) =>
+      'https://api.dicebear.com/6.x/adventurer-neutral/png?seed=${index + 1}');
 
   Future<void> _registerUser() async {
     if (_selectedAvatarIndex == null) {
-      setState(() {
-        _errorMessage = 'Veuillez sélectionner un avatar';
-      });
+      setState(() => _errorMessage = 'Veuillez sélectionner un avatar');
       return;
     }
 
@@ -376,18 +478,12 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
         _authService.setAuthToken(response.token!);
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
       } else {
-        setState(() {
-          _errorMessage = 'Erreur lors de l\'inscription. Veuillez réessayer.';
-        });
+        setState(() => _errorMessage = 'Erreur lors de l\'inscription. Veuillez réessayer.');
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
-      });
+      setState(() => _errorMessage = 'Une erreur est survenue. Veuillez réessayer.');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -398,8 +494,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
         const SizedBox(height: 20),
         const Text('Choisissez un avatar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 15),
-        if (_errorMessage != null)
-          Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+        if (_errorMessage != null) Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -407,19 +502,33 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
               crossAxisCount: 3,
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
+              childAspectRatio: 1,
             ),
             itemCount: _avatarUrls.length,
             itemBuilder: (_, index) {
+              final isSelected = _selectedAvatarIndex == index;
               return GestureDetector(
                 onTap: () => setState(() => _selectedAvatarIndex = index),
                 child: Container(
                   decoration: BoxDecoration(
-                    border: _selectedAvatarIndex == index ? Border.all(color: _purpleMain, width: 3) : null,
+                    border: isSelected
+                        ? Border.all(color: _purpleMain, width: 3)
+                        : Border.all(color: Colors.transparent),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(_avatarUrls[index], fit: BoxFit.cover),
+                    child: Image.network(
+                      _avatarUrls[index],
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(child: CircularProgressIndicator());
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(child: Icon(Icons.error, color: Colors.red));
+                      },
+                    ),
                   ),
                 ),
               );
@@ -449,9 +558,10 @@ Widget _buildInputField({
       const SizedBox(height: 8),
       TextField(
         controller: controller,
-        obscureText: isPassword,
-        keyboardType: keyboardType,
         onChanged: onChanged,
+        keyboardType: keyboardType,
+        obscureText: isPassword,
+        textDirection: TextDirection.ltr,
         decoration: InputDecoration(
           hintText: hint,
           filled: true,
@@ -467,11 +577,14 @@ Widget _buildInputField({
 Widget _buildNextButton({required String text, required VoidCallback onPressed}) {
   return SizedBox(
     width: double.infinity,
-    height: 55,
     child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: _purpleMain,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
       onPressed: onPressed,
-      style: ElevatedButton.styleFrom(backgroundColor: _purpleMain, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-      child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+      child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
     ),
   );
 }

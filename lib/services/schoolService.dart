@@ -8,7 +8,7 @@ class SchoolService {
 
   SchoolService._internal() {
     _dio = Dio();
-    _dio.options.baseUrl = 'http://localhost:8080'; // Remplace par ton URL API
+    _dio.options.baseUrl = 'http://localhost:8089'; // Remplace par ton URL API
     _dio.options.contentType = 'application/json';
   }
 
