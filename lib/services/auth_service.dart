@@ -42,28 +42,39 @@ class AuthService {
   /// Register a new student
   Future<LoginResponse?> register({
     required String email,
-    required String password,
+    required String motDePasse,
     required String nom,
     required String prenom,
+    required String ville,
+    String? photoProfil,
+    required int classeId,
+    required int telephone,
+    required int niveauId,
   }) async {
     try {
       final registerRequest = RegisterRequest((b) => b
         ..email = email
-        ..password = password
+        ..motDePasse = motDePasse
         ..nom = nom
-        ..prenom = prenom);
-      
+        ..prenom = prenom
+        ..ville = ville
+        ..photoProfil = photoProfil
+        ..classeId = classeId
+        ..telephone = telephone
+        ..niveauId = niveauId
+      );
+
       final serialized = standardSerializers.serialize(registerRequest);
       final response = await _dio.post('/api/auth/register', data: serialized);
-      
+
       final loginResponse = standardSerializers.deserializeWith(LoginResponse.serializer, response.data);
       return loginResponse;
     } catch (e) {
-      // Handle error appropriately
       print('Register error: $e');
       return null;
     }
   }
+
   
   /// Refresh JWT token
   Future<Map<String, dynamic>?> refreshToken(String refreshToken) async {
