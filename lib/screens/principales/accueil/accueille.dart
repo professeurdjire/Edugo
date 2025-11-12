@@ -242,136 +242,140 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeaderContent(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 80),
-            decoration: const BoxDecoration(
-              color: _purpleHeader,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
+Widget _buildHeaderContent(BuildContext context) {
+  return Container(
+    color: Colors.white,
+    child: Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 80),
+          decoration: const BoxDecoration(
+            color: _purpleHeader,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
             ),
-            child: SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => ProfilScreen(
-                              eleveId: _currentEleveId,
-
-                            )),
-                          );
-                        },
-                        child: _buildUserAvatar(),
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Bienvenue',
-                              style: TextStyle(
-                                color: _colorWhite,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: _fontFamily,
-                              ),
-                            ),
-                            Text(
-                              _userName,
-                              style: const TextStyle(
-                                color: _colorWhite,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: _fontFamily,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+          ),
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ProfilScreen(
+                            eleveId: _currentEleveId,
+                          )),
+                        );
+                      },
+                      child: _buildUserAvatar(),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded( // ← AJOUTEZ EXPANDED ICI
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const PointExchangeScreen()),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.black.withOpacity(0.2),
-                                  width: 1,
-                                ),
+                          const Text(
+                            'Bienvenue',
+                            style: TextStyle(
+                              color: _colorWhite,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: _fontFamily,
+                            ),
+                          ),
+                          Text(
+                            _userName,
+                            style: const TextStyle(
+                              color: _colorWhite,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: _fontFamily,
+                            ),
+                            overflow: TextOverflow.ellipsis, // ← AJOUTEZ OVERFLOW
+                            maxLines: 1, // ← LIMITEZ À 1 LIGNE
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const PointExchangeScreen()),
+                            );
+                          },
+                          child: Container(
+                            constraints: BoxConstraints(maxWidth: 120), // ← LIMITEZ LA LARGEUR
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.black.withOpacity(0.2),
+                                width: 1,
                               ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.star, color: _colorGold, size: 18),
-                                  const SizedBox(width: 5),
-                                  Text(
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min, // ← AJOUTEZ CECI
+                              children: [
+                                const Icon(Icons.star, color: _colorGold, size: 18),
+                                const SizedBox(width: 5),
+                                Flexible( // ← AJOUTEZ FLEXIBLE
+                                  child: Text(
                                     '$_userPoints',
                                     style: const TextStyle(
                                       color: _colorWhite,
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const NotificationScreen()),
-                              );
-                            },
-                            child: const Icon(
-                              Icons.notifications,
-                              color: _colorGold,
-                              size: 26,
-                            ),
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                            );
+                          },
+                          child: const Icon(
+                            Icons.notifications,
+                            color: _colorGold,
+                            size: 26,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          Positioned(
-            bottom: -30,
-            left: 20,
-            right: 20,
-            child: _buildDailyChallengeCard(),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        Positioned(
+          bottom: -30,
+          left: 20,
+          right: 20,
+          child: _buildDailyChallengeCard(),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildUserAvatar() {
     if (_userPhotoProfil.isNotEmpty) {
