@@ -7,7 +7,9 @@ import 'package:edugo/screens/profil/profil.dart';
 import 'package:edugo/screens/principales/accueil/badges.dart';
 import 'package:edugo/screens/principales/accueil/notification.dart';
 import 'package:edugo/screens/conversionData/listeConversion.dart';
-
+import 'package:edugo/services/auth_service.dart';
+import 'package:edugo/services/eleveService.dart';
+import 'package:edugo/models/eleve.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _purpleMain = Color(0xFFA885D8);
@@ -35,18 +37,27 @@ class CurrentReading {
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int? eleveId;
+
+  const HomeScreen({super.key, this.eleveId});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Données simulées
-  final String _userName = 'Haoua Haïdara';
-  final int _userPoints = 1000;
-  double _dailyChallengeProgress = 0.0; // Commence à 0 comme dans Acceuil.png
-  bool _isChallengeCompleted = false; // Variable pour le changement d'etat de la card defi
+  final AuthService _authService = AuthService();
+  final EleveService _eleveService = EleveService();
+
+  // Données réelles de l'utilisateur
+  String _userName = 'Chargement...';
+  String _userPhotoProfil = '';
+  int _userPoints = 0;
+  int? _currentEleveId;
+
+  // Données simulées pour les autres sections
+  double _dailyChallengeProgress = 0.0;
+  bool _isChallengeCompleted = false;
   final int _booksRead = 3;
   final int _totalBooksGoal = 5;
   final int _daysRemaining = 3;
@@ -63,11 +74,80 @@ class _HomeScreenState extends State<HomeScreen> {
     CurrentReading(title: 'Le coeur se souvient', progress: 0.25),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Priorité 1: Utiliser l'ID passé en paramètre
+      if (widget.eleveId != null) {
+        _currentEleveId = widget.eleveId;
+        print('🎯 Chargement des données avec ID depuis MainScreen: $_currentEleveId');
+
+        final eleveData = await _eleveService.getEleveProfile(_currentEleveId!);
+        if (eleveData != null) {
+          _updateUIWithEleveData(eleveData);
+          _authService.setCurrentEleve(eleveData);
+          return;
+        }
+      }
+
+      // Priorité 2: Essayer de récupérer depuis AuthService
+      final eleve = _authService.currentEleve;
+      if (eleve != null) {
+        _updateUIWithEleveData(eleve);
+        _currentEleveId = eleve.id;
+        return;
+      }
+
+      // Priorité 3: Essayer de récupérer l'ID depuis AuthService
+      final userId = _authService.currentUserId;
+      if (userId != null) {
+        _currentEleveId = userId;
+        final eleveData = await _eleveService.getEleveProfile(userId);
+        if (eleveData != null) {
+          _updateUIWithEleveData(eleveData);
+          _authService.setCurrentEleve(eleveData);
+          return;
+        }
+      }
+
+      // Dernier recours: données simulées
+      _setDefaultData();
+
+    } catch (e) {
+      print('❌ Erreur lors du chargement des données utilisateur: $e');
+      _setDefaultData();
+    }
+  }
+
+  void _updateUIWithEleveData(Eleve eleve) {
+    setState(() {
+      _userName = '${eleve.prenom ?? ''} ${eleve.nom ?? ''}'.trim();
+      _userPhotoProfil = eleve.photoProfil ?? '';
+      _userPoints = eleve.pointAccumule ?? 0;
+      _currentEleveId = eleve.id;
+    });
+    print('✅ Données utilisateur mises à jour: $_userName, Points: $_userPoints');
+  }
+
+  void _setDefaultData() {
+    setState(() {
+      _userName = 'Utilisateur';
+      _userPhotoProfil = '';
+      _userPoints = 0;
+    });
+    print('⚠️ Utilisation des données par défaut');
+  }
+
   // Fonction pour afficher le popup de défi
   void _showChallengeDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false, // Empêche la fermeture en cliquant à l'extérieur
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return _ChallengePopup();
       },
@@ -77,13 +157,12 @@ class _HomeScreenState extends State<HomeScreen> {
   // Fonction pour compléter le défi (appelée depuis le popup)
   void _completeChallenge(bool isCorrect, BuildContext context) {
     setState(() {
-      _dailyChallengeProgress = 1.0; // Remplit la barre de progression
+      _dailyChallengeProgress = 1.0;
       _isChallengeCompleted = true;
     });
 
-    // Affiche le résultat après un court délai
     Future.delayed(const Duration(milliseconds: 500), () {
-      Navigator.of(context).pop(); // Ferme le popup de défi
+      Navigator.of(context).pop();
 
       showDialog(
         context: context,
@@ -189,25 +268,40 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const ProfilScreen()),
+                            MaterialPageRoute(builder: (context) => ProfilScreen(
+                              eleveId: _currentEleveId,
+
+                            )),
                           );
                         },
-                        child: const CircleAvatar(
-                          radius: 30,
-                          backgroundColor: _colorWhite,
-                          child: Icon(Icons.person, color: _purpleMain, size: 40),
-                        ),
+                        child: _buildUserAvatar(),
                       ),
                       const SizedBox(width: 15),
                       Expanded(
-                        child: Text(
-                          'Bienvenue\n$_userName',
-                          style: const TextStyle(
-                            color: _colorWhite,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: _fontFamily,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Bienvenue',
+                              style: TextStyle(
+                                color: _colorWhite,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: _fontFamily,
+                              ),
+                            ),
+                            Text(
+                              _userName,
+                              style: const TextStyle(
+                                color: _colorWhite,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: _fontFamily,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
+                          ],
                         ),
                       ),
                       Column(
@@ -279,6 +373,52 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildUserAvatar() {
+    if (_userPhotoProfil.isNotEmpty) {
+      return CircleAvatar(
+        radius: 30,
+        backgroundImage: NetworkImage(_userPhotoProfil),
+        onBackgroundImageError: (exception, stackTrace) {
+          // Fallback si l'image ne charge pas
+          setState(() {
+            _userPhotoProfil = '';
+          });
+        },
+      );
+    }
+
+    // Avatar par défaut avec initiales
+    return CircleAvatar(
+      radius: 30,
+      backgroundColor: _colorWhite,
+      child: _userName != 'Chargement...' && _userName != 'Utilisateur'
+          ? Text(
+              _getUserInitials(),
+              style: const TextStyle(
+                color: _purpleMain,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            )
+          : const Icon(Icons.person, color: _purpleMain, size: 40),
+    );
+  }
+
+  String _getUserInitials() {
+    if (_userName.isEmpty || _userName == 'Chargement...' || _userName == 'Utilisateur') {
+      return '';
+    }
+
+    final parts = _userName.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    } else if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+
+    return '';
+  }
+
   Widget _buildDailyChallengeCard() {
     final String progressText = _isChallengeCompleted
         ? 'Complété'
@@ -311,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     const Text('Défi du jour', style: TextStyle(color: _colorBlack, fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 5),
-                    if (!_isChallengeCompleted) // Affiche le crayon seulement si pas complété
+                    if (!_isChallengeCompleted)
                       GestureDetector(
                         onTap: () => _showChallengeDialog(context),
                         child: const Icon(Icons.edit, color: Colors.grey, size: 18),
@@ -321,7 +461,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   progressText,
                   style: TextStyle(
-                      color: _isChallengeCompleted ? Colors.green : Colors.grey, // Vert si complété
+                      color: _isChallengeCompleted ? Colors.green : Colors.grey,
                       fontSize: 16,
                       fontWeight: FontWeight.bold
                   ),
@@ -335,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 value: _dailyChallengeProgress,
                 backgroundColor: Colors.grey.shade200,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                    _isChallengeCompleted ? Colors.green : _colorWarning // Vert si complété
+                    _isChallengeCompleted ? Colors.green : _colorWarning
                 ),
                 minHeight: 8,
               ),
@@ -689,17 +829,14 @@ class _ChallengePopupState extends State<_ChallengePopup> {
   }
 
   void _submitAnswer(bool isCorrect) {
-    // Arrête le timer s'il est encore actif
     if (_timer.isActive) {
       _timer.cancel();
     }
 
-    // Appelle completeChallenge avec le contexte actuel
     final homeScreenState = context.findAncestorStateOfType<_HomeScreenState>();
     if (homeScreenState != null) {
       homeScreenState._completeChallenge(isCorrect, context);
     } else {
-      // Fallback si on ne trouve pas le HomeScreenState
       Navigator.of(context).pop();
       showDialog(
         context: context,
@@ -789,7 +926,6 @@ class _ChallengePopupState extends State<_ChallengePopup> {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // Vérifie si la réponse est correcte (H2O)
                   bool isCorrect = _answerController.text.trim().toUpperCase() == 'H2O';
                   _submitAnswer(isCorrect);
                 },

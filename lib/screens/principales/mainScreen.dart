@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:edugo/core/constants/constant.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final int? eleveId;
+
+  const MainScreen({super.key, this.eleveId});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -15,14 +17,24 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  late List<Widget> _pages;
 
-  final List<Widget> _pages = [
-    HomeScreen(),
-    LibraryScreen(),
-    ChallengeScreen(),
-    MatiereListScreen(),
-    AssistanceScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Initialiser les pages avec l'ID de l'élève
+    _initializePages();
+  }
+
+  void _initializePages() {
+    _pages = [
+      HomeScreen(eleveId: widget.eleveId), // Passer l'ID à HomeScreen
+      LibraryScreen(eleveId: widget.eleveId), // Passer l'ID à LibraryScreen si nécessaire
+      ChallengeScreen(eleveId: widget.eleveId), // Passer l'ID à ChallengeScreen si nécessaire
+      MatiereListScreen(eleveId: widget.eleveId), // Passer l'ID à MatiereListScreen si nécessaire
+      AssistanceScreen(eleveId: widget.eleveId), // Passer l'ID à AssistanceScreen si nécessaire
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -73,13 +85,13 @@ class _MainScreenState extends State<MainScreen> {
         children: [
           Icon(
             icon,
-            color: isSelected ? Color(0xFFA885D8) : Colors.black, // Changé de Colors.black12 à Colors.black
+            color: isSelected ? Color(0xFFA885D8) : Colors.black,
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              color: isSelected ? Color(0xFFA885D8) : Colors.black, // Changé de Colors.black12 à Colors.black
+              color: isSelected ? Color(0xFFA885D8) : Colors.black,
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),

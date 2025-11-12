@@ -6,7 +6,9 @@ const Color _colorBlack = Color(0xFF000000); // Texte noir
 const String _fontFamily = 'Roboto'; // Police principale
 
 class AssistanceScreen extends StatelessWidget {
-  const AssistanceScreen({super.key});
+  final int? eleveId;
+
+    const AssistanceScreen({super.key, this.eleveId});
 
   @override
   Widget build(BuildContext context) {

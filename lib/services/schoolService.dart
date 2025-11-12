@@ -57,7 +57,7 @@ class SchoolService {
   Future<List<Map<String, dynamic>>> getClasses(int niveauId) async {
     try {
       print('Appel API: GET /api/classes/niveau/$niveauId');
-      final response = await _dio.get('/api/api//classes/niveau/$niveauId'); // <- correction ici
+      final response = await _dio.get('/api/api/classes/niveau/$niveauId'); // <- correction ici
       print('Réponse classes: ${response.statusCode}');
       print('Données classes: ${response.data}');
 

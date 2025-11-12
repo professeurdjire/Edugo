@@ -9,7 +9,9 @@ const Color _shadowColor = Color(0xFFE5E5E5); // Gris clair d'ombre
 const Color _colorBackground = Color(0xFFF8F9FA);
 
 class MatiereListScreen extends StatelessWidget {
-  const MatiereListScreen({super.key});
+  final int? eleveId;
+
+    const MatiereListScreen({super.key, this.eleveId});
 
   // Liste des matières à afficher
   final List<String> matieres = const [

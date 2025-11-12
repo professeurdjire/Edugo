@@ -11,7 +11,9 @@ const Color _colorGrey = Color(0xFF757575); // Gris pour texte secondaire
 const String _fontFamily = 'Roboto'; // Police principale
 
 class ChallengeScreen extends StatelessWidget {
-  const ChallengeScreen({super.key});
+  final int? eleveId;
+
+    const ChallengeScreen({super.key, this.eleveId});
 
   @override
   Widget build(BuildContext context) {
