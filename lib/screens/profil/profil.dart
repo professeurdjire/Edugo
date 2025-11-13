@@ -4,278 +4,322 @@ import 'package:edugo/screens/profil/modifierProfil.dart';
 import 'package:edugo/screens/profil/changerMotPasse.dart';
 import 'package:edugo/screens/profil/suggestion.dart';
 import 'package:edugo/services/auth_service.dart';
+import 'package:edugo/services/theme_service.dart';
 
-class ProfilScreen extends StatelessWidget {
- final int? eleveId; // Ajouter si nécessaire
+class ProfilScreen extends StatefulWidget {
+  final int? eleveId;
 
-   const ProfilScreen({super.key, this.eleveId});
+  const ProfilScreen({super.key, this.eleveId});
+
+  @override
+  State<ProfilScreen> createState() => _ProfilScreenState();
+}
+
+class _ProfilScreenState extends State<ProfilScreen> {
+  final AuthService _authService = AuthService();
+  final ThemeService _themeService = ThemeService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    // S'assurer que les données utilisateur sont à jour
+    await _authService.getCurrentUserProfile();
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Couleurs principales cohérentes avec votre thème
-    const Color primaryPurple = Color(0xFFA885D8);
-    const Color lightPurple = Color(0xFFF3EDFC);
-    const Color cardBackground = Color(0xFFF8F9FA);
-    const Color logoutRed = Color(0xFFFF6B6B);
-    const Color textDark = Color(0xFF2D3748);
-    const Color textLight = Color(0xFF718096);
+    final currentEleve = _authService.currentEleve;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        // Couleurs dynamiques basées sur le thème
+        final Color primaryPurple = primaryColor;
+        final Color lightPurple = primaryColor.withOpacity(0.1);
+        final Color cardBackground = const Color(0xFFF8F9FA);
+        final Color logoutRed = const Color(0xFFFF6B6B);
+        final Color textDark = const Color(0xFF2D3748);
+        final Color textLight = const Color(0xFF718096);
 
-      // AppBar améliorée
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black, size: 20),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text(
-          "Profil",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-            fontFamily: 'Roboto',
+        return Scaffold(
+          backgroundColor: Colors.white,
+
+          // AppBar améliorée
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black, size: 20),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            title: const Text(
+              "Profil",
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontFamily: 'Roboto',
+              ),
+            ),
+            centerTitle: true,
           ),
-        ),
-        centerTitle: true,
-      ),
 
-      // Corps de la page
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          children: [
-            // --- Carte Profil Principale ---
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [primaryPurple.withOpacity(0.9), primaryPurple],
+          // Corps de la page
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              children: [
+                // --- Carte Profil Principale ---
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [primaryPurple.withOpacity(0.9), primaryPurple],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryPurple.withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Avatar avec photo réelle
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          backgroundColor: lightPurple,
+                          backgroundImage: currentEleve?.photoProfil != null &&
+                                          currentEleve!.photoProfil!.isNotEmpty
+                              ? NetworkImage(currentEleve.photoProfil!)
+                              : const AssetImage('assets/avatar.png') as ImageProvider,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Nom et email réels
+                      Text(
+                        "${currentEleve?.prenom ?? 'Prénom'} ${currentEleve?.nom ?? 'Nom'}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Roboto',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        currentEleve?.email ?? "email@example.com",
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          fontFamily: 'Roboto',
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // --- Statistiques avec données réelles ---
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _StatItem(
+                              icon: Icons.workspace_premium,
+                              value: "5",
+                              label: "Badges",
+                              color: const Color(0xFFFFD700),
+                            ),
+                            _StatItem(
+                              icon: Icons.star_rounded,
+                              value: "${currentEleve?.pointAccumule ?? 0}",
+                              label: "Points",
+                              color: const Color(0xFFFFA500),
+                            ),
+                            _StatItem(
+                              icon: Icons.emoji_events_rounded,
+                              value: "7",
+                              label: "Challenges",
+                              color: const Color(0xFF4CAF50),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryPurple.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Avatar SANS icône de modification
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: CircleAvatar(
-                      backgroundColor: lightPurple,
-                      backgroundImage: const AssetImage('assets/avatar.png'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
 
-                  // Nom et email
-                  const Text(
-                    "Haoua Haïdara",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "haidarahaoua@gmail.com",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-                  // --- Statistiques améliorées ---
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: const [
-                        _StatItem(
-                          icon: Icons.workspace_premium,
-                          value: "5",
-                          label: "Badges",
-                          color: Color(0xFFFFD700),
-                        ),
-                        _StatItem(
-                          icon: Icons.star_rounded,
-                          value: "1000",
-                          label: "Points",
-                          color: Color(0xFFFFA500),
-                        ),
-                        _StatItem(
-                          icon: Icons.emoji_events_rounded,
-                          value: "7",
-                          label: "Challenges",
-                          color: Color(0xFF4CAF50),
-                        ),
-                      ],
-                    ),
+                // --- Section Paramètres ---
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: cardBackground,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Paramètres",
+                        style: TextStyle(
+                          color: Color(0xFF2D3748),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Roboto',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-            const SizedBox(height: 24),
-
-            // --- Section Actions ---
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: cardBackground,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                      _ActionButton(
+                        text: "Modifier le profil",
+                        icon: Icons.person_outline,
+                        color: Colors.white,
+                        primaryColor: primaryColor,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _ActionButton(
+                        text: "Changer le mot de passe",
+                        icon: Icons.lock_outline,
+                        color: Colors.white,
+                        primaryColor: primaryColor,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _ActionButton(
+                        text: "Changer la couleur du thème",
+                        icon: Icons.color_lens,
+                        color: Colors.white,
+                        primaryColor: primaryColor,
+                        onPressed: () {
+                          _showColorPickerDialog(context);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _ActionButton(
+                        text: "Suggestion",
+                        icon: Icons.lightbulb_outline,
+                        color: Colors.white,
+                        primaryColor: primaryColor,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SuggestionScreen()),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Paramètres",
-                    style: TextStyle(
-                      color: textDark,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                ),
 
-                  _ActionButton(
-                    text: "Modifier le profil",
-                    icon: Icons.person_outline,
+                const SizedBox(height: 20),
+
+                // --- Bouton Déconnexion ---
+                Container(
+                  width: double.infinity,
+                  height: 56,
+                  decoration: BoxDecoration(
                     color: Colors.white,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const EditProfileScreen()),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _ActionButton(
-                    text: "Changer le mot de passe",
-                    icon: Icons.lock_outline,
-                    color: Colors.white,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _ActionButton(
-                    text: "Suggestion",
-                    icon: Icons.lightbulb_outline,
-                    color: Colors.white,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SuggestionScreen()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // --- Bouton Déconnexion ---
-            Container(
-              width: double.infinity,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: logoutRed.withOpacity(0.3)),
-                boxShadow: [
-                  BoxShadow(
-                    color: logoutRed.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextButton(
-                onPressed: () {
-                  _showLogoutDialog(context);
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: logoutRed,
-                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: logoutRed.withOpacity(0.3)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: logoutRed.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.logout, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      "Déconnexion",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Roboto',
+                  child: TextButton(
+                    onPressed: () {
+                      _showLogoutDialog(context);
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: logoutRed,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.logout, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          "Déconnexion",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Roboto',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -326,6 +370,65 @@ class ProfilScreen extends StatelessWidget {
                 style: TextStyle(
                   color: Color(0xFFFF6B6B),
                   fontWeight: FontWeight.bold,
+                  fontFamily: 'Roboto',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showColorPickerDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            "Choisir la couleur du thème",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Roboto',
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: _themeService.availableColors.length,
+              itemBuilder: (context, index) {
+                final color = _themeService.availableColors[index];
+                return GestureDetector(
+                  onTap: () {
+                    _themeService.setPrimaryColor(color.value.toString());
+                    Navigator.of(context).pop();
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                "Annuler",
+                style: TextStyle(
+                  color: Colors.grey,
                   fontFamily: 'Roboto',
                 ),
               ),
@@ -396,12 +499,14 @@ class _ActionButton extends StatelessWidget {
   final String text;
   final Color color;
   final IconData icon;
+  final Color primaryColor;
   final VoidCallback onPressed;
 
   const _ActionButton({
     required this.text,
     required this.color,
     required this.icon,
+    required this.primaryColor,
     required this.onPressed,
   });
 
@@ -424,12 +529,12 @@ class _ActionButton extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFA582E5).withOpacity(0.1),
+            color: primaryColor.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(
             icon,
-            color: const Color(0xFFA582E5),
+            color: primaryColor,
             size: 20,
           ),
         ),
@@ -445,12 +550,12 @@ class _ActionButton extends StatelessWidget {
         trailing: Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: const Color(0xFFA582E5).withOpacity(0.1),
+            color: primaryColor.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.arrow_forward_ios_rounded,
-            color: Color(0xFFA582E5),
+            color: primaryColor,
             size: 14,
           ),
         ),

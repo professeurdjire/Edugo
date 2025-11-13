@@ -26,6 +26,8 @@ class AuthService {
     _dio.options.contentType = 'application/json';
   }
 
+  Dio get dio => _dio; // Getter public pour l'instance Dio
+
   // Getters pour l'utilisateur courant
   Eleve? get currentEleve => _currentEleve;
   String get userName => '${_currentEleve?.prenom ?? ''} ${_currentEleve?.nom ?? ''}'.trim();
