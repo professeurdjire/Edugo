@@ -10,6 +10,9 @@ import 'package:edugo/screens/conversionData/listeConversion.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/eleveService.dart';
 import 'package:edugo/models/eleve.dart';
+import 'package:edugo/services/objectifService.dart';
+import 'package:edugo/models/objectifRequest.dart';
+import 'package:edugo/models/objectifResponse.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _purpleMain = Color(0xFFA885D8);
@@ -48,12 +51,18 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
   final EleveService _eleveService = EleveService();
+  final ObjectifService _objectifService = ObjectifService();
 
   // Données réelles de l'utilisateur
   String _userName = 'Chargement...';
   String _userPhotoProfil = '';
   int _userPoints = 0;
   int? _currentEleveId;
+
+  // Variables pour l'objectif - TYPE CORRIGÉ
+     ObjectifResponse? _currentObjectif; // ← Type corrigé
+     bool _isLoadingObjectif = false;
+
 
   // Données simulées pour les autres sections
   double _dailyChallengeProgress = 0.0;
@@ -85,12 +94,13 @@ class _HomeScreenState extends State<HomeScreen> {
       // Priorité 1: Utiliser l'ID passé en paramètre
       if (widget.eleveId != null) {
         _currentEleveId = widget.eleveId;
-        print('🎯 Chargement des données avec ID depuis MainScreen: $_currentEleveId');
+        print(' Chargement des données avec ID depuis MainScreen: $_currentEleveId');
 
         final eleveData = await _eleveService.getEleveProfile(_currentEleveId!);
         if (eleveData != null) {
           _updateUIWithEleveData(eleveData);
           _authService.setCurrentEleve(eleveData);
+          await _loadCurrentObjectif();
           return;
         }
       }
@@ -100,6 +110,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (eleve != null) {
         _updateUIWithEleveData(eleve);
         _currentEleveId = eleve.id;
+        await _loadCurrentObjectif();
+
         return;
       }
 
@@ -111,6 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (eleveData != null) {
           _updateUIWithEleveData(eleveData);
           _authService.setCurrentEleve(eleveData);
+          await _loadCurrentObjectif();
           return;
         }
       }
@@ -119,10 +132,48 @@ class _HomeScreenState extends State<HomeScreen> {
       _setDefaultData();
 
     } catch (e) {
-      print('❌ Erreur lors du chargement des données utilisateur: $e');
+      print(' Erreur lors du chargement des données utilisateur: $e');
       _setDefaultData();
     }
   }
+
+ Future<void> _loadCurrentObjectif() async {
+   if (_currentEleveId == null) {
+     print('❌ ID élève non disponible pour charger l\'objectif');
+     return;
+   }
+
+   setState(() {
+     _isLoadingObjectif = true;
+   });
+
+   try {
+     print('🔄 Chargement de l\'objectif pour l\'élève ID: $_currentEleveId');
+     final objectif = await _objectifService.getObjectifEnCours(_currentEleveId!);
+
+     if (objectif != null) {
+       setState(() {
+         _currentObjectif = objectif;
+       });
+       print('✅ Objectif chargé: ${objectif.typeObjectif}, Livres: ${objectif.nbreLivre}');
+     } else {
+       print('ℹ️ Aucun objectif en cours trouvé pour cet élève');
+       setState(() {
+         _currentObjectif = null;
+       });
+     }
+   } catch (e) {
+     print('❌ Erreur détaillée lors du chargement de l\'objectif: $e');
+     // En cas d'erreur, on définit _currentObjectif à null pour éviter les crashs
+     setState(() {
+       _currentObjectif = null;
+     });
+   } finally {
+     setState(() {
+       _isLoadingObjectif = false;
+     });
+   }
+ }
 
   void _updateUIWithEleveData(Eleve eleve) {
     setState(() {
@@ -131,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _userPoints = eleve.pointAccumule ?? 0;
       _currentEleveId = eleve.id;
     });
-    print('✅ Données utilisateur mises à jour: $_userName, Points: $_userPoints');
+    print(' Données utilisateur mises à jour: $_userName, Points: $_userPoints');
   }
 
   void _setDefaultData() {
@@ -140,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _userPhotoProfil = '';
       _userPoints = 0;
     });
-    print('⚠️ Utilisation des données par défaut');
+    print(' Utilisation des données par défaut');
   }
 
   // Fonction pour afficher le popup de défi
@@ -490,86 +541,240 @@ Widget _buildHeaderContent(BuildContext context) {
     );
   }
 
-  Widget _buildReadingGoals(BuildContext context) {
-    double weeklyGoalProgress = _booksRead / _totalBooksGoal;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+class _GoalPopup extends StatefulWidget {
+  final int? eleveId; // ← AJOUTEZ CE PARAMÈTRE
+  final Function()? onObjectifCreated;
+
+  const _GoalPopup({this.eleveId, this.onObjectifCreated}); // ← MODIFIEZ LE CONSTRUCTEUR
+
+  @override
+  State<_GoalPopup> createState() => _GoalPopupState();
+}
+
+class _GoalPopupState extends State<_GoalPopup> {
+  final ObjectifService _objectifService = ObjectifService();
+  final TextEditingController _livresController = TextEditingController();
+
+  String _selectedType = 'HEBDOMADAIRE';
+  final List<String> _goalTypes = ['HEBDOMADAIRE', 'MENSUEL'];
+
+  bool _isLoading = false;
+
+  Future<void> _createObjectif() async {
+    // Utilisez widget.eleveId au lieu de homeState?._currentEleveId
+    if (widget.eleveId == null) {
+      print('❌ ID élève non disponible dans le popup');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur: ID élève non disponible')),
+      );
+      return;
+    }
+
+    final nbreLivre = int.tryParse(_livresController.text);
+    if (nbreLivre == null || nbreLivre <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez entrer un nombre de livres valide')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final now = DateTime.now().toIso8601String().split('T')[0];
+
+      print('🔄 Création d\'objectif pour élève ID: ${widget.eleveId}');
+      final result = await _objectifService.createObjectif(
+        eleveId: widget.eleveId!, // ← UTILISEZ widget.eleveId
+        typeObjectif: _selectedType,
+        nbreLivre: nbreLivre,
+        dateEnvoie: now,
+      );
+
+      if (result != null) {
+        print('✅ Objectif créé avec succès: ${result.typeObjectif}');
+        if (widget.onObjectifCreated != null) {
+          widget.onObjectifCreated!();
+        }
+        Navigator.of(context).pop();
+
+        // Message de succès
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Objectif créé avec succès!')),
+        );
+      } else {
+        print('❌ Erreur lors de la création de l\'objectif');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur lors de la création de l\'objectif')),
+        );
+      }
+    } catch (e) {
+      print('❌ Erreur détaillée: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      title: const Text(
+        'Définir un nouvel objectif',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: _purpleMain,
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+        ),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Expanded(
-              child: Text(
-                'Objectifs ',
-                style: TextStyle(
-                  color: _colorBlack,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
+            const Text(
+              'Type Objectif',
+              style: TextStyle(
+                color: _colorBlack,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            TextButton(
-              onPressed: () {
-                _showGoalDialog(context);
-              },
-              child: const Text(
-                'Définir un objectif',
-                style: TextStyle(
-                  color: _purpleMain,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _selectedType,
+                  items: _goalTypes.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(_formatDisplayType(value)),
+                    );
+                  }).toList(),
+                  onChanged: _isLoading ? null : (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedType = newValue;
+                      });
+                    }
+                  },
                 ),
               ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Nombre de Livres',
+              style: TextStyle(
+                color: _colorBlack,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _livresController,
+              keyboardType: TextInputType.number,
+              enabled: !_isLoading,
+              decoration: InputDecoration(
+                hintText: 'Ex: 5',
+                hintStyle: const TextStyle(color: Colors.grey),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+              ),
+            ),
+            const SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: _isLoading ? null : () {
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _colorWhite,
+                    foregroundColor: _colorBlack,
+                    side: const BorderSide(color: Colors.grey),
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    elevation: 0,
+                  ),
+                  child: const Text('Annuler', style: TextStyle(fontSize: 16)),
+                ),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _createObjectif, // ← APPEL DIRECT
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _purpleMain,
+                    foregroundColor: _colorWhite,
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    elevation: 2,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(_colorWhite),
+                          ),
+                        )
+                      : const Text('Définir', style: TextStyle(fontSize: 16)),
+                ),
+              ],
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Objectif hebdomadaire', style: TextStyle(color: _colorBlack, fontSize: 16, fontWeight: FontWeight.w500)),
-                  Text('$_daysRemaining jours restant', style: const TextStyle(color: _purpleMain, fontSize: 14)),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.book, color: _purpleMain, size: 24),
-                  const SizedBox(width: 8),
-                  Text('$_totalBooksGoal Livres', style: const TextStyle(color: _purpleMain, fontSize: 16, fontWeight: FontWeight.bold)),
-                ],
-              ),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(50),
-                child: LinearProgressIndicator(
-                  value: weeklyGoalProgress,
-                  backgroundColor: Colors.grey.shade200,
-                  valueColor: const AlwaysStoppedAnimation<Color>(_purpleMain),
-                  minHeight: 8,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text('$_booksRead/$_totalBooksGoal livres lus', style: const TextStyle(color: Colors.grey, fontSize: 14)),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
+
+  String _formatDisplayType(String type) {
+    switch (type) {
+      case 'HEBDOMADAIRE': return 'Hebdomadaire';
+      case 'MENSUEL': return 'Mensuel';
+      default: return type;
+    }
+  }
+}
+
+   void _showGoalDialog(BuildContext context) {
+     showDialog(
+       context: context,
+       builder: (BuildContext context) {
+         return _GoalPopup(
+           eleveId: _currentEleveId, // ← PASSEZ L'ID ICI
+           onObjectifCreated: () {
+             _loadCurrentObjectif();
+           },
+         );
+       },
+     );
+   }
 
   Widget _buildBadgesSection(BuildContext context) {
     return Column(
@@ -787,14 +992,6 @@ Widget _buildHeaderContent(BuildContext context) {
     );
   }
 
-  void _showGoalDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return _GoalPopup();
-      },
-    );
-  }
 }
 
 // -------------------------------------------------------------------
@@ -1282,11 +1479,86 @@ class _FixedHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-class _GoalPopup extends StatelessWidget {
-  const _GoalPopup();
+class _GoalPopup extends StatefulWidget {
+  final int? eleveId; // ← AJOUTEZ CE PARAMÈTRE
+  final Function()? onObjectifCreated;
 
-  static const List<String> _goalTypes = ['Hebdomadaire', 'Mensuel', 'Annuel'];
-  final String _defaultGoalType = 'choisissez un type';
+  const _GoalPopup({this.eleveId, this.onObjectifCreated}); // ← MODIFIEZ LE CONSTRUCTEUR
+
+  @override
+  State<_GoalPopup> createState() => _GoalPopupState();
+}
+
+class _GoalPopupState extends State<_GoalPopup> {
+  final ObjectifService _objectifService = ObjectifService();
+  final TextEditingController _livresController = TextEditingController();
+
+  String _selectedType = 'HEBDOMADAIRE';
+  final List<String> _goalTypes = ['HEBDOMADAIRE', 'MENSUEL'];
+
+  bool _isLoading = false;
+
+  Future<void> _createObjectif() async {
+    // Utilisez widget.eleveId au lieu de homeState?._currentEleveId
+    if (widget.eleveId == null) {
+      print('❌ ID élève non disponible dans le popup');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur: ID élève non disponible')),
+      );
+      return;
+    }
+
+    final nbreLivre = int.tryParse(_livresController.text);
+    if (nbreLivre == null || nbreLivre <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez entrer un nombre de livres valide')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final now = DateTime.now().toIso8601String().split('T')[0];
+
+      print('🔄 Création d\'objectif pour élève ID: ${widget.eleveId}');
+      final result = await _objectifService.createObjectif(
+        eleveId: widget.eleveId!, // ← UTILISEZ widget.eleveId
+        typeObjectif: _selectedType,
+        nbreLivre: nbreLivre,
+        dateEnvoie: now,
+      );
+
+      if (result != null) {
+        print('✅ Objectif créé avec succès: ${result.typeObjectif}');
+        if (widget.onObjectifCreated != null) {
+          widget.onObjectifCreated!();
+        }
+        Navigator.of(context).pop();
+
+        // Message de succès
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Objectif créé avec succès!')),
+        );
+      } else {
+        print('❌ Erreur lors de la création de l\'objectif');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur lors de la création de l\'objectif')),
+        );
+      }
+    } catch (e) {
+      print('❌ Erreur détaillée: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1328,22 +1600,26 @@ class _GoalPopup extends StatelessWidget {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   isExpanded: true,
-                  value: null,
-                  hint: Text(_defaultGoalType, style: const TextStyle(color: Colors.grey)),
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                  value: _selectedType,
                   items: _goalTypes.map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
-                      child: Text(value),
+                      child: Text(_formatDisplayType(value)),
                     );
                   }).toList(),
-                  onChanged: (String? newValue) {},
+                  onChanged: _isLoading ? null : (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedType = newValue;
+                      });
+                    }
+                  },
                 ),
               ),
             ),
             const SizedBox(height: 20),
             const Text(
-              'Nombre de Livre',
+              'Nombre de Livres',
               style: TextStyle(
                 color: _colorBlack,
                 fontSize: 16,
@@ -1352,9 +1628,11 @@ class _GoalPopup extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             TextField(
+              controller: _livresController,
               keyboardType: TextInputType.number,
+              enabled: !_isLoading,
               decoration: InputDecoration(
-                hintText: 'renseigner un nombre',
+                hintText: 'Ex: 5',
                 hintStyle: const TextStyle(color: Colors.grey),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -1372,7 +1650,7 @@ class _GoalPopup extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: _isLoading ? null : () {
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
@@ -1386,9 +1664,7 @@ class _GoalPopup extends StatelessWidget {
                   child: const Text('Annuler', style: TextStyle(fontSize: 16)),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: _isLoading ? null : _createObjectif, // ← APPEL DIRECT
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _purpleMain,
                     foregroundColor: _colorWhite,
@@ -1396,7 +1672,16 @@ class _GoalPopup extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     elevation: 2,
                   ),
-                  child: const Text('Définir', style: TextStyle(fontSize: 16)),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(_colorWhite),
+                          ),
+                        )
+                      : const Text('Définir', style: TextStyle(fontSize: 16)),
                 ),
               ],
             ),
@@ -1404,5 +1689,13 @@ class _GoalPopup extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatDisplayType(String type) {
+    switch (type) {
+      case 'HEBDOMADAIRE': return 'Hebdomadaire';
+      case 'MENSUEL': return 'Mensuel';
+      default: return type;
+    }
   }
 }
