@@ -5,21 +5,21 @@
 import 'package:dio/dio.dart';
 import 'package:built_value/serializer.dart';
 import 'package:openapi/src/serializers.dart';
-import 'package:openapi/src/auth/api_key_auth.dart';
-import 'package:openapi/src/auth/basic_auth.dart';
-import 'package:openapi/src/auth/bearer_auth.dart';
-import 'package:openapi/src/auth/oauth.dart';
-import 'package:openapi/src/api/administration_api.dart';
-import 'package:openapi/src/api/authentification_api.dart';
-import 'package:openapi/src/api/badges_api.dart';
-import 'package:openapi/src/api/challenges_api.dart';
-import 'package:openapi/src/api/classes_api.dart';
-import 'package:openapi/src/api/dfis_api.dart';
-import 'package:openapi/src/api/exercices_api.dart';
-import 'package:openapi/src/api/livres_api.dart';
-import 'package:openapi/src/api/lve_api.dart';
-import 'package:openapi/src/api/matires_api.dart';
-import 'package:openapi/src/api/niveaux_api.dart';
+import '../../../services/api_key_auth.dart';
+import '../../../services/basic_auth.dart';
+import '../../../services/bearer_auth.dart';
+import '../../../services/oauth.dart';
+import '../../../services/api/administration_api.dart';
+import '../../../services/api/authentification_api.dart';
+import '../../../services/api/badges_api.dart';
+import '../../../services/api/challenges_api.dart';
+import '../../../services/api/classes_api.dart';
+import '../../../services/api/dfis_api.dart';
+import '../../../services/api/exercices_api.dart';
+import '../../../services/api/livres_api.dart';
+import '../../../services/api/lve_api.dart';
+import '../../../services/api/matires_api.dart';
+import '../../../services/api/niveaux_api.dart';
 
 class Openapi {
   static const String basePath = r'http://localhost:8080/api';

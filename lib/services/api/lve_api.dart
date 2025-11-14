@@ -10,7 +10,7 @@ import 'package:dio/dio.dart';
 
 import 'package:built_collection/built_collection.dart';
 import 'package:built_value/json_object.dart';
-import 'package:openapi/src/api_util.dart';
+import 'package:edugo/services/api_util.dart';
 import 'package:edugo/models/badge.dart';
 import 'package:edugo/models/challenge.dart';
 import 'package:edugo/models/change_password_request.dart';

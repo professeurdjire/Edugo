@@ -10,7 +10,7 @@ import 'package:dio/dio.dart';
 
 import 'package:built_collection/built_collection.dart';
 import 'package:built_value/json_object.dart';
-import 'package:openapi/src/api_util.dart';
+import 'package:edugo/services/api_util.dart';
 import 'package:edugo/models/correction_request.dart';
 import 'package:edugo/models/exercice_detail_response.dart';
 import 'package:edugo/models/exercice_request.dart';

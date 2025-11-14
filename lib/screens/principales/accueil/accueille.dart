@@ -125,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 30),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: _buildRecommendationsSection(),
+                  child: _buildRecommendationsSection(context),
                 ),
                 const SizedBox(height: 30),
                 Padding(
@@ -496,61 +496,74 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildRecommendationsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Recommandation pour toi',
-          style: TextStyle(
-            color: _colorBlack,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        TextButton(
-          onPressed: () {},
-          child: const Text(
-            'Voir tout',
+  Widget _buildRecommendationsSection(BuildContext context) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'Recommandation pour toi',
             style: TextStyle(
-              color: _purpleMain,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+              color: _colorBlack,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-        const SizedBox(height: 15),
-        SizedBox(
-          height: 200,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              _RecommendationCard(
-                title: 'Le jardin invisible',
-                author: 'Auteur : C.S.Lewis',
-                coverAsset: 'book1.png',
+          TextButton(
+             onPressed: () {
+                  Navigator.push(
+                    context,
+                     MaterialPageRoute(builder: (context) => const RecentActivitiesScreen()),
+                  );
+                },
+            child:  const Text(
+              'Voir tout',
+              style: TextStyle(
+                color: _purpleMain,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-              _RecommendationCard(
-                title: 'Le coeur se souvient',
-                author: 'Auteur : C.S.Lewis',
-                coverAsset: 'book1.png',
-              ),
-              _RecommendationCard(
-                title: 'Libre comme l\'ère',
-                author: 'Auteur : C.S.Lewis',
-                coverAsset: 'book1.png',
-              ),
-              _RecommendationCard(
-                title: 'En apnée',
-                author: 'Auteur : C.S.Lewis',
-                coverAsset: 'book1.png',
-              ),
-            ],
+            ),
           ),
+        ],
+      ),
+
+      const SizedBox(height: 15),
+
+      SizedBox(
+        height: 200,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            _RecommendationCard(
+              title: 'Le jardin invisible',
+              author: 'Auteur : C.S.Lewis',
+              coverAsset: 'book1.png',
+            ),
+            _RecommendationCard(
+              title: 'Le coeur se souvient',
+              author: 'Auteur : C.S.Lewis',
+              coverAsset: 'book1.png',
+            ),
+            _RecommendationCard(
+              title: 'Libre comme l\'ère',
+              author: 'Auteur : C.S.Lewis',
+              coverAsset: 'book1.png',
+            ),
+            _RecommendationCard(
+              title: 'En apnée',
+              author: 'Auteur : C.S.Lewis',
+              coverAsset: 'book1.png',
+            ),
+          ],
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
+
 
   Widget _buildCurrentReadingsSection(BuildContext context) {
     return Column(

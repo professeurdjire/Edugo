@@ -9,7 +9,7 @@ import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
 import 'package:built_collection/built_collection.dart';
-import 'package:openapi/src/api_util.dart';
+import 'package:edugo/services/api_util.dart';
 import 'package:edugo/models/badge_request.dart';
 import 'package:edugo/models/badge_response.dart';
 

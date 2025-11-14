@@ -7,7 +7,20 @@ import 'dart:typed_data';
 
 import 'package:built_collection/built_collection.dart';
 import 'package:built_value/serializer.dart';
-import 'package:dio/dio.dart';
+
+/// Encodes a query parameter value.
+String encodeQueryParameter(Serializers serializers, dynamic value, FullType specifiedType) {
+  final serialized = serializers.serialize(value, specifiedType: specifiedType);
+  if (serialized is String) {
+    return serialized;
+  } else if (serialized is num || serialized is bool) {
+    return serialized.toString();
+  } else {
+    // For complex types, you might want to use JSON encoding
+    // But for simple types like int, this should suffice
+    return serialized.toString();
+  }
+}
 
 /// Format the given form parameter object into something that Dio can handle.
 /// Returns primitive or String.
@@ -30,34 +43,6 @@ dynamic encodeFormParameter(Serializers serializers, dynamic value, FullType typ
     return serialized;
   }
   return json.encode(serialized);
-}
-
-dynamic encodeQueryParameter(
-  Serializers serializers,
-  dynamic value,
-  FullType type,
-) {
-  if (value == null) {
-    return '';
-  }
-  if (value is String || value is num || value is bool) {
-    return value;
-  }
-  if (value is Uint8List) {
-    // Currently not sure how to serialize this
-    return value;
-  }
-  final serialized = serializers.serialize(
-    value as Object,
-    specifiedType: type,
-  );
-  if (serialized == null) {
-    return '';
-  }
-  if (serialized is String) {
-    return serialized;
-  }
-  return serialized;
 }
 
 ListParam<Object?> encodeCollectionQueryParameter<T>(

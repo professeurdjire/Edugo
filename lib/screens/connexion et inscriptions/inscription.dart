@@ -9,6 +9,10 @@ import 'package:edugo/screens/principales/mainScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/models/auth_models.dart';
+import 'package:edugo/services/school_data_service.dart';
+import 'package:edugo/models/niveau_response.dart';
+import 'package:edugo/models/classe_response.dart';
+import 'package:built_collection/built_collection.dart';
 
 // Constantes de style pour les couleurs
 const Color _purpleMain = Color(0xFFA885D8); // Violet principal (logo, bouton, étape active)
@@ -367,16 +371,18 @@ class RegistrationStep2 extends StatefulWidget {
 class _RegistrationStep2State extends State<RegistrationStep2> {
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
-  late TextEditingController _schoolLevelController;
-  late TextEditingController _classController;
+  BuiltList<NiveauResponse>? _schoolLevels;
+  BuiltList<ClasseResponse>? _classes;
+  NiveauResponse? _selectedSchoolLevel;
+  ClasseResponse? _selectedClass;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController(text: widget.email);
     _passwordController = TextEditingController(text: widget.password);
-    _schoolLevelController = TextEditingController(text: widget.schoolLevel);
-    _classController = TextEditingController(text: widget.className);
+    _loadSchoolData();
   }
 
   @override
@@ -388,21 +394,51 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
     if (oldWidget.password != widget.password) {
       _passwordController.text = widget.password;
     }
-    if (oldWidget.schoolLevel != widget.schoolLevel) {
-      _schoolLevelController.text = widget.schoolLevel;
-    }
-    if (oldWidget.className != widget.className) {
-      _classController.text = widget.className;
-    }
   }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _schoolLevelController.dispose();
-    _classController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSchoolData() async {
+    try {
+      final schoolDataService = SchoolDataService();
+      final schoolLevels = await schoolDataService.fetchSchoolLevels();
+      final classes = await schoolDataService.fetchClasses();
+      
+      if (mounted) {
+        setState(() {
+          _schoolLevels = schoolLevels;
+          _classes = classes;
+          _isLoading = false;
+          
+          // Set default selections if previously selected
+          if (widget.schoolLevel.isNotEmpty && _schoolLevels != null) {
+            _selectedSchoolLevel = _schoolLevels!.firstWhere(
+              (level) => level.nom == widget.schoolLevel,
+              orElse: () => _schoolLevels!.first,
+            );
+          }
+          
+          if (widget.className.isNotEmpty && _classes != null) {
+            _selectedClass = _classes!.firstWhere(
+              (classe) => classe.nom == widget.className,
+              orElse: () => _classes!.first,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      print('Error loading school data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -431,21 +467,49 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
           ),
           const SizedBox(height: 25),
           
-          // Niveau Scolaire (Simulé par un champ de texte simple pour l'aspect visuel)
-          _buildInputField(
-            label: 'Niveau Scolaire de l\'enfant', 
+          // Niveau Scolaire dropdown
+          _buildDropdownField<NiveauResponse>(
+            label: 'Niveau Scolaire de l\'enfant',
             hint: 'Choisir votre niveau d\'etude',
-            controller: _schoolLevelController,
-            onChanged: widget.onSchoolLevelChanged,
+            items: _schoolLevels
+                ?.map((level) => DropdownMenuItem<NiveauResponse>(
+                      value: level,
+                      child: Text(level.nom ?? ''),
+                    ))
+                .toList() ?? [],
+            value: _selectedSchoolLevel,
+            onChanged: (NiveauResponse? newValue) {
+              setState(() {
+                _selectedSchoolLevel = newValue;
+                if (newValue != null) {
+                  widget.onSchoolLevelChanged(newValue.nom ?? '');
+                }
+              });
+            },
+            isLoading: _isLoading,
           ),
           const SizedBox(height: 25),
           
-          // Classe Actuelle
-          _buildInputField(
-            label: 'Classe actuelle de l\'enfant', 
-            hint: 'Précisez votre classe',
-            controller: _classController,
-            onChanged: widget.onClassChanged,
+          // Classe Actuelle dropdown
+          _buildDropdownField<ClasseResponse>(
+            label: 'Classe actuelle de l\'enfant',
+            hint: 'Choisir votre classe',
+            items: _classes
+                ?.map((classe) => DropdownMenuItem<ClasseResponse>(
+                      value: classe,
+                      child: Text(classe.nom ?? ''),
+                    ))
+                .toList() ?? [],
+            value: _selectedClass,
+            onChanged: (ClasseResponse? newValue) {
+              setState(() {
+                _selectedClass = newValue;
+                if (newValue != null) {
+                  widget.onClassChanged(newValue.nom ?? '');
+                }
+              });
+            },
+            isLoading: _isLoading,
           ),
           
           const SizedBox(height: 60),
@@ -689,9 +753,13 @@ Widget _buildInputField({
 
 
 // Widget pour simuler le champ de sélection (Dropdown)
-Widget _buildDropdownField({
+Widget _buildDropdownField<T>({
   required String label,
   required String hint,
+  required List<DropdownMenuItem<T>> items,
+  T? value,
+  Function(T?)? onChanged,
+  bool isLoading = false,
 }) {
   const Color borderColor = Color(0xFFD1C4E9);
   const Color fillColor = Color(0xFFF5F5F5);
@@ -717,16 +785,18 @@ Widget _buildDropdownField({
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         height: 55,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              hint,
-              style: const TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-            const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-          ],
-        ),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : DropdownButtonHideUnderline(
+                child: DropdownButton<T>(
+                  isExpanded: true,
+                  hint: Text(hint, style: const TextStyle(color: Colors.grey)),
+                  items: items,
+                  value: value,
+                  onChanged: onChanged,
+                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                ),
+              ),
       ),
     ],
   );

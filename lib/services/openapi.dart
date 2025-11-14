@@ -1,0 +1,83 @@
+//
+// AUTO-GENERATED FILE, DO NOT MODIFY!
+//
+
+export 'package:openapi/src/api.dart';
+export '../../services/api_key_auth.dart';
+export '../../services/basic_auth.dart';
+export '../../services/bearer_auth.dart';
+export '../../services/oauth.dart';
+export 'package:openapi/src/serializers.dart';
+export 'package:openapi/src/model/date.dart';
+
+export '../../services/api/administration_api.dart';
+export '../../services/api/authentification_api.dart';
+export '../../services/api/badges_api.dart';
+export '../../services/api/challenges_api.dart';
+export '../../services/api/classes_api.dart';
+export '../../services/api/dfis_api.dart';
+export '../../services/api/exercices_api.dart';
+export '../../services/api/livres_api.dart';
+export '../../services/api/lve_api.dart';
+export '../../services/api/matires_api.dart';
+export '../../services/api/niveaux_api.dart';
+
+export 'package:openapi/src/model/badge.dart';
+export 'package:openapi/src/model/badge_request.dart';
+export 'package:openapi/src/model/badge_response.dart';
+export 'package:openapi/src/model/challenge.dart';
+export 'package:openapi/src/model/change_password_request.dart';
+export 'package:openapi/src/model/classe.dart';
+export 'package:openapi/src/model/classe_request.dart';
+export 'package:openapi/src/model/classe_response.dart';
+export 'package:openapi/src/model/conversion_eleve.dart';
+export 'package:openapi/src/model/correction_request.dart';
+export 'package:openapi/src/model/defi.dart';
+export 'package:openapi/src/model/defi_detail_response.dart';
+export 'package:openapi/src/model/defi_request.dart';
+export 'package:openapi/src/model/defi_response.dart';
+export 'package:openapi/src/model/eleve.dart';
+export 'package:openapi/src/model/eleve_defi.dart';
+export 'package:openapi/src/model/eleve_defi_response.dart';
+export 'package:openapi/src/model/eleve_lite_response.dart';
+export 'package:openapi/src/model/exercice.dart';
+export 'package:openapi/src/model/exercice_detail_response.dart';
+export 'package:openapi/src/model/exercice_request.dart';
+export 'package:openapi/src/model/exercice_response.dart';
+export 'package:openapi/src/model/exercice_submission_request.dart';
+export 'package:openapi/src/model/faire_exercice.dart';
+export 'package:openapi/src/model/faire_exercice_response.dart';
+export 'package:openapi/src/model/fichier_livre.dart';
+export 'package:openapi/src/model/granted_authority.dart';
+export 'package:openapi/src/model/langue.dart';
+export 'package:openapi/src/model/livre.dart';
+export 'package:openapi/src/model/livre_detail_response.dart';
+export 'package:openapi/src/model/livre_populaire_response.dart';
+export 'package:openapi/src/model/livre_request.dart';
+export 'package:openapi/src/model/livre_response.dart';
+export 'package:openapi/src/model/login_request.dart';
+export 'package:openapi/src/model/login_response.dart';
+export 'package:openapi/src/model/matiere.dart';
+export 'package:openapi/src/model/matiere_detail_response.dart';
+export 'package:openapi/src/model/matiere_request.dart';
+export 'package:openapi/src/model/matiere_response.dart';
+export 'package:openapi/src/model/niveau.dart';
+export 'package:openapi/src/model/niveau_request.dart';
+export 'package:openapi/src/model/niveau_response.dart';
+export 'package:openapi/src/model/options_conversion.dart';
+export 'package:openapi/src/model/participation.dart';
+export 'package:openapi/src/model/progression.dart';
+export 'package:openapi/src/model/progression_response.dart';
+export 'package:openapi/src/model/progression_update_request.dart';
+export 'package:openapi/src/model/question.dart';
+export 'package:openapi/src/model/quiz.dart';
+export 'package:openapi/src/model/refresh_token_request.dart';
+export 'package:openapi/src/model/register_request.dart';
+export 'package:openapi/src/model/reponse_eleve.dart';
+export 'package:openapi/src/model/reponse_possible.dart';
+export 'package:openapi/src/model/statistiques_livre_response.dart';
+export 'package:openapi/src/model/suggestion.dart';
+export 'package:openapi/src/model/tag.dart';
+export 'package:openapi/src/model/type_question.dart';
+export 'package:openapi/src/model/user.dart';
+
