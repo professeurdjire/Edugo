@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/services/theme_service.dart';
 
-// --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Couleur principale pour les boutons/progress
+// --- CONSTANTES DE STYLES ---
 const Color _colorBlack = Color(0xFF000000);
 const Color _colorGreen = Color(0xFF32C832); // Vert de validation
 const Color _shadowColor = Color(0xFFEEEEEE); // Couleur de l'ombre
@@ -32,7 +32,9 @@ class ReadingItem {
 // ===================================================================
 
 class MyReadingsScreen extends StatefulWidget {
-  const MyReadingsScreen({super.key});
+  final ThemeService themeService;
+
+  const MyReadingsScreen({super.key, required this.themeService});
 
   @override
   State<MyReadingsScreen> createState() => _MyReadingsScreenState();
@@ -63,9 +65,10 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
+    final primaryColor = widget.themeService.currentPrimaryColor;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -77,11 +80,11 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 10),
-                  _buildSearchBar(),
+                  _buildSearchBar(primaryColor),
                   const SizedBox(height: 20),
-                  _buildStatusFilters(), // Contient maintenant la logique onTap
+                  _buildStatusFilters(primaryColor), // Contient maintenant la logique onTap
                   const SizedBox(height: 20),
-                  _buildReadingsList(), // Utilise la liste filtrée
+                  _buildReadingsList(primaryColor), // Utilise la liste filtrée
                   const SizedBox(height: 40),
                 ],
               ),
@@ -104,7 +107,7 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_sharp, color: _colorBlack),
+                  icon: const Icon(Icons.arrow_back_ios_sharp, color: _colorBlack), // Flèche en noir
                   onPressed: () => Navigator.pop(context),
                 ),
                 const Expanded(
@@ -112,7 +115,7 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
                     child: Text(
                       'Toutes mes Lectures',
                       style: TextStyle(
-                        color: _colorBlack,
+                        color: _colorBlack, // Titre en noir
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         fontFamily: _fontFamily,
@@ -129,27 +132,27 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(Color primaryColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: primaryColor.withOpacity(0.3)), // Bordure adaptée au thème
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const TextField(
+      child: TextField(
         decoration: InputDecoration(
           hintText: 'Rechercher un livre par nom ou auteur',
-          hintStyle: TextStyle(color: Colors.grey),
-          prefixIcon: Icon(Icons.search, color: Colors.grey),
+          hintStyle: TextStyle(color: primaryColor.withOpacity(0.5)),
+          prefixIcon: Icon(Icons.search, color: primaryColor.withOpacity(0.7)),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
         ),
       ),
     );
   }
 
-  Widget _buildStatusFilters() {
+  Widget _buildStatusFilters(Color primaryColor) {
     return Row(
       children: [
         // Bouton 'Tout'
@@ -157,6 +160,7 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
           child: _StatusFilterChip(
             label: 'Tout',
             isSelected: _currentFilter == ReadingFilter.all,
+            primaryColor: primaryColor,
             onTap: () {
               setState(() {
                 _currentFilter = ReadingFilter.all;
@@ -170,6 +174,7 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
           child: _StatusFilterChip(
             label: 'Encours',
             isSelected: _currentFilter == ReadingFilter.inProgress,
+            primaryColor: primaryColor,
             onTap: () {
               setState(() {
                 _currentFilter = ReadingFilter.inProgress;
@@ -183,6 +188,7 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
           child: _StatusFilterChip(
             label: 'Terminé',
             isSelected: _currentFilter == ReadingFilter.finished,
+            primaryColor: primaryColor,
             onTap: () {
               setState(() {
                 _currentFilter = ReadingFilter.finished;
@@ -194,7 +200,7 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
     );
   }
 
-  Widget _buildReadingsList() {
+  Widget _buildReadingsList(Color primaryColor) {
     // Utilisation de la liste filtrée
     final filteredReadings = _filteredReadings;
 
@@ -211,6 +217,7 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
             author: item.author,
             progress: item.progress,
             imagePath: item.imagePath,
+            primaryColor: primaryColor,
           ),
         );
       },
@@ -223,30 +230,31 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
 class _StatusFilterChip extends StatelessWidget {
   final String label;
   final bool isSelected;
-  final VoidCallback? onTap; // AJOUTÉ : Pour gérer le clic
+  final Color primaryColor;
+  final VoidCallback? onTap;
 
   const _StatusFilterChip({
     super.key,
     required this.label,
     this.isSelected = false,
+    required this.primaryColor,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell( // Utilisation de InkWell pour rendre le conteneur cliquable
+    return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? _purpleMain : Colors.white,
+          color: isSelected ? primaryColor : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          // Bords gérés pour le style visuel
           border: isSelected
-              ? Border.all(color: _purpleMain, width: 1)
-              : Border.all(color: Colors.white, width: 1),
+              ? Border.all(color: primaryColor, width: 1)
+              : Border.all(color: primaryColor.withOpacity(0.3), width: 1), // Bordure adaptée
         ),
         child: Text(
           label,
@@ -268,6 +276,7 @@ class _ReadingListItem extends StatelessWidget {
   final String author;
   final double progress;
   final String imagePath;
+  final Color primaryColor;
 
   const _ReadingListItem({
     super.key,
@@ -275,6 +284,7 @@ class _ReadingListItem extends StatelessWidget {
     required this.author,
     required this.progress,
     required this.imagePath,
+    required this.primaryColor,
   });
 
   @override
@@ -288,12 +298,16 @@ class _ReadingListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: _shadowColor,
+            color: primaryColor.withOpacity(0.1), // Ombre adaptée au thème
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
           ),
         ],
+        border: Border.all(
+          color: primaryColor.withOpacity(0.1), // Bordure subtile adaptée
+          width: 1,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -311,7 +325,7 @@ class _ReadingListItem extends StatelessWidget {
                   width: 55,
                   height: 75,
                   color: Colors.grey.shade200,
-                  child: const Icon(Icons.book, color: Colors.grey),
+                  child: Icon(Icons.book, color: primaryColor.withOpacity(0.5)),
                 );
               },
             ),
@@ -339,8 +353,8 @@ class _ReadingListItem extends StatelessWidget {
                   author,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.grey,
+                  style: TextStyle(
+                    color: primaryColor.withOpacity(0.7), // Auteur adapté au thème
                     fontSize: 14,
                     fontFamily: _fontFamily,
                   ),
@@ -361,10 +375,10 @@ class _ReadingListItem extends StatelessWidget {
                 children: [
                   Text(
                     '${(progress * 100).round()}%',
-                    style: const TextStyle(
-                      color: _colorBlack,
+                    style: TextStyle(
+                      color: primaryColor, // Pourcentage en couleur du thème
                       fontSize: 14,
-                      fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w600,
                       fontFamily: _fontFamily,
                     ),
                   ),
@@ -374,7 +388,7 @@ class _ReadingListItem extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       backgroundColor: Colors.grey.shade300,
-                      valueColor: const AlwaysStoppedAnimation<Color>(_purpleMain),
+                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor), // Barre de progression adaptée
                       minHeight: 5,
                     ),
                   ),

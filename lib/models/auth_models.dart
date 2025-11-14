@@ -81,13 +81,13 @@ class LoginResponse {
 
 class RegisterRequest {
   final String email;
-  final String password;
+  final String motDePasse;
   final String nom;
   final String prenom;
 
   RegisterRequest({
     required this.email,
-    required this.password,
+    required this.motDePasse,
     required this.nom,
     required this.prenom,
   });
@@ -95,7 +95,7 @@ class RegisterRequest {
   Map<String, dynamic> toJson() {
     return {
       'email': email,
-      'password': password,
+      'password': motDePasse,
       'nom': nom,
       'prenom': prenom,
     };

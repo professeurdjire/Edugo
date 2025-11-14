@@ -11,7 +11,9 @@ const Color _colorBackground = Color(0xFFF8F9FA);
 const String _fontFamily = 'Roboto';
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key});
+  final int? eleveId;
+
+    const LibraryScreen({super.key, this.eleveId});
 
   @override
   _LibraryScreenState createState() => _LibraryScreenState();

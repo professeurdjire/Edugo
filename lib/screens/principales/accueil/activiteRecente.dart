@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/services/theme_service.dart';
 
-// --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active)
+// --- CONSTANTES DE STYLES ---
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const Color _colorSuccess = Color(0xFF32C832); // Vert pour la validation (Quiz terminé)
 const Color _colorBadge = Color(0xFFE8981A); // Couleur Bronze/Trophée
@@ -16,9 +16,9 @@ class Activity {
   final Color iconColor;
 
   Activity({
-    required this.description, 
-    required this.time, 
-    required this.icon, 
+    required this.description,
+    required this.time,
+    required this.icon,
     required this.iconColor,
   });
 }
@@ -55,32 +55,50 @@ final Map<String, List<Activity>> _simulatedActivities = {
   ],
 };
 
+class RecentActivitiesScreen extends StatefulWidget {
+  final ThemeService? themeService; // Rendez optionnel
 
-class RecentActivitiesScreen extends StatelessWidget {
-  const RecentActivitiesScreen({super.key});
+  const RecentActivitiesScreen({super.key, this.themeService}); // Enlevez required
+
+  @override
+  State<RecentActivitiesScreen> createState() => _RecentActivitiesScreenState();
+}
+
+class _RecentActivitiesScreenState extends State<RecentActivitiesScreen> {
+  late ThemeService _themeService;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeService = widget.themeService ?? ThemeService();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: Column(
+            children: [
+              // 1. App Bar personnalisé (avec barre de statut et titre)
+              _buildCustomAppBar(context),
 
-      body: Column(
-        children: [
-          // 1. App Bar personnalisé (avec barre de statut et titre)
-          _buildCustomAppBar(context),
-
-          // 2. Le corps de la page (Liste des activités)
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _buildActivitySections(),
+              // 2. Le corps de la page (Liste des activités)
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _buildActivitySections(primaryColor),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -98,15 +116,15 @@ class RecentActivitiesScreen extends StatelessWidget {
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_sharp, color: _colorBlack),
-                  onPressed: () => Navigator.pop(context), 
+                  icon: const Icon(Icons.arrow_back_ios_sharp, color: _colorBlack), // Flèche en noir
+                  onPressed: () => Navigator.pop(context),
                 ),
-                const Expanded(
+                Expanded(
                   child: Center(
-                    child: Text(
+                    child: const Text(
                       'Activités Récentes',
                       style: TextStyle(
-                        color: _colorBlack,
+                        color: _colorBlack, // Titre en noir
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         fontFamily: _fontFamily,
@@ -114,7 +132,7 @@ class RecentActivitiesScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 48), 
+                const SizedBox(width: 48),
               ],
             ),
           ],
@@ -123,9 +141,9 @@ class RecentActivitiesScreen extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildActivitySections() {
+  List<Widget> _buildActivitySections(Color primaryColor) {
     List<Widget> sections = [];
-    
+
     _simulatedActivities.forEach((date, activities) {
       // Titre de la section (Aujourd'hui, Hier, etc.)
       sections.add(
@@ -133,8 +151,8 @@ class RecentActivitiesScreen extends StatelessWidget {
           padding: const EdgeInsets.only(top: 10.0, bottom: 15.0),
           child: Text(
             date,
-            style: const TextStyle(
-              color: _colorBlack,
+            style: TextStyle(
+              color: primaryColor, // Sous-titres en couleur du thème
               fontSize: 22,
               fontWeight: FontWeight.bold,
               fontFamily: _fontFamily,
@@ -142,18 +160,18 @@ class RecentActivitiesScreen extends StatelessWidget {
           ),
         ),
       );
-      
+
       // Liste des activités pour cette section
       for (var activity in activities) {
         sections.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 15.0),
-            child: _ActivityTile(activity: activity),
+            child: _ActivityTile(activity: activity, primaryColor: primaryColor),
           ),
         );
       }
     });
-    
+
     return sections;
   }
 }
@@ -164,8 +182,9 @@ class RecentActivitiesScreen extends StatelessWidget {
 
 class _ActivityTile extends StatelessWidget {
   final Activity activity;
+  final Color primaryColor;
 
-  const _ActivityTile({required this.activity});
+  const _ActivityTile({required this.activity, required this.primaryColor});
 
   @override
   Widget build(BuildContext context) {
@@ -176,24 +195,35 @@ class _ActivityTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: primaryColor.withOpacity(0.1),
             spreadRadius: 2,
             blurRadius: 5,
-            offset: const Offset(0, 3), 
+            offset: const Offset(0, 3),
           ),
         ],
+        border: Border.all(
+          color: primaryColor.withOpacity(0.1),
+          width: 1,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Icône d'activité
-          Icon(
-            activity.icon, 
-            color: activity.iconColor, 
-            size: 30,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              activity.icon,
+              color: activity.iconColor,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 15),
-          
+
           // Détails de l'activité
           Expanded(
             child: Column(
@@ -211,9 +241,10 @@ class _ActivityTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   activity.time,
-                  style: const TextStyle(
-                    color: Colors.grey,
+                  style: TextStyle(
+                    color: primaryColor.withOpacity(0.7),
                     fontSize: 13,
+                    fontWeight: FontWeight.w500,
                     fontFamily: _fontFamily,
                   ),
                 ),
@@ -230,8 +261,14 @@ class _NavBarItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
+  final Color primaryColor;
 
-  const _NavBarItem({required this.icon, required this.label, this.isSelected = false});
+  const _NavBarItem({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.primaryColor
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -240,15 +277,16 @@ class _NavBarItem extends StatelessWidget {
       children: [
         Icon(
           icon,
-          color: isSelected ? _purpleMain : _colorBlack,
+          color: isSelected ? primaryColor : _colorBlack.withOpacity(0.6),
           size: 24,
         ),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
-            color: isSelected ? _purpleMain : _colorBlack,
+            color: isSelected ? primaryColor : _colorBlack.withOpacity(0.6),
             fontSize: 11,
-            fontWeight: FontWeight.w400,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w400,
             fontFamily: _fontFamily,
           ),
         ),

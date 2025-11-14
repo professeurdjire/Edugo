@@ -22,7 +22,7 @@ import '../../../services/api/matires_api.dart';
 import '../../../services/api/niveaux_api.dart';
 
 class Openapi {
-  static const String basePath = r'http://localhost:8080/api';
+  static const String basePath = r'http://localhost:8089/api';
 
   final Dio dio;
   final Serializers serializers;
