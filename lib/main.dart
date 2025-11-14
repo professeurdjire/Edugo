@@ -142,7 +142,7 @@ class MyApp extends StatelessWidget {
             fontFamily: 'Roboto',
             useMaterial3: true,
           ),
-          home: const LoginScreen(),
+          home: LoginScreen(themeService: themeService),
           debugShowCheckedModeBanner: false,
 
           // Gestion des routes (optionnel)
@@ -151,7 +151,7 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (context) {
                 // Ici vous pouvez retourner les différents écrans de votre app
-                return const LoginScreen();
+                return  LoginScreen(themeService: themeService);
               },
             );
           },

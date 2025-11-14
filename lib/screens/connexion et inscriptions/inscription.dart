@@ -3,16 +3,13 @@ import 'package:edugo/screens/principales/mainScreen.dart';
 import 'package:edugo/screens/connexion et inscriptions/login.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/schoolService.dart';
-
-// ------------------ CONSTANTES ------------------
-const Color _purpleMain = Color(0xFFA885D8);
-const Color _purpleLight = Color(0xFFF1EFFE);
-const Color _purpleStepInactive = Color(0xFFE8E8E8);
-const String _fontFamily = 'Roboto';
+import 'package:edugo/services/theme_service.dart';
 
 // ------------------ ÉCRAN PRINCIPAL ------------------
 class RegistrationStepperScreen extends StatefulWidget {
-  const RegistrationStepperScreen({super.key});
+  final ThemeService? themeService;
+
+  const RegistrationStepperScreen({super.key, this.themeService});
 
   @override
   State<RegistrationStepperScreen> createState() => _RegistrationStepperScreenState();
@@ -21,6 +18,7 @@ class RegistrationStepperScreen extends StatefulWidget {
 class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
   int _currentStep = 0;
   late PageController _pageController;
+  late ThemeService _themeService;
 
   // Données collectées
   String _firstName = '';
@@ -36,6 +34,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentStep);
+    _themeService = widget.themeService ?? ThemeService();
   }
 
   @override
@@ -69,6 +68,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
           lastName: _lastName,
           phone: _phone,
           city: _city,
+          themeService: _themeService,
         ),
         RegistrationStep2(
           onNext: _nextStep,
@@ -81,6 +81,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
           password: _password,
           schoolLevelId: _niveauId,
           classId: _classeId,
+          themeService: _themeService,
         ),
         RegistrationStep3(
           onNext: _nextStep,
@@ -89,36 +90,45 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
           userPassword: _password,
           userFirstName: _firstName,
           userLastName: _lastName,
-          ville: _city, // ✅ Champ ville bien passé
+          ville: _city,
           telephone: _phone,
           classeId: _classeId,
           niveauId: _niveauId,
+          themeService: _themeService,
         ),
       ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          SizedBox(height: MediaQuery.of(context).size.height * 0.08),
-          Image.asset('assets/images/logo.png', height: 120, fit: BoxFit.contain),
-          const SizedBox(height: 30),
-          _buildStepIndicator(),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: _steps,
-            ),
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        final Color purpleStepInactive = const Color(0xFFE8E8E8);
+        final String fontFamily = 'Roboto';
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: Column(
+            children: [
+              SizedBox(height: MediaQuery.of(context).size.height * 0.08),
+              Image.asset('assets/images/logo.png', height: 120, fit: BoxFit.contain),
+              const SizedBox(height: 30),
+              _buildStepIndicator(primaryColor, purpleStepInactive),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: _steps,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildStepIndicator() {
+  Widget _buildStepIndicator(Color primaryColor, Color purpleStepInactive) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
       child: Row(
@@ -133,7 +143,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
                   width: 30,
                   height: 30,
                   decoration: BoxDecoration(
-                    color: isCurrent || isCompleted ? _purpleMain : _purpleStepInactive,
+                    color: isCurrent || isCompleted ? primaryColor : purpleStepInactive,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
@@ -143,7 +153,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Container(height: 2, color: isCompleted ? _purpleMain : _purpleStepInactive),
+                      child: Container(height: 2, color: isCompleted ? primaryColor : purpleStepInactive),
                     ),
                   ),
               ],
@@ -166,6 +176,7 @@ class RegistrationStep1 extends StatefulWidget {
   final String lastName;
   final String phone;
   final String city;
+  final ThemeService themeService;
 
   const RegistrationStep1({
     super.key,
@@ -178,6 +189,7 @@ class RegistrationStep1 extends StatefulWidget {
     required this.lastName,
     required this.phone,
     required this.city,
+    required this.themeService,
   });
 
   @override
@@ -218,44 +230,79 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildInputField(
-            label: 'Nom',
-            hint: 'Entrer votre nom',
-            controller: _firstNameController,
-            onChanged: widget.onFirstNameChanged,
+    return ValueListenableBuilder<Color>(
+      valueListenable: widget.themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        final Color borderColor = primaryColor.withOpacity(0.5);
+        final Color fillColor = const Color(0xFFF5F5F5);
+        final Color iconColor = primaryColor.withOpacity(0.7);
+        final String fontFamily = 'Roboto';
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInputField(
+                label: 'Nom',
+                hint: 'Entrer votre nom',
+                controller: _firstNameController,
+                onChanged: widget.onFirstNameChanged,
+                primaryColor: primaryColor,
+                borderColor: borderColor,
+                fillColor: fillColor,
+                iconColor: iconColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 25),
+              _buildInputField(
+                label: 'Prénom',
+                hint: 'Entrer votre prénom',
+                controller: _lastNameController,
+                onChanged: widget.onLastNameChanged,
+                primaryColor: primaryColor,
+                borderColor: borderColor,
+                fillColor: fillColor,
+                iconColor: iconColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 25),
+              _buildInputField(
+                label: 'Téléphone',
+                hint: 'Votre numéro',
+                controller: _phoneController,
+                onChanged: widget.onPhoneChanged,
+                keyboardType: TextInputType.phone,
+                primaryColor: primaryColor,
+                borderColor: borderColor,
+                fillColor: fillColor,
+                iconColor: iconColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 25),
+              _buildInputField(
+                label: 'Ville',
+                hint: 'Votre ville',
+                controller: _cityController,
+                onChanged: widget.onCityChanged,
+                primaryColor: primaryColor,
+                borderColor: borderColor,
+                fillColor: fillColor,
+                iconColor: iconColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 60),
+              _buildNextButton(
+                text: 'Suivant',
+                onPressed: widget.onNext,
+                primaryColor: primaryColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 40),
+            ],
           ),
-          const SizedBox(height: 25),
-          _buildInputField(
-            label: 'Prénom',
-            hint: 'Entrer votre prénom',
-            controller: _lastNameController,
-            onChanged: widget.onLastNameChanged,
-          ),
-          const SizedBox(height: 25),
-          _buildInputField(
-            label: 'Téléphone',
-            hint: 'Votre numéro',
-            controller: _phoneController,
-            onChanged: widget.onPhoneChanged,
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 25),
-          _buildInputField(
-            label: 'Ville',
-            hint: 'Votre ville',
-            controller: _cityController,
-            onChanged: widget.onCityChanged,
-          ),
-          const SizedBox(height: 60),
-          _buildNextButton(text: 'Suivant', onPressed: widget.onNext),
-          const SizedBox(height: 40),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -264,12 +311,24 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
     required String hint,
     required TextEditingController controller,
     required Function(String) onChanged,
+    required Color primaryColor,
+    required Color borderColor,
+    required Color fillColor,
+    required Color iconColor,
+    required String fontFamily,
     TextInputType keyboardType = TextInputType.text,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: primaryColor,
+            fontFamily: fontFamily,
+          )
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -280,19 +339,27 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
-            fillColor: _purpleLight,
+            fillColor: fillColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: borderColor, width: 1.0),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: primaryColor, width: 1.5),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: borderColor, width: 1.0),
             ),
             hintStyle: TextStyle(
-              fontFamily: _fontFamily,
+              fontFamily: fontFamily,
               color: Colors.grey[600],
             ),
           ),
           style: TextStyle(
-            fontFamily: _fontFamily,
+            fontFamily: fontFamily,
             fontSize: 16,
             color: Colors.black,
           ),
@@ -314,6 +381,7 @@ class RegistrationStep2 extends StatefulWidget {
   final String password;
   final int? schoolLevelId;
   final int? classId;
+  final ThemeService themeService;
 
   const RegistrationStep2({
     super.key,
@@ -327,6 +395,7 @@ class RegistrationStep2 extends StatefulWidget {
     required this.password,
     this.schoolLevelId,
     this.classId,
+    required this.themeService,
   });
 
   @override
@@ -528,65 +597,104 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
     );
   }
 
+  void _togglePasswordVisibility() {
+    setState(() {
+      _obscurePassword = !_obscurePassword;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Email
-          _buildInputField(
-            label: 'Adresse Email',
-            hint: 'Entrer votre email',
-            controller: _emailController,
-            onChanged: widget.onEmailChanged,
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 25),
+    return ValueListenableBuilder<Color>(
+      valueListenable: widget.themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        final Color borderColor = primaryColor.withOpacity(0.5);
+        final Color fillColor = const Color(0xFFF5F5F5);
+        final Color iconColor = primaryColor.withOpacity(0.7);
+        final String fontFamily = 'Roboto';
 
-          // Mot de passe
-          _buildPasswordField(),
-          const SizedBox(height: 25),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Email
+              _buildInputField(
+                label: 'Adresse Email',
+                hint: 'Entrer votre email',
+                controller: _emailController,
+                onChanged: widget.onEmailChanged,
+                keyboardType: TextInputType.emailAddress,
+                primaryColor: primaryColor,
+                borderColor: borderColor,
+                fillColor: fillColor,
+                iconColor: iconColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 25),
 
-          // Niveau scolaire
-          _buildDropdownField(
-            label: 'Niveau Scolaire de l\'enfant',
-            controller: _niveauController,
-            hint: 'Choisir votre niveau d\'étude',
-            onTap: _showNiveauSelection,
-            isLoading: _loadingNiveaux,
-          ),
-          const SizedBox(height: 25),
+              // Mot de passe
+              _buildPasswordField(
+                primaryColor: primaryColor,
+                borderColor: borderColor,
+                fillColor: fillColor,
+                iconColor: iconColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 25),
 
-          // Classe
-          _buildDropdownField(
-            label: 'Classe actuelle de l\'enfant',
-            controller: _classeController,
-            hint: 'Choisissez votre classe',
-            onTap: _showClasseSelection,
-            isLoading: _loadingClasses,
-            isEnabled: selectedNiveau != null,
+              // Niveau scolaire
+              _buildDropdownField(
+                label: 'Niveau Scolaire de l\'enfant',
+                controller: _niveauController,
+                hint: 'Choisir votre niveau d\'étude',
+                onTap: _showNiveauSelection,
+                isLoading: _loadingNiveaux,
+                primaryColor: primaryColor,
+                borderColor: borderColor,
+                fillColor: fillColor,
+                iconColor: iconColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 25),
+
+              // Classe
+              _buildDropdownField(
+                label: 'Classe actuelle de l\'enfant',
+                controller: _classeController,
+                hint: 'Choisissez votre classe',
+                onTap: _showClasseSelection,
+                isLoading: _loadingClasses,
+                isEnabled: selectedNiveau != null,
+                primaryColor: primaryColor,
+                borderColor: borderColor,
+                fillColor: fillColor,
+                iconColor: iconColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 60),
+              _buildNextButton(
+                text: 'Suivant',
+                onPressed: () {
+                  if (_emailController.text.isEmpty ||
+                      _passwordController.text.isEmpty ||
+                      selectedNiveau == null ||
+                      selectedClasse == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Veuillez remplir tous les champs')),
+                    );
+                    return;
+                  }
+                  widget.onNext();
+                },
+                primaryColor: primaryColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 40),
+            ],
           ),
-          const SizedBox(height: 60),
-          _buildNextButton(
-            text: 'Suivant',
-            onPressed: () {
-              if (_emailController.text.isEmpty ||
-                  _passwordController.text.isEmpty ||
-                  selectedNiveau == null ||
-                  selectedClasse == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Veuillez remplir tous les champs')),
-                );
-                return;
-              }
-              widget.onNext();
-            },
-          ),
-          const SizedBox(height: 40),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -595,12 +703,24 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
     required String hint,
     required TextEditingController controller,
     required Function(String) onChanged,
+    required Color primaryColor,
+    required Color borderColor,
+    required Color fillColor,
+    required Color iconColor,
+    required String fontFamily,
     TextInputType keyboardType = TextInputType.text,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: primaryColor,
+            fontFamily: fontFamily,
+          )
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -611,19 +731,27 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
-            fillColor: _purpleLight,
+            fillColor: fillColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: borderColor, width: 1.0),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: primaryColor, width: 1.5),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: borderColor, width: 1.0),
             ),
             hintStyle: TextStyle(
-              fontFamily: _fontFamily,
+              fontFamily: fontFamily,
               color: Colors.grey[600],
             ),
           ),
           style: TextStyle(
-            fontFamily: _fontFamily,
+            fontFamily: fontFamily,
             fontSize: 16,
             color: Colors.black,
           ),
@@ -632,11 +760,24 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
     );
   }
 
-  Widget _buildPasswordField() {
+  Widget _buildPasswordField({
+    required Color primaryColor,
+    required Color borderColor,
+    required Color fillColor,
+    required Color iconColor,
+    required String fontFamily,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Mot de passe', style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(
+          'Mot de passe',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: primaryColor,
+            fontFamily: fontFamily,
+          )
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: _passwordController,
@@ -647,23 +788,34 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
           decoration: InputDecoration(
             hintText: 'Entrer votre mot de passe',
             filled: true,
-            fillColor: _purpleLight,
+            fillColor: fillColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: borderColor, width: 1.0),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: primaryColor, width: 1.5),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: borderColor, width: 1.0),
             ),
             suffixIcon: IconButton(
-              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                color: iconColor,
+              ),
+              onPressed: _togglePasswordVisibility,
             ),
             hintStyle: TextStyle(
-              fontFamily: _fontFamily,
+              fontFamily: fontFamily,
               color: Colors.grey[600],
             ),
           ),
           style: TextStyle(
-            fontFamily: _fontFamily,
+            fontFamily: fontFamily,
             fontSize: 16,
             color: Colors.black,
           ),
@@ -677,13 +829,25 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
     required TextEditingController controller,
     required String hint,
     required VoidCallback onTap,
+    required Color primaryColor,
+    required Color borderColor,
+    required Color fillColor,
+    required Color iconColor,
+    required String fontFamily,
     bool isLoading = false,
     bool isEnabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: primaryColor,
+            fontFamily: fontFamily,
+          )
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -694,11 +858,19 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
-            fillColor: isEnabled ? _purpleLight : Colors.grey[200],
+            fillColor: isEnabled ? fillColor : Colors.grey[200],
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: isEnabled ? borderColor : Colors.grey[400]!, width: 1.0),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: isEnabled ? primaryColor : Colors.grey[400]!, width: 1.5),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: isEnabled ? borderColor : Colors.grey[400]!, width: 1.0),
             ),
             suffixIcon: isLoading
                 ? const Padding(
@@ -709,14 +881,14 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   )
-                : const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                : Icon(Icons.arrow_drop_down, color: iconColor),
             hintStyle: TextStyle(
-              fontFamily: _fontFamily,
+              fontFamily: fontFamily,
               color: Colors.grey[600],
             ),
           ),
           style: TextStyle(
-            fontFamily: _fontFamily,
+            fontFamily: fontFamily,
             fontSize: 16,
             color: isEnabled ? Colors.black : Colors.grey[600],
           ),
@@ -726,7 +898,7 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
   }
 }
 
-// ------------------ STEP 3 CORRIGÉ ------------------
+// ------------------ STEP 3 ------------------
 class RegistrationStep3 extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onPrevious;
@@ -734,10 +906,11 @@ class RegistrationStep3 extends StatefulWidget {
   final String userPassword;
   final String userFirstName;
   final String userLastName;
-  final String ville; // ✅ Champ ville bien défini
+  final String ville;
   final String telephone;
   final int? classeId;
   final int? niveauId;
+  final ThemeService themeService;
 
   const RegistrationStep3({
     super.key,
@@ -747,10 +920,11 @@ class RegistrationStep3 extends StatefulWidget {
     required this.userPassword,
     required this.userFirstName,
     required this.userLastName,
-    required this.ville, // ✅ Ville bien reçue
+    required this.ville,
     required this.telephone,
     required this.classeId,
     required this.niveauId,
+    required this.themeService,
   });
 
   @override
@@ -792,7 +966,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
         motDePasse: widget.userPassword,
         nom: widget.userLastName,
         prenom: widget.userFirstName,
-        ville: widget.ville, // ✅ Ville bien envoyée
+        ville: widget.ville,
         classeId: widget.classeId!,
         telephone: int.parse(widget.telephone),
         niveauId: widget.niveauId!,
@@ -806,8 +980,8 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
         // ✅ Redirection vers la page de connexion après inscription réussie
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => LoginScreen()), // Remplacez par votre écran de connexion
-          (route) => false, // Supprime toutes les routes précédentes
+          MaterialPageRoute(builder: (_) => LoginScreen(themeService: widget.themeService)),
+          (route) => false,
         );
       } else {
         setState(() => _errorMessage = 'Erreur lors de l\'inscription. Veuillez réessayer.');
@@ -822,134 +996,164 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          const Text(
-            'Choisissez un avatar',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Sélectionnez un avatar qui vous représente',
-            style: TextStyle(color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 30),
+    return ValueListenableBuilder<Color>(
+      valueListenable: widget.themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        final String fontFamily = 'Roboto';
 
-          // Message d'erreur
-          if (_errorMessage != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red),
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              Text(
+                'Choisissez un avatar',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: primaryColor,
+                  fontFamily: fontFamily,
+                ),
               ),
-              child: Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red),
+              const SizedBox(height: 10),
+              Text(
+                'Sélectionnez un avatar qui vous représente',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontFamily: fontFamily,
+                ),
                 textAlign: TextAlign.center,
               ),
-            ),
-          if (_errorMessage != null) const SizedBox(height: 20),
+              const SizedBox(height: 30),
 
-          // ❌ SUPPRIMÉ : Le message "Avatar X sélectionné" a été retiré
-
-          // Grille d'avatars avec défilement horizontal
-          Expanded(
-            child: GridView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 15,
-                mainAxisSpacing: 15,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: _avatars.length,
-              itemBuilder: (_, index) {
-                final isSelected = _selectedAvatarIndex == index;
-
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedAvatarIndex = index;
-                      _errorMessage = null;
-                    });
-                    print('👤 Avatar $index sélectionné: ${_avatars[index]}');
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: isSelected
-                          ? Border.all(color: _purpleMain, width: 3)
-                          : Border.all(color: Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        if (isSelected)
-                          BoxShadow(
-                            color: _purpleMain.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        _avatars[index],
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: _purpleLight,
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          print(' Erreur chargement avatar $index: $error');
-                          return Container(
-                            color: _purpleLight,
-                            child: const Icon(Icons.person, color: _purpleMain, size: 30),
-                          );
-                        },
-                      ),
-                    ),
+              // Message d'erreur
+              if (_errorMessage != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red),
                   ),
-                );
-              },
-            ),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              if (_errorMessage != null) const SizedBox(height: 20),
+
+              // Grille d'avatars avec défilement horizontal
+              Expanded(
+                child: GridView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                    childAspectRatio: 1.0,
+                  ),
+                  itemCount: _avatars.length,
+                  itemBuilder: (_, index) {
+                    final isSelected = _selectedAvatarIndex == index;
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedAvatarIndex = index;
+                          _errorMessage = null;
+                        });
+                        print('👤 Avatar $index sélectionné: ${_avatars[index]}');
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: isSelected
+                              ? Border.all(color: primaryColor, width: 3)
+                              : Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            if (isSelected)
+                              BoxShadow(
+                                color: primaryColor.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            _avatars[index],
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: widget.themeService.lightVariant,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              print(' Erreur chargement avatar $index: $error');
+                              return Container(
+                                color: widget.themeService.lightVariant,
+                                child: Icon(Icons.person, color: primaryColor, size: 30),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 30),
+              _buildNextButton(
+                text: _isLoading ? 'Inscription en cours...' : 'S\'inscrire',
+                onPressed: _isLoading ? null : _registerUser,
+                primaryColor: primaryColor,
+                fontFamily: fontFamily,
+              ),
+              const SizedBox(height: 30),
+            ],
           ),
-          const SizedBox(height: 30),
-          _buildNextButton(
-            text: _isLoading ? 'Inscription en cours...' : 'S\'inscrire',
-            onPressed: _isLoading ? null : _registerUser,
-          ),
-          const SizedBox(height: 30),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 // ------------------ WIDGETS UTILITAIRES ------------------
-Widget _buildNextButton({required String text, VoidCallback? onPressed}) {
+Widget _buildNextButton({
+  required String text,
+  VoidCallback? onPressed,
+  required Color primaryColor,
+  required String fontFamily,
+}) {
   return SizedBox(
     width: double.infinity,
     child: ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: _purpleMain,
+        backgroundColor: primaryColor,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       onPressed: onPressed,
-      child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          fontFamily: fontFamily,
+        )
+      ),
     ),
   );
 }

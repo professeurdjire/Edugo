@@ -4,9 +4,12 @@ import 'package:edugo/screens/profil/reenitialiserMotDePasse/reenitialisationA.d
 import 'package:flutter/material.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/models/auth_models.dart';
+import 'package:edugo/services/theme_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final ThemeService? themeService;
+
+  const LoginScreen({super.key, this.themeService});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -19,141 +22,151 @@ class _LoginScreenState extends State<LoginScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   String? _errorMessage;
+  late ThemeService _themeService;
+  bool _obscurePassword = true; // Variable pour gérer la visibilité du mot de passe
 
-  // Couleurs utilisées dans le design
-  final Color _purpleLogoAndButton = const Color(0xFFA885D8); // Violet principal (bouton, logo)
-  final Color _lightPurpleInput = const Color(0xFFF1EFFE); // Violet très clair (fond des champs)
-  final String _fontFamily = 'Roboto'; // Police par défaut
+  final String _fontFamily = 'Roboto';
 
-  // Nouvelles couleurs pour correspondre au style de l'inscription
-  final Color _borderColor = const Color(0xFFD1C4E9); // Bordure douce violette
-  final Color _fillColor = const Color(0xFFF5F5F5);   // Fond gris clair
+  @override
+  void initState() {
+    super.initState();
+    _themeService = widget.themeService ?? ThemeService();
+  }
+
+  // Fonction pour basculer la visibilité du mot de passe
+  void _togglePasswordVisibility() {
+    setState(() {
+      _obscurePassword = !_obscurePassword;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // La couleur de fond est blanche
-      backgroundColor: Colors.white,
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        // Couleurs dynamiques basées sur le thème
+        final Color purpleLogoAndButton = primaryColor;
+        final Color borderColor = primaryColor.withOpacity(0.5);
+        final Color fillColor = const Color(0xFFF5F5F5);
+        final Color iconColor = primaryColor.withOpacity(0.7);
 
-      // La barre d'état (20:20, icônes) est gérée par le système,
-      // mais nous pouvons la simuler si besoin (comme dans la page précédente),
-      // ici nous nous concentrons sur le contenu principal.
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 40.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: <Widget>[
-              // Espace pour la barre de statut (simulée ici, environ 10% de l'écran)
-              SizedBox(height: MediaQuery.of(context).size.height * 0.12),
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 40.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: <Widget>[
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.12),
 
-              // 1. Logo et Nom de l'Application
-              _buildLogoSection(context),
+                  // 1. Logo et Nom de l'Application
+                  _buildLogoSection(context, primaryColor),
 
-              const SizedBox(height: 60),
+                  const SizedBox(height: 60),
 
-              // 2. Champs de Saisie (Adresse Email)
-              _buildEmailField(),
+                  // 2. Champs de Saisie (Adresse Email)
+                  _buildEmailField(primaryColor, borderColor, fillColor, iconColor),
 
-              const SizedBox(height: 25),
+                  const SizedBox(height: 25),
 
-              // 3. Champs de Saisie (Mot de Passe)
-              _buildPasswordField(),
+                  // 3. Champs de Saisie (Mot de passe)
+                  _buildPasswordField(primaryColor, borderColor, fillColor, iconColor),
 
-              const SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-              // Affichage des erreurs
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: Colors.red, fontSize: 14),
-                  ),
-                ),
+                  // Affichage des erreurs
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red, fontSize: 14),
+                      ),
+                    ),
 
-              // 4. Lien "Mot de passe oublié?"
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => MotPasseOublieA()),
-                    );
-                    // Action pour mot de passe oublié
-                    debugPrint('Mot de passe oublié cliqué.');
-                  },
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero, // Retire le padding par défaut
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'Mot de passe oublié?',
-                    style: TextStyle(
-                      color: _purpleLogoAndButton.withOpacity(0.8),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: _fontFamily,
+                  // 4. Lien "Mot de passe oublié?"
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => MotPasseOublieA()),
+                        );
+                        debugPrint('Mot de passe oublié cliqué.');
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Mot de passe oublié?',
+                        style: TextStyle(
+                          color: primaryColor.withOpacity(0.8),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: _fontFamily,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
 
-              const SizedBox(height: 40),
+                  const SizedBox(height: 40),
 
-              // 5. Bouton "Se Connecter"
-              _buildLoginButton(context),
+                  // 5. Bouton "Se Connecter"
+                  _buildLoginButton(context, primaryColor),
 
-              const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-              // 6. Lien "Pas de compte ? Inscrivez Vous"
-              TextButton(
-                onPressed: () {
-                  // Action pour inscription
-                  debugPrint('Inscription cliquée.');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const RegistrationStepperScreen()),
-                  );
-                },
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  'Pas de compte ? Inscrivez Vous',
-                  style: TextStyle(
-                    color: _purpleLogoAndButton.withOpacity(0.8),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: _fontFamily,
-                    decoration: TextDecoration.underline, // Ajout du soulignement visible sur le PNG
-                    decorationColor: _purpleLogoAndButton.withOpacity(0.8),
+                  // 6. Lien "Pas de compte ? Inscrivez Vous"
+                  TextButton(
+                    onPressed: () {
+                      debugPrint('Inscription cliquée.');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => RegistrationStepperScreen(themeService: widget.themeService),),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'Pas de compte ? Inscrivez Vous',
+                      style: TextStyle(
+                        color: primaryColor.withOpacity(0.8),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: _fontFamily,
+                        decoration: TextDecoration.underline,
+                        decorationColor: primaryColor.withOpacity(0.8),
+                      ),
+                    ),
                   ),
-                ),
-              ),
 
-              // Espace pour la barre de navigation du système (bas de l'écran)
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
-            ],
+                  // Espace pour la barre de navigation du système
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   // Widget pour la section du logo
-  Widget _buildLogoSection(BuildContext context) {
+  Widget _buildLogoSection(BuildContext context, Color primaryColor) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Remplacer avec le chemin de votre image si vous l'avez
         Image.asset(
-          'assets/images/logo.png', // Assurez-vous d'ajouter cette image
-          height: 120, // Hauteur ajustée pour la proportion
+          'assets/images/logo.png',
+          height: 120,
           fit: BoxFit.contain,
         ),
       ],
@@ -161,23 +174,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // Widget pour le champ email
-  Widget _buildEmailField() {
+  Widget _buildEmailField(Color primaryColor, Color borderColor, Color fillColor, Color iconColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Label du champ
-        const Text(
+        Text(
           'Adresse Email',
           style: TextStyle(
-            color: Colors.black,
+            color: primaryColor,
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            fontFamily: 'Roboto',
+            fontFamily: _fontFamily,
           ),
         ),
         const SizedBox(height: 8),
-
-        // Champ de saisie - NOUVEAU STYLE
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
@@ -194,27 +204,27 @@ class _LoginScreenState extends State<LoginScreen> {
             hintText: 'Entré Votre Email',
             hintStyle: const TextStyle(color: Colors.grey),
             filled: true,
-            fillColor: const Color(0xFFF5F5F5),
+            fillColor: fillColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            suffixIcon: const Icon(Icons.email_outlined, color: Color(0xFFA582E5)),
+            suffixIcon: Icon(Icons.email_outlined, color: iconColor),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD1C4E9),
+              borderSide: BorderSide(
+                color: borderColor,
                 width: 1.0,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD1C4E9),
-                width: 1.0,
+              borderSide: BorderSide(
+                color: primaryColor,
+                width: 1.5,
               ),
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD1C4E9),
+              borderSide: BorderSide(
+                color: borderColor,
                 width: 1.0,
               ),
             ),
@@ -229,27 +239,24 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Widget pour le champ mot de passe
-  Widget _buildPasswordField() {
+  // Widget pour le champ mot de passe avec icône œil dynamique
+  Widget _buildPasswordField(Color primaryColor, Color borderColor, Color fillColor, Color iconColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Label du champ
-        const Text(
+        Text(
           'Mot De Passe',
           style: TextStyle(
-            color: Colors.black,
+            color: primaryColor,
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            fontFamily: 'Roboto',
+            fontFamily: _fontFamily,
           ),
         ),
         const SizedBox(height: 8),
-
-        // Champ de saisie - NOUVEAU STYLE
         TextFormField(
           controller: _passwordController,
-          obscureText: true,
+          obscureText: _obscurePassword, // Utilise la variable d'état
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Veuillez entrer votre mot de passe';
@@ -263,27 +270,34 @@ class _LoginScreenState extends State<LoginScreen> {
             hintText: 'Entré Votre Mot de Passe',
             hintStyle: const TextStyle(color: Colors.grey),
             filled: true,
-            fillColor: const Color(0xFFF5F5F5),
+            fillColor: fillColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            suffixIcon: const Icon(Icons.visibility_outlined, color: Color(0xFFA582E5)),
+            suffixIcon: IconButton(
+              icon: Icon(
+                // Change l'icône en fonction de l'état
+                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                color: iconColor,
+              ),
+              onPressed: _togglePasswordVisibility, // Appelle la fonction de bascule
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD1C4E9),
+              borderSide: BorderSide(
+                color: borderColor,
                 width: 1.0,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD1C4E9),
-                width: 1.0,
+              borderSide: BorderSide(
+                color: primaryColor,
+                width: 1.5,
               ),
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD1C4E9),
+              borderSide: BorderSide(
+                color: borderColor,
                 width: 1.0,
               ),
             ),
@@ -298,8 +312,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Widget pour le bouton de connexion - MODIFIÉ
-  Widget _buildLoginButton(BuildContext context) {
+  // Widget pour le bouton de connexion
+  Widget _buildLoginButton(BuildContext context, Color primaryColor) {
     return SizedBox(
       width: double.infinity,
       height: 55,
@@ -318,26 +332,25 @@ class _LoginScreenState extends State<LoginScreen> {
               );
 
               if (response != null && response.token != null) {
-                // Login successful
                 _authService.setAuthToken(response.token!);
-
-                // Récupérer l'ID de l'utilisateur connecté
                 final userId = _authService.currentUserId;
 
                 if (userId != null) {
                   print('✅ Utilisateur connecté avec ID: $userId');
-
-                  // Naviguer vers MainScreen avec l'ID
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => MainScreen(eleveId: userId)),
+                    MaterialPageRoute(builder: (context) => MainScreen(
+                      eleveId: userId,
+                      themeService: _themeService,
+                    )),
                   );
                 } else {
-                  // Fallback si l'ID n'est pas disponible
                   print('⚠️ ID utilisateur non disponible, navigation sans ID');
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => MainScreen()),
+                    MaterialPageRoute(builder: (context) => MainScreen(
+                      themeService: _themeService,
+                    )),
                   );
                 }
               } else {
@@ -358,7 +371,7 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: _purpleLogoAndButton,
+          backgroundColor: primaryColor,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15.0),

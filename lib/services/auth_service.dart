@@ -22,7 +22,7 @@ class AuthService {
 
   AuthService._internal() {
     _dio = Dio();
-    _dio.options.baseUrl = 'http://localhost:8089';
+    _dio.options.baseUrl = 'http://localhost:8080';
     _dio.options.contentType = 'application/json';
   }
 

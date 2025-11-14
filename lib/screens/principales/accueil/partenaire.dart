@@ -1,42 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/services/theme_service.dart';
 
-// --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal
+// --- CONSTANTES DE STYLES ---
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const String _fontFamily = 'Roboto'; // Police principale
 
-class PartnersScreen extends StatelessWidget {
-  const PartnersScreen({super.key});
+class PartnersScreen extends StatefulWidget {
+  final ThemeService? themeService; // Rendez optionnel
+
+  const PartnersScreen({super.key, this.themeService}); // Enlevez required
+
+  @override
+  State<PartnersScreen> createState() => _PartnersScreenState();
+}
+
+class _PartnersScreenState extends State<PartnersScreen> {
+  late ThemeService _themeService;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeService = widget.themeService ?? ThemeService();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: Column(
+            children: [
+              // 1. App Bar personnalisé (avec barre de statut et titre)
+              _buildCustomAppBar(context),
 
-      body: Column(
-        children: [
-          // 1. App Bar personnalisé (avec barre de statut et titre)
-          _buildCustomAppBar(context),
+              // 2. Le corps de la page (Défilement)
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
 
-          // 2. Le corps de la page (Défilement)
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  
-                  // 3. Liste des Partenaires
-                  _buildPartnersList(),
-                  
-                  const SizedBox(height: 80), // Espace final pour la barre de navigation
-                ],
+                      // 3. Liste des Partenaires
+                      _buildPartnersList(primaryColor),
+
+                      const SizedBox(height: 80), // Espace final pour la barre de navigation
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -54,16 +73,15 @@ class PartnersScreen extends StatelessWidget {
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
-                  // Retour à la page précédente (Accueil)
-                  onPressed: () => Navigator.pop(context), 
+                  icon: const Icon(Icons.arrow_back_ios, color: _colorBlack), // Flèche en noir
+                  onPressed: () => Navigator.pop(context),
                 ),
                 const Expanded(
                   child: Center(
                     child: Text(
                       'Partenaires éducatifs',
                       style: TextStyle(
-                        color: _colorBlack,
+                        color: _colorBlack, // Titre en noir
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         fontFamily: _fontFamily,
@@ -79,8 +97,8 @@ class PartnersScreen extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildPartnersList() {
+
+  Widget _buildPartnersList(Color primaryColor) {
     // Données simulées pour les Partenaires
     const List<Map<String, dynamic>> partners = [
       {'name': 'Khan Academy', 'description': 'Des milliers de leçons gratuites sur tous les sujets', 'logo': 'khan_academy_logo.png', 'color': Color(0xFF147A83)},
@@ -88,7 +106,7 @@ class PartnersScreen extends StatelessWidget {
       {'name': 'Busuu', 'description': 'Des milliers de leçon gratuites sur tous les sujets', 'logo': 'busuu_logo.png', 'color': Color(0xFF1456D3)},
       {'name': 'Busuu', 'description': 'Des milliers de leçon gratuites sur tous les sujets', 'logo': 'busuu_logo.png', 'color': Color(0xFF1456D3)},
     ];
-    
+
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -102,6 +120,7 @@ class PartnersScreen extends StatelessWidget {
             description: item['description']!,
             logoPath: 'assets/logos/${item['logo']!}', // Simulé
             logoColor: item['color'] as Color,
+            primaryColor: primaryColor,
           ),
         );
       },
@@ -117,13 +136,15 @@ class _PartnerCard extends StatelessWidget {
   final String name;
   final String description;
   final String logoPath;
-  final Color logoColor; // Couleur principale du logo/carte pour le Khan Academy et Busuu.
+  final Color logoColor;
+  final Color primaryColor;
 
   const _PartnerCard({
     required this.name,
     required this.description,
     required this.logoPath,
     required this.logoColor,
+    required this.primaryColor,
   });
 
   @override
@@ -135,12 +156,16 @@ class _PartnerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: primaryColor.withOpacity(0.1), // Ombre adaptée au thème
             spreadRadius: 2,
             blurRadius: 5,
-            offset: const Offset(0, 3), 
+            offset: const Offset(0, 3),
           ),
         ],
+        border: Border.all(
+          color: primaryColor.withOpacity(0.1), // Bordure subtile adaptée au thème
+          width: 1,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -153,11 +178,9 @@ class _PartnerCard extends StatelessWidget {
               color: logoColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            // Utiliser une icône si l'asset n'est pas disponible, 
-            // ou un Image.asset(logoPath) si les logos sont disponibles.
-            child: Icon(Icons.school, color: logoColor), 
+            child: Icon(Icons.school, color: logoColor),
           ),
-          
+
           const SizedBox(width: 15),
 
           // Détails du Partenaire
@@ -179,8 +202,8 @@ class _PartnerCard extends StatelessWidget {
                   description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.grey,
+                  style: TextStyle(
+                    color: primaryColor.withOpacity(0.7), // Texte adapté au thème
                     fontSize: 13,
                     fontFamily: _fontFamily,
                   ),
@@ -188,14 +211,14 @@ class _PartnerCard extends StatelessWidget {
               ],
             ),
           ),
-          
+
           const SizedBox(width: 10),
 
           // Bouton Visiter
           ElevatedButton(
             onPressed: () {},
             style: ElevatedButton.styleFrom(
-              backgroundColor: _purpleMain,
+              backgroundColor: primaryColor, // Bouton avec couleur du thème
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
