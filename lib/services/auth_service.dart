@@ -22,9 +22,11 @@ class AuthService {
 
   AuthService._internal() {
     _dio = Dio();
-    _dio.options.baseUrl = 'http://localhost:8089';
+    _dio.options.baseUrl = 'http://localhost:8080';
     _dio.options.contentType = 'application/json';
   }
+
+  Dio get dio => _dio; // Getter public pour l'instance Dio
 
   // Getters pour l'utilisateur courant
   Eleve? get currentEleve => _currentEleve;

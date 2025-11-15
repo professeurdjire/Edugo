@@ -9,7 +9,7 @@ class SchoolService {
   SchoolService._internal() {
     _dio = Dio();
     // Pour Chrome (web) - utilisez localhost directement
-    _dio.options.baseUrl = 'http://localhost:8089';
+    _dio.options.baseUrl = 'http://localhost:8080';
     _dio.options.contentType = 'application/json';
     _dio.options.connectTimeout = const Duration(seconds: 10);
     _dio.options.receiveTimeout = const Duration(seconds: 10);
