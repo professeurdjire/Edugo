@@ -3,24 +3,18 @@
 //
 
 import 'package:dio/dio.dart';
-import 'package:openapi/src/auth/auth.dart';
 
-class OAuthInterceptor extends AuthInterceptor {
+class OAuthInterceptor extends Interceptor {
   final Map<String, String> tokens = {};
 
-  @override
   void onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) {
-    final authInfo = getAuthInfo(options, (secure) => secure['type'] == 'oauth' || secure['type'] == 'oauth2');
-    for (final info in authInfo) {
-      final token = tokens[info['name']];
-      if (token != null) {
-        options.headers['Authorization'] = 'Bearer ${token}';
-        break;
-      }
-    }
-    super.onRequest(options, handler);
+    // Si nécessaire, vous pouvez remplir manuellement tokens[...] ailleurs
+    // puis accéder ici via l'URL ou d'autres métadonnées.
+    // Pour l'instant, on laisse simplement passer la requête.
+    handler.next(options);
   }
+
 }

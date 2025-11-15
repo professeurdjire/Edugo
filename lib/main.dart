@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/connexion%20et%20inscriptions/login.dart';
 import 'package:edugo/services/theme_service.dart';
+import 'package:edugo/screens/splash.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -142,7 +143,8 @@ class MyApp extends StatelessWidget {
             fontFamily: 'Roboto',
             useMaterial3: true,
           ),
-          home: LoginScreen(themeService: themeService),
+          home: SplashScreen(themeService: themeService),
+
           debugShowCheckedModeBanner: false,
 
           // Gestion des routes (optionnel)
