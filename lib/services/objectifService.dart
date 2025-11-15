@@ -11,7 +11,7 @@ class ObjectifService {
 
   ObjectifService._internal() {
     _dio = Dio();
-    _dio.options.baseUrl = 'http://localhost:8080/api/api/objectifs';
+    _dio.options.baseUrl = 'http://localhost:8089/api/api/objectifs';
     _dio.options.contentType = 'application/json';
 
     // Ajout automatique du token si l'élève est connecté

@@ -45,6 +45,16 @@ dependencies:
   built_value: '>=8.4.0 <9.0.0'
   built_collection: '>=5.1.1 <6.0.0'
   shared_preferences: ^2.2.2
+  # NOUVELLES DÉPENDANCES POUR LES PDF
+  # ou alternative:
+  # syncfusion_flutter_pdfviewer: ^23.1.44
+  # advance_pdf_viewer: ^2.0.0
+
+  # Dépendances optionnelles pour une meilleure expérience
+  cached_network_image: ^3.3.0  # Pour le caching des images de couverture
+  pull_to_refresh: ^2.0.0  # Pour le refresh indicator amélioré
+  webview_flutter: ^4.4.2
+
 
 dev_dependencies:
   flutter_test:

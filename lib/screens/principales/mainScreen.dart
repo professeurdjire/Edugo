@@ -31,7 +31,7 @@ class _MainScreenState extends State<MainScreen> {
   void _initializePages() {
     _pages = [
       HomeScreen(eleveId: widget.eleveId, themeService: widget.themeService),
-      LibraryScreen(eleveId: widget.eleveId), // Si LibraryScreen n'a pas besoin de themeService
+       LibraryScreen(), // Si LibraryScreen n'a pas besoin de themeService
       ChallengeScreen(eleveId: widget.eleveId), // Si ChallengeScreen n'a pas besoin de themeService
       MatiereListScreen(eleveId: widget.eleveId), // Si MatiereListScreen n'a pas besoin de themeService
       AssistanceScreen(eleveId: widget.eleveId), // Si AssistanceScreen n'a pas besoin de themeService
