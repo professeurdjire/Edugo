@@ -6,7 +6,9 @@ import 'package:edugo/screens/profil/suggestion.dart';
 import 'package:edugo/services/auth_service.dart';
 
 class ProfilScreen extends StatelessWidget {
-  const ProfilScreen({super.key});
+ final int? eleveId; // Ajouter si nécessaire
+
+   const ProfilScreen({super.key, this.eleveId});
 
   @override
   Widget build(BuildContext context) {

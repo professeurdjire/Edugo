@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/principales/mainScreen.dart';
+import 'package:edugo/screens/connexion et inscriptions/login.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/schoolService.dart';
 
@@ -88,7 +89,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
           userPassword: _password,
           userFirstName: _firstName,
           userLastName: _lastName,
-          ville: _city,
+          ville: _city, // ✅ Champ ville bien passé
           telephone: _phone,
           classeId: _classeId,
           niveauId: _niveauId,
@@ -154,7 +155,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
   }
 }
 
-// ------------------ STEP 1 CORRIGÉ ------------------
+// ------------------ STEP 1 ------------------
 class RegistrationStep1 extends StatefulWidget {
   final VoidCallback onNext;
   final Function(String) onFirstNameChanged;
@@ -301,7 +302,7 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
   }
 }
 
-// ------------------ STEP 2 COMPLÈTEMENT CORRIGÉ ------------------
+// ------------------ STEP 2 ------------------
 class RegistrationStep2 extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onPrevious;
@@ -725,7 +726,7 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
   }
 }
 
-// ------------------ STEP 3 AVEC AVATARS PNG ET ENVOI DE L'AVATAR ------------------
+// ------------------ STEP 3 CORRIGÉ ------------------
 class RegistrationStep3 extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onPrevious;
@@ -733,7 +734,7 @@ class RegistrationStep3 extends StatefulWidget {
   final String userPassword;
   final String userFirstName;
   final String userLastName;
-  final String ville;
+  final String ville; // ✅ Champ ville bien défini
   final String telephone;
   final int? classeId;
   final int? niveauId;
@@ -746,7 +747,7 @@ class RegistrationStep3 extends StatefulWidget {
     required this.userPassword,
     required this.userFirstName,
     required this.userLastName,
-    required this.ville,
+    required this.ville, // ✅ Ville bien reçue
     required this.telephone,
     required this.classeId,
     required this.niveauId,
@@ -764,16 +765,9 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
 
   // Liste d'avatars en format PNG
   final List<String> _avatars = [
-    // Style Personas (24 avatars) - PNG
     ...List.generate(24, (index) => 'https://api.dicebear.com/6.x/personas/png?seed=personas${index + 1}'),
-
-    // Style Adventurer (24 avatars) - PNG
     ...List.generate(24, (index) => 'https://api.dicebear.com/6.x/adventurer/png?seed=adventurer${index + 1}'),
-
-    // Style Avataaars (24 avatars) - PNG
     ...List.generate(24, (index) => 'https://api.dicebear.com/6.x/avataaars/png?seed=avataaars${index + 1}'),
-
-    // Style Micah (24 avatars) - PNG
     ...List.generate(24, (index) => 'https://api.dicebear.com/6.x/micah/png?seed=micah${index + 1}'),
   ];
 
@@ -791,32 +785,35 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
     try {
       // Récupérer l'URL de l'avatar sélectionné
       final String selectedAvatarUrl = _avatars[_selectedAvatarIndex!];
-      print(' Avatar sélectionné: $selectedAvatarUrl');
+      print('🖼️ Avatar sélectionné: $selectedAvatarUrl');
 
       final response = await _authService.register(
         email: widget.userEmail,
         motDePasse: widget.userPassword,
         nom: widget.userLastName,
         prenom: widget.userFirstName,
-        ville: widget.ville,
+        ville: widget.ville, // ✅ Ville bien envoyée
         classeId: widget.classeId!,
         telephone: int.parse(widget.telephone),
         niveauId: widget.niveauId!,
-        photoProfil: selectedAvatarUrl, // Envoi de l'URL dans photoProfil
+        photoProfil: selectedAvatarUrl,
       );
 
       if (response != null && response.token != null) {
         _authService.setAuthToken(response.token!);
-        print(' Inscription réussie avec avatar');
-        Navigator.pushReplacement(
+        print('✅ Inscription réussie avec avatar');
+
+        // ✅ Redirection vers la page de connexion après inscription réussie
+        Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const MainScreen())
+          MaterialPageRoute(builder: (_) => LoginScreen()), // Remplacez par votre écran de connexion
+          (route) => false, // Supprime toutes les routes précédentes
         );
       } else {
         setState(() => _errorMessage = 'Erreur lors de l\'inscription. Veuillez réessayer.');
       }
     } catch (e) {
-      print(' Erreur inscription: $e');
+      print('❌ Erreur inscription: $e');
       setState(() => _errorMessage = 'Une erreur est survenue: $e');
     } finally {
       setState(() => _isLoading = false);
@@ -861,18 +858,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
             ),
           if (_errorMessage != null) const SizedBox(height: 20),
 
-          // Indicateur de sélection
-          if (_selectedAvatarIndex != null)
-            Container(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                'Avatar ${_selectedAvatarIndex! + 1} sélectionné',
-                style: TextStyle(
-                  color: _purpleMain,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+          // ❌ SUPPRIMÉ : Le message "Avatar X sélectionné" a été retiré
 
           // Grille d'avatars avec défilement horizontal
           Expanded(
@@ -880,7 +866,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // 2 lignes pour le défilement horizontal
+                crossAxisCount: 2,
                 crossAxisSpacing: 15,
                 mainAxisSpacing: 15,
                 childAspectRatio: 1.0,
@@ -893,7 +879,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                   onTap: () {
                     setState(() {
                       _selectedAvatarIndex = index;
-                      _errorMessage = null; // Effacer l'erreur si avatar sélectionné
+                      _errorMessage = null;
                     });
                     print('👤 Avatar $index sélectionné: ${_avatars[index]}');
                   },

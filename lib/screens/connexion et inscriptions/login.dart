@@ -298,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Widget pour le bouton de connexion
+  // Widget pour le bouton de connexion - MODIFIÉ
   Widget _buildLoginButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
@@ -310,26 +310,43 @@ class _LoginScreenState extends State<LoginScreen> {
               _isLoading = true;
               _errorMessage = null;
             });
-            
+
             try {
               final response = await _authService.login(
                 _emailController.text.trim(),
                 _passwordController.text,
               );
-              
+
               if (response != null && response.token != null) {
-                // Login successful, save token and navigate to main screen
+                // Login successful
                 _authService.setAuthToken(response.token!);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => MainScreen()),
-                );
+
+                // Récupérer l'ID de l'utilisateur connecté
+                final userId = _authService.currentUserId;
+
+                if (userId != null) {
+                  print('✅ Utilisateur connecté avec ID: $userId');
+
+                  // Naviguer vers MainScreen avec l'ID
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => MainScreen(eleveId: userId)),
+                  );
+                } else {
+                  // Fallback si l'ID n'est pas disponible
+                  print('⚠️ ID utilisateur non disponible, navigation sans ID');
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => MainScreen()),
+                  );
+                }
               } else {
                 setState(() {
                   _errorMessage = 'Identifiants incorrects. Veuillez réessayer.';
                 });
               }
             } catch (e) {
+              print('❌ Erreur de connexion: $e');
               setState(() {
                 _errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
               });
@@ -344,7 +361,7 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: _purpleLogoAndButton,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0), // Coins arrondis
+            borderRadius: BorderRadius.circular(15.0),
           ),
           padding: const EdgeInsets.symmetric(vertical: 15),
         ),

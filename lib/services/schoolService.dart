@@ -9,7 +9,7 @@ class SchoolService {
   SchoolService._internal() {
     _dio = Dio();
     // Pour Chrome (web) - utilisez localhost directement
-    _dio.options.baseUrl = 'http://localhost:8080';
+    _dio.options.baseUrl = 'http://localhost:8089';
     _dio.options.contentType = 'application/json';
     _dio.options.connectTimeout = const Duration(seconds: 10);
     _dio.options.receiveTimeout = const Duration(seconds: 10);
@@ -57,7 +57,7 @@ class SchoolService {
   Future<List<Map<String, dynamic>>> getClasses(int niveauId) async {
     try {
       print('Appel API: GET /api/classes/niveau/$niveauId');
-      final response = await _dio.get('/api/api//classes/niveau/$niveauId'); // <- correction ici
+      final response = await _dio.get('/api/api/classes/niveau/$niveauId'); // <- correction ici
       print('Réponse classes: ${response.statusCode}');
       print('Données classes: ${response.data}');
 
