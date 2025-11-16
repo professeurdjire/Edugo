@@ -53,7 +53,10 @@ dependencies:
   # Dépendances optionnelles pour une meilleure expérience
   cached_network_image: ^3.3.0  # Pour le caching des images de couverture
   pull_to_refresh: ^2.0.0  # Pour le refresh indicator amélioré
-  webview_flutter: ^4.4.2
+  webview_flutter: ^4.1.0
+  #webview_flutter_android: ^2.8.0  # À décommenter si nécessaire
+  #webview_flutter_wkwebview: ^2.7.0  # À décommenter si nécessaire
+
 
 
 dev_dependencies:

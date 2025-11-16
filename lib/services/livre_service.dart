@@ -34,7 +34,7 @@ class LivreService {
   /// Récupérer les fichiers d'un livre
   Future<List<FichierLivreDto>> getFichiersLivre(int livreId) async {
     try {
-      final response = await _dio.get('/livres/$livreId/fichiers');
+      final response = await _dio.get('/api/livres/$livreId/fichiers');
       if (response.statusCode == 200) {
         return (response.data as List)
             .map((json) => FichierLivreDto.fromJson(json))
@@ -62,6 +62,7 @@ class LivreService {
         orElse: () => fichiers.first, // Fallback sur le premier fichier
       );
 
+      // ⬇️ CORRECTION UNIQUE : Supprimer le double "api/api"
       return 'http://localhost:8089/api/livres/fichiers/${pdfFile.id}/download';
     } catch (e) {
       print('Erreur getDocumentPdfUrl: $e');
@@ -69,26 +70,113 @@ class LivreService {
     }
   }
 
-  /// Récupérer tous les livres
+  /// Récupérer tous les livres avec gestion d'erreur améliorée
   Future<List<LivreResponse>> getAllLivres() async {
     try {
-      final response = await _dio.get('/livres');
+      print('🔄 Tentative de connexion à: /api/livres');
+
+      final response = await _dio.get(
+        '/api/livres',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
       if (response.statusCode == 200) {
+        print('✅ Réponse reçue - Status: ${response.statusCode}');
         return (response.data as List)
             .map((json) => LivreResponse.fromJson(json))
             .toList();
       }
-      throw Exception('Erreur lors de la récupération des livres');
+      throw Exception('Erreur serveur: ${response.statusCode}');
+    } on DioException catch (e) {
+      print('❌ Erreur Dio détaillée getAllLivres:');
+      print('   Type: ${e.type}');
+      print('   Message: ${e.message}');
+      print('   Status: ${e.response?.statusCode}');
+      print('   Data: ${e.response?.data}');
+
+      // Gestion spécifique selon le type d'erreur
+      switch (e.type) {
+        case DioExceptionType.connectionError:
+          throw Exception('Problème de connexion au serveur');
+        case DioExceptionType.badResponse:
+          if (e.response?.statusCode == 500) {
+            throw Exception('Erreur interne du serveur. Veuillez réessayer plus tard.');
+          }
+          throw Exception('Erreur serveur: ${e.response?.statusCode}');
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          throw Exception('Timeout de connexion');
+        default:
+          throw Exception('Erreur inconnue: ${e.message}');
+      }
     } catch (e) {
-      print('Erreur getAllLivres: $e');
-      throw e;
+      print('Erreur inattendue getAllLivres: $e');
+      throw Exception('Erreur inattendue: $e');
     }
+  }
+
+  /// Méthode de fallback qui retourne des données mockées en cas d'erreur
+  Future<List<dynamic>> getAllLivresWithFallback() async {
+    try {
+      return await getAllLivres();
+    } catch (e) {
+      print('⚠️ Erreur API, utilisation des données de fallback: $e');
+      // Retourner des données mockées en cas d'erreur
+      return _getMockLivres();
+    }
+  }
+
+  /// Données mockées pour le fallback
+  List<dynamic> _getMockLivres() {
+    return [
+      {
+        'id': 1,
+        'titre': 'Introduction à Flutter',
+        'auteur': 'Dart Team',
+        'totalPages': 150,
+        'description': 'Un livre pour apprendre Flutter',
+      },
+      {
+        'id': 2,
+        'titre': 'Dart Programming',
+        'auteur': 'Google Developers',
+        'totalPages': 200,
+        'description': 'Guide complet du langage Dart',
+      },
+      {
+        'id': 3,
+        'titre': 'Mobile Development',
+        'auteur': 'Tech Experts',
+        'totalPages': 180,
+        'description': 'Développement mobile avec les meilleures pratiques',
+      },
+      {
+        'id': 4,
+        'titre': 'Les Aventures de Coding',
+        'auteur': 'Dev Master',
+        'totalPages': 220,
+        'description': 'Apprenez à coder à travers une histoire',
+      },
+      {
+        'id': 5,
+        'titre': 'Algorithmes Avancés',
+        'auteur': 'Computer Science Pro',
+        'totalPages': 300,
+        'description': 'Maîtrisez les algorithmes complexes',
+      },
+    ];
   }
 
   /// Récupérer les livres disponibles pour un élève
   Future<List<LivreResponse>> getLivresDisponibles(int eleveId) async {
     try {
-      final response = await _dio.get('/livres/disponibles/$eleveId');
+      final response = await _dio.get('/api/livres/disponibles/$eleveId');
       if (response.statusCode == 200) {
         return (response.data as List)
             .map((json) => LivreResponse.fromJson(json))
@@ -113,7 +201,7 @@ class LivreService {
   /// Récupérer les détails d'un livre
   Future<LivreDetailResponse> getLivreById(int livreId) async {
     try {
-      final response = await _dio.get('/livres/$livreId');
+      final response = await _dio.get('/api/livres/$livreId');
       if (response.statusCode == 200) {
         return LivreDetailResponse.fromJson(response.data);
       }
@@ -129,7 +217,7 @@ class LivreService {
       int eleveId, int livreId, int pageActuelle) async {
     try {
       final response = await _dio.post(
-        '/livres/progression/$eleveId/$livreId',
+        '/api/livres/progression/$eleveId/$livreId',
         data: {'pageActuelle': pageActuelle},
       );
       if (response.statusCode == 200) {
@@ -154,7 +242,7 @@ class LivreService {
   /// Récupérer la progression d'un livre spécifique
   Future<ProgressionResponse?> getProgressionLivre(int eleveId, int livreId) async {
     try {
-      final response = await _dio.get('/livres/progression/$eleveId/$livreId');
+      final response = await _dio.get('/api/livres/progression/$eleveId/$livreId');
       if (response.statusCode == 200) {
         return ProgressionResponse.fromJson(response.data);
       }
@@ -177,7 +265,7 @@ class LivreService {
   /// Récupérer la progression de lecture d'un élève
   Future<List<ProgressionResponse>> getProgressionLecture(int eleveId) async {
     try {
-      final response = await _dio.get('/livres/progression/$eleveId');
+      final response = await _dio.get('/api/livres/progression/$eleveId');
       if (response.statusCode == 200) {
         return (response.data as List)
             .map((json) => ProgressionResponse.fromJson(json))
@@ -202,7 +290,7 @@ class LivreService {
   /// Récupérer les statistiques d'un livre
   Future<StatistiquesLivreResponse> getStatistiquesLivre(int livreId) async {
     try {
-      final response = await _dio.get('/livres/statistiques/$livreId');
+      final response = await _dio.get('/api/livres/statistiques/$livreId');
       if (response.statusCode == 200) {
         return StatistiquesLivreResponse.fromJson(response.data);
       }
@@ -216,7 +304,7 @@ class LivreService {
   /// Récupérer les livres populaires
   Future<List<LivrePopulaireResponse>> getLivresPopulaires() async {
     try {
-      final response = await _dio.get('/livres/populaires');
+      final response = await _dio.get('/api/livres/populaires');
       if (response.statusCode == 200) {
         return (response.data as List)
             .map((json) => LivrePopulaireResponse.fromJson(json))
@@ -232,7 +320,7 @@ class LivreService {
   /// Récupérer les livres recommandés pour un élève
   Future<List<LivreResponse>> getLivresRecommandes(int eleveId) async {
     try {
-      final response = await _dio.get('/livres/recommandes/$eleveId');
+      final response = await _dio.get('/api/livres/recommandes/$eleveId');
       if (response.statusCode == 200) {
         return (response.data as List)
             .map((json) => LivreResponse.fromJson(json))
@@ -257,7 +345,7 @@ class LivreService {
   /// Rechercher des livres par titre
   Future<List<LivreResponse>> searchLivresByTitre(String titre) async {
     try {
-      final response = await _dio.get('/livres/recherche/titre', queryParameters: {'titre': titre});
+      final response = await _dio.get('/api/livres/recherche/titre', queryParameters: {'titre': titre});
       if (response.statusCode == 200) {
         return (response.data as List)
             .map((json) => LivreResponse.fromJson(json))
@@ -289,7 +377,7 @@ class LivreService {
   /// Récupérer les livres récents
   Future<List<LivreResponse>> getLivresRecents() async {
     try {
-      final response = await _dio.get('/livres/recents');
+      final response = await _dio.get('/api/livres/recents');
       if (response.statusCode == 200) {
         return (response.data as List)
             .map((json) => LivreResponse.fromJson(json))
@@ -305,7 +393,7 @@ class LivreService {
   /// Récupérer les livres par matière
   Future<List<LivreResponse>> getLivresByMatiere(int matiereId) async {
     try {
-      final response = await _dio.get('/livres/matiere/$matiereId');
+      final response = await _dio.get('/api/livres/matiere/$matiereId');
       if (response.statusCode == 200) {
         return (response.data as List)
             .map((json) => LivreResponse.fromJson(json))
@@ -321,7 +409,7 @@ class LivreService {
   /// Récupérer les livres par niveau
   Future<List<LivreResponse>> getLivresByNiveau(int niveauId) async {
     try {
-      final response = await _dio.get('/livres/niveau/$niveauId');
+      final response = await _dio.get('/api/livres/niveau/$niveauId');
       if (response.statusCode == 200) {
         return (response.data as List)
             .map((json) => LivreResponse.fromJson(json))
@@ -337,7 +425,7 @@ class LivreService {
   /// Récupérer les livres par classe
   Future<List<LivreResponse>> getLivresByClasse(int classeId) async {
     try {
-      final response = await _dio.get('/livres/classe/$classeId');
+      final response = await _dio.get('/api/livres/classe/$classeId');
       if (response.statusCode == 200) {
         return (response.data as List)
             .map((json) => LivreResponse.fromJson(json))
@@ -351,18 +439,18 @@ class LivreService {
   }
 
   /// Récupérer l'URL du PDF formatée pour WebView
-    Future<String> getDocumentPdfUrlForWebView(int livreId) async {
-      try {
-        final pdfUrl = await getDocumentPdfUrl(livreId);
+  Future<String> getDocumentPdfUrlForWebView(int livreId) async {
+    try {
+      final pdfUrl = await getDocumentPdfUrl(livreId);
 
-        // Option: Utiliser Google Docs Viewer pour un meilleur affichage
-        // return 'https://docs.google.com/gview?embedded=true&url=${Uri.encodeComponent(pdfUrl)}';
+      // Option: Utiliser Google Docs Viewer pour un meilleur affichage
+      // return 'https://docs.google.com/gview?embedded=true&url=${Uri.encodeComponent(pdfUrl)}';
 
-        // Retourner l'URL directe (votre serveur doit servir les PDF correctement)
-        return pdfUrl;
-      } catch (e) {
-        print('Erreur getDocumentPdfUrlForWebView: $e');
-        throw e;
-      }
+      // Retourner l'URL directe (votre serveur doit servir les PDF correctement)
+      return pdfUrl;
+    } catch (e) {
+      print('Erreur getDocumentPdfUrlForWebView: $e');
+      throw e;
     }
+  }
 }

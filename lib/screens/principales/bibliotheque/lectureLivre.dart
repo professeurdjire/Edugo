@@ -57,12 +57,30 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
       // Charger l'URL du PDF
       _pdfUrl = await _livreService.getDocumentPdfUrl(widget.livreId);
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Charger la progression existante
-      await _loadProgression();
+      // Initialiser le contrôleur WebView
+      _webViewController = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..loadRequest(Uri.parse(_pdfUrl))
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onPageStarted: (String url) {
+              print('Chargement du PDF démarré: $url');
+            },
+            onPageFinished: (String url) {
+              print('Chargement du PDF terminé: $url');
+              setState(() {
+                _isLoading = false;
+              });
+            },
+            onWebResourceError: (WebResourceError error) {
+              print('Erreur WebView: ${error.description}');
+              setState(() {
+                _errorMessage = 'Erreur de chargement: ${error.description}';
+                _isLoading = false;
+              });
+            },
+          ),
+        );
 
     } catch (e) {
       setState(() {
@@ -77,8 +95,6 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
       final progression = await _livreService.getProgressionForCurrentUser(widget.livreId);
       if (progression != null && progression.pageActuelle != null) {
         print('Progression chargée: page ${progression.pageActuelle}');
-        // Avec WebView, on ne peut pas facilement sauter à une page spécifique
-        // On affiche simplement un message
       }
     } catch (e) {
       print('Erreur lors du chargement de la progression: $e');
@@ -87,10 +103,7 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
 
   Future<void> _saveProgression() async {
     try {
-      // Avec WebView, on sauvegarde la progression quand l'utilisateur quitte
-      // ou on utilise une valeur par défaut
       final currentPage = 1; // À adapter selon votre logique
-
       await _livreService.updateProgressionForCurrentUser(
         widget.livreId,
         currentPage
@@ -104,14 +117,12 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
     setState(() {
       _isPlayingAudio = !_isPlayingAudio;
     });
-    // Intégration de la lecture audio si nécessaire
   }
 
   void _markAsCompleted() {
     setState(() {
       _showCompletionOverlay = true;
     });
-    // Sauvegarder comme terminé
     _livreService.updateProgressionForCurrentUser(widget.livreId, widget.totalPages);
   }
 
@@ -429,7 +440,11 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
 
                   Expanded(
                     child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFA885D8)),
+                            ),
+                          )
                         : _errorMessage.isNotEmpty
                             ? Center(
                                 child: Column(
@@ -441,14 +456,17 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
                                       color: Colors.red[300],
                                     ),
                                     const SizedBox(height: 16),
-                                    Text(
-                                      _errorMessage,
-                                      style: const TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 16,
-                                        fontFamily: 'Roboto',
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                                      child: Text(
+                                        _errorMessage,
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 16,
+                                          fontFamily: 'Roboto',
+                                        ),
+                                        textAlign: TextAlign.center,
                                       ),
-                                      textAlign: TextAlign.center,
                                     ),
                                     const SizedBox(height: 16),
                                     ElevatedButton(
@@ -462,21 +480,7 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
                                   ],
                                 ),
                               )
-                            : WebView(
-                                initialUrl: _pdfUrl,
-                                javascriptMode: JavascriptMode.unrestricted,
-                                onWebViewCreated: (WebViewController webViewController) {
-                                  _webViewController = webViewController;
-                                },
-                                onPageStarted: (String url) {
-                                  print('Chargement du PDF démarré: $url');
-                                },
-                                onPageFinished: (String url) {
-                                  print('Chargement du PDF terminé: $url');
-                                },
-                                gestureNavigationEnabled: true,
-                                allowsInlineMediaPlayback: true,
-                              ),
+                            : WebViewWidget(controller: _webViewController),
                   ),
                 ],
               ),
@@ -491,7 +495,7 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
 
   @override
   void dispose() {
-    _saveProgression(); // Sauvegarder la progression à la fermeture
+    _saveProgression();
     super.dispose();
   }
 }

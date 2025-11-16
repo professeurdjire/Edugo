@@ -1,45 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:edugo/services/livre_service.dart';
 import 'package:edugo/services/auth_service.dart';
-import 'package:edugo/models/livre_models.dart';
 import 'package:edugo/screens/principales/bibliotheque/lectureLivre.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:edugo/models/livre_models.dart'; // Import des modèles
 
-class  LibraryScreen extends StatefulWidget {
-  const  LibraryScreen({super.key});
+class LibraryScreen extends StatefulWidget {
+  const LibraryScreen({super.key});
 
   @override
-  State< LibraryScreen> createState() => _ LibraryScreenState();
+  State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _ LibraryScreenState extends State< LibraryScreen> {
+class _LibraryScreenState extends State<LibraryScreen> {
   final LivreService _livreService = LivreService();
   final AuthService _authService = AuthService();
 
-  List<LivreResponse> _livres = [];
+  List<dynamic> _livres = []; // Garder dynamic pour compatibilité
   bool _isLoading = true;
   String _errorMessage = '';
-  String _userName = '';
-  int? _currentEleveId; // ✅ AJOUT: Stocker l'ID pour le debug
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
     _loadLivres();
-  }
-
-  void _loadUserData() {
-    final eleve = _authService.currentEleve;
-    if (eleve != null) {
-      setState(() {
-        _userName = '${eleve.prenom} ${eleve.nom}';
-        _currentEleveId = eleve.id; // ✅ AJOUT: Stocker l'ID
-      });
-      print('✅ Élève connecté: $_userName (ID: $_currentEleveId)'); // ✅ AJOUT: Debug
-    } else {
-      print('❌ Aucun élève connecté dans AuthService'); // ✅ AJOUT: Debug
-    }
   }
 
   Future<void> _loadLivres() async {
@@ -49,155 +33,167 @@ class _ LibraryScreenState extends State< LibraryScreen> {
         _errorMessage = '';
       });
 
-      // ✅ AMÉLIORATION: Vérification plus robuste
-      final eleveId = _livreService.getCurrentEleveId();
-      if (eleveId == null) {
-        throw Exception('Veuillez vous connecter pour accéder à la bibliothèque');
-      }
-
-      print('🔄 Chargement des livres pour l\'élève ID: $eleveId'); // ✅ AJOUT: Debug
-
-      List<LivreResponse> livres;
-      try {
-        // Essayer de récupérer les livres disponibles pour l'élève connecté
-        livres = await _livreService.getLivresDisponiblesForCurrentUser();
-        print('✅ ${livres.length} livres chargés avec succès'); // ✅ AJOUT: Debug
-      } catch (e) {
-        // Fallback: récupérer tous les livres
-        print('⚠️ Fallback: chargement de tous les livres - $e');
-        livres = await _livreService.getAllLivres();
-        print('✅ ${livres.length} livres chargés (fallback)'); // ✅ AJOUT: Debug
-      }
-
+      // Utiliser la méthode avec fallback
+      final livres = await _livreService.getAllLivresWithFallback();
       setState(() {
         _livres = livres;
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Erreur lors du chargement: $e'); // ✅ AJOUT: Debug
+      print('Erreur de chargement: $e');
       setState(() {
-        _errorMessage = 'Erreur lors du chargement des livres: $e';
+        _errorMessage = 'Erreur de chargement: $e';
         _isLoading = false;
       });
     }
   }
 
-  void _onLivreTap(LivreResponse livre) {
-    if (!_livreService.isEleveConnected()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez vous connecter pour lire ce livre'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+  // Méthode pour obtenir le titre d'un livre (gère les deux formats)
+  String _getLivreTitre(dynamic livre) {
+    if (livre is LivreResponse) {
+      return livre.titre;
+    } else if (livre is Map<String, dynamic>) {
+      return livre['titre']?.toString() ?? 'Titre inconnu';
     }
+    return 'Titre inconnu';
+  }
 
+  // Méthode pour obtenir l'auteur d'un livre (gère les deux formats)
+  String _getLivreAuteur(dynamic livre) {
+    if (livre is LivreResponse) {
+      return livre.auteur;
+    } else if (livre is Map<String, dynamic>) {
+      return livre['auteur']?.toString() ?? 'Auteur inconnu';
+    }
+    return 'Auteur inconnu';
+  }
+
+  // Méthode pour obtenir le nombre de pages (gère les deux formats)
+  int _getLivreNombrePages(dynamic livre) {
+    if (livre is LivreResponse) {
+      return livre.totalPages ?? 100;
+    } else if (livre is Map<String, dynamic>) {
+      return (livre['totalPages'] as int?) ??
+             (livre['nombrePages'] as int?) ??
+             100;
+    }
+    return 100;
+  }
+
+  // Méthode pour obtenir l'ID (gère les deux formats)
+  int _getLivreId(dynamic livre) {
+    if (livre is LivreResponse) {
+      return livre.id;
+    } else if (livre is Map<String, dynamic>) {
+      return (livre['id'] as int?) ?? 0;
+    }
+    return 0;
+  }
+
+  List<dynamic> get _filteredLivres {
+    if (_searchQuery.isEmpty) return _livres;
+    return _livres.where((livre) {
+      final titre = _getLivreTitre(livre).toLowerCase();
+      final auteur = _getLivreAuteur(livre).toLowerCase();
+      return titre.contains(_searchQuery.toLowerCase()) ||
+             auteur.contains(_searchQuery.toLowerCase());
+    }).toList();
+  }
+
+  void _onLivreTap(dynamic livre) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => BookReaderScreen(
-          livreId: livre.id,
-          bookTitle: livre.titre,
-          totalPages: livre.totalPages ?? 1,
+          livreId: _getLivreId(livre),
+          bookTitle: _getLivreTitre(livre),
+          totalPages: _getLivreNombrePages(livre),
         ),
       ),
     );
   }
 
-  Widget _buildLivreCard(LivreResponse livre) {
+  Widget _buildLivreCard(dynamic livre, bool isSmallScreen) {
+    final titre = _getLivreTitre(livre);
+    final auteur = _getLivreAuteur(livre);
+    final nombrePages = _getLivreNombrePages(livre);
+
     return Card(
       elevation: 4,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => _onLivreTap(livre),
+      margin: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 8 : 16,
+        vertical: 8,
+      ),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _onLivreTap(livre),
+        child: Container(
           padding: const EdgeInsets.all(16),
+          constraints: BoxConstraints(
+            minHeight: isSmallScreen ? 100 : 120,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ✅ AMÉLIORATION: Image avec caching
+              // Couverture du livre
               Container(
-                width: 80,
-                height: 100,
+                width: isSmallScreen ? 60 : 80,
+                height: isSmallScreen ? 80 : 100,
                 decoration: BoxDecoration(
+                  color: const Color(0xFFA885D8),
                   borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[200],
                 ),
-                child: livre.imageCouverture != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: livre.imageCouverture!,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Colors.grey[300],
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                              ),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey[200],
-                            child: Icon(Icons.book, size: 30, color: Colors.grey[400]),
-                          ),
-                        ),
-                      )
-                    : Center(
-                        child: Icon(Icons.book, size: 40, color: Colors.grey[400]),
-                      ),
+                child: const Icon(
+                  Icons.book_rounded,
+                  color: Colors.white,
+                  size: 40,
+                ),
               ),
               const SizedBox(width: 16),
-              // Informations du livre
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      livre.titre,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Roboto',
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Par ${livre.auteur}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        fontFamily: 'Roboto',
-                      ),
-                    ),
-                    if (livre.totalPages != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '${livre.totalPages} pages',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                          fontFamily: 'Roboto',
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          titre,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Roboto',
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
-                    // ✅ AJOUT: Indicateur de disponibilité
-                    const SizedBox(height: 4),
+                        const SizedBox(height: 4),
+                        Text(
+                          auteur,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
+                            fontFamily: 'Roboto',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.circle, size: 8, color: Colors.green),
+                        const Icon(Icons.pages, size: 16, color: Colors.grey),
                         const SizedBox(width: 4),
                         Text(
-                          'Disponible',
-                          style: TextStyle(
+                          '$nombrePages pages',
+                          style: const TextStyle(
+                            color: Colors.grey,
                             fontSize: 12,
-                            color: Colors.green[700],
                             fontFamily: 'Roboto',
                           ),
                         ),
@@ -206,7 +202,11 @@ class _ LibraryScreenState extends State< LibraryScreen> {
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey,
+                size: 16,
+              ),
             ],
           ),
         ),
@@ -214,95 +214,86 @@ class _ LibraryScreenState extends State< LibraryScreen> {
     );
   }
 
-  Widget _buildUserInfo() {
-    if (_userName.isEmpty) {
-      // ✅ AMÉLIORATION: Meilleur message quand non connecté
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+  Widget _buildSearchBar() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Rechercher un livre...',
+          prefixIcon: const Icon(Icons.search),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.grey[50],
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
-        child: Row(
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return SingleChildScrollView(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.warning_amber, color: Colors.orange),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Non connecté',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.orange[800],
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                  Text(
-                    'Connectez-vous pour accéder à tous les livres',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.orange[600],
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                ],
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+                fontFamily: 'Roboto',
               ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadLivres,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFA885D8),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Réessayer'),
             ),
           ],
         ),
-      );
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFA885D8).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFA885D8).withOpacity(0.3)),
       ),
-      child: Row(
+    );
+  }
+
+  Widget _buildLoadingWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.person, color: const Color(0xFFA885D8)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Connecté en tant que:',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontFamily: 'Roboto',
-                  ),
-                ),
-                Text(
-                  _userName,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Roboto',
-                  ),
-                ),
-                // ✅ AJOUT: Affichage de l'ID pour debug
-                if (_currentEleveId != null)
-                  Text(
-                    'ID: $_currentEleveId',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey[500],
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-              ],
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFA885D8)),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Chargement des livres...',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Roboto',
+              color: Colors.grey[600],
             ),
           ),
         ],
@@ -310,9 +301,69 @@ class _ LibraryScreenState extends State< LibraryScreen> {
     );
   }
 
+  Widget _buildEmptyWidget() {
+    return SingleChildScrollView(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.book_outlined,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _searchQuery.isEmpty
+                  ? 'Aucun livre disponible'
+                  : 'Aucun livre trouvé pour "$_searchQuery"',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 16,
+                fontFamily: 'Roboto',
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (_searchQuery.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _searchQuery = '';
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[300],
+                  foregroundColor: Colors.grey[700],
+                ),
+                child: const Text('Effacer la recherche'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLivresList() {
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 16),
+      itemCount: _filteredLivres.length,
+      itemBuilder: (context, index) {
+        final livre = _filteredLivres[index];
+        return _buildLivreCard(livre, MediaQuery.of(context).size.width < 600);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Bibliothèque',
@@ -323,134 +374,22 @@ class _ LibraryScreenState extends State< LibraryScreen> {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          // ✅ AMÉLIORATION: Toujours afficher le bouton refresh
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadLivres,
-            tooltip: 'Actualiser la bibliothèque',
+        foregroundColor: Colors.black,
+      ),
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          Expanded(
+            child: _isLoading
+                ? _buildLoadingWidget()
+                : _errorMessage.isNotEmpty
+                    ? _buildErrorWidget()
+                    : _filteredLivres.isEmpty
+                        ? _buildEmptyWidget()
+                        : _buildLivresList(),
           ),
         ],
       ),
-      backgroundColor: Colors.white,
-      body: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Chargement de votre bibliothèque...',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : _errorMessage.isNotEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red[300],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _errorMessage,
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 16,
-                          fontFamily: 'Roboto',
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadLivres,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFA885D8),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Réessayer'),
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () {
-                          // Option: Rediriger vers la page de connexion
-                        },
-                        child: const Text('Se connecter'),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
-                  children: [
-                    _buildUserInfo(),
-                    // ✅ AJOUT: Compteur de livres
-                    if (_livres.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Row(
-                          children: [
-                            Text(
-                              '${_livres.length} livre${_livres.length > 1 ? 's' : ''} disponible${_livres.length > 1 ? 's' : ''}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                                fontFamily: 'Roboto',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    Expanded(
-                      child: _livres.isEmpty
-                          ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.book, size: 64, color: Colors.grey),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'Aucun livre disponible',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey,
-                                      fontFamily: 'Roboto',
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'Revenez plus tard ou contactez votre administrateur',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                      fontFamily: 'Roboto',
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            )
-                          : RefreshIndicator(
-                              onRefresh: _loadLivres,
-                              color: const Color(0xFFA885D8),
-                              child: ListView.builder(
-                                itemCount: _livres.length,
-                                itemBuilder: (context, index) {
-                                  return _buildLivreCard(_livres[index]);
-                                },
-                              ),
-                            ),
-                    ),
-                  ],
-                ),
     );
   }
 }

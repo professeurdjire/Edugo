@@ -1,15 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // AJOUT IMPORT MANQUANT
 import 'package:edugo/screens/connexion%20et%20inscriptions/login.dart';
 import 'package:edugo/services/theme_service.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+// Pour Android
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+// Pour iOS
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialisation de WebView
+  _initializeWebView();
 
   // Initialiser le service de thème
   final themeService = ThemeService();
   await themeService.initialize();
 
   runApp(MyApp(themeService: themeService));
+}
+
+void _initializeWebView() {
+  // Initialisation conditionnelle selon la plateforme
+  if (WebViewPlatform.instance == null) {
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        WebViewPlatform.instance = WebKitWebViewPlatform();
+        break;
+      case TargetPlatform.android:
+        WebViewPlatform.instance = AndroidWebViewPlatform();
+        break;
+      default:
+        // Pour les autres plateformes, on utilise l'implémentation par défaut
+        break;
+    }
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -151,7 +177,7 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (context) {
                 // Ici vous pouvez retourner les différents écrans de votre app
-                return  LoginScreen(themeService: themeService);
+                return LoginScreen(themeService: themeService);
               },
             );
           },
