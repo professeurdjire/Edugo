@@ -8,15 +8,8 @@ class SuggestionService {
   late Dio _dio;
 
   SuggestionService._internal() {
-    _dio = Dio();
-    _dio.options.baseUrl = 'http://localhost:8080/api/api/suggestions';
-    _dio.options.contentType = 'application/json';
-
-    // Ajout automatique du token si l'élève est connecté
-    final token = AuthService().dio.options.headers['Authorization'];
-    if (token != null) {
-      _dio.options.headers['Authorization'] = token;
-    }
+    // Use the shared Dio instance from AuthService to ensure consistent base URL and headers
+    _dio = AuthService().dio;
   }
 
   /// Envoyer une suggestion

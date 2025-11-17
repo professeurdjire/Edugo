@@ -21,7 +21,7 @@ class EleveService {
   // Récupérer le profil d'un élève par ID
   Future<Eleve?> getEleveProfile(int eleveId) async {
     try {
-      final response = await _dio.get('/api/api/eleve/profil/$eleveId');
+      final response = await _dio.get('/api/eleve/profil/$eleveId');
 
       if (response.statusCode == 200) {
         return standardSerializers.deserializeWith(Eleve.serializer, response.data);
@@ -38,7 +38,7 @@ class EleveService {
       print('🔄 Mise à jour du profil élève $eleveId: $updateData');
 
       final response = await _dio.put(
-        '/api/api/eleve/profil/$eleveId',
+        '/api/eleve/profil/$eleveId',
         data: updateData
       );
 
@@ -81,7 +81,7 @@ class EleveService {
         };
 
         final response = await _dio.post(
-          '/api/api/eleve/profil/$eleveId/change-password',
+          '/api/eleve/profil/$eleveId/change-password',
           data: passwordData,
         );
 
@@ -113,7 +113,7 @@ class EleveService {
   // Récupérer les points de l'élève
   Future<int?> getElevePoints(int eleveId) async {
     try {
-      final response = await _dio.get('/api/api/eleve/points/$eleveId');
+      final response = await _dio.get('/api/eleve/points/$eleveId');
 
       if (response.statusCode == 200) {
         return response.data['points'];

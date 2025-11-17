@@ -3,7 +3,7 @@
 //
 
 import 'package:dio/dio.dart';
-import 'package:openapi/src/auth/auth.dart';
+import 'package:edugo/services/auth.dart';
 
 class OAuthInterceptor extends AuthInterceptor {
   final Map<String, String> tokens = {};
@@ -21,6 +21,6 @@ class OAuthInterceptor extends AuthInterceptor {
         break;
       }
     }
-    super.onRequest(options, handler);
+
   }
 }

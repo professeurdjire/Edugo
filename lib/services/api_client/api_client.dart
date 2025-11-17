@@ -15,7 +15,7 @@ class ApiClient {
     _dio = Dio();
     
     // Configure base URL (you should update this to your actual API endpoint)
-    _dio.options.baseUrl = 'http://localhost:8080'; // Update with your API URL
+    _dio.options.baseUrl = 'http://10.0.2.2:8080'; // Update with your API URL
   }
 
   // Method to update base URL if needed

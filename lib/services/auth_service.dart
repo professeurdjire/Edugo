@@ -7,6 +7,7 @@ import 'package:edugo/models/eleveProfileData.dart'; // ← NOUVEL IMPORT
 import 'package:edugo/services/serializers.dart';
 import 'package:built_value/serializer.dart';
 import 'package:edugo/models/eleve.dart';
+import 'dart:io' show Platform;
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -22,7 +23,27 @@ class AuthService {
 
   AuthService._internal() {
     _dio = Dio();
-    _dio.options.baseUrl = 'http://localhost:8080';
+    
+    // Configuration for different environments
+    String baseUrl = 'http://192.168.1.3:8080'; // Physical device - your machine's IP
+    
+    try {
+      if (Platform.isAndroid) {
+        // Check if we're likely on a physical device or emulator
+        // For physical Android devices, use your machine's IP address
+        // baseUrl = 'http://192.168.1.3:8080'; // Physical device
+        baseUrl = 'http://10.0.2.2:8080'; // Emulator - uncomment this for BlueStacks
+      } else if (Platform.isIOS) {
+        // For iOS simulator
+        baseUrl = 'http://192.168.1.3:8080'; // Physical device
+        // baseUrl = 'http://localhost:8080'; // Simulator - uncomment this for iOS simulator
+      }
+    } catch (e) {
+      // Platform detection may not work in web, default to localhost
+      baseUrl = 'http://192.168.1.3:8080';
+    }
+    
+    _dio.options.baseUrl = baseUrl;
     _dio.options.contentType = 'application/json';
   }
 
@@ -79,7 +100,7 @@ class AuthService {
   // Méthode pour récupérer le profil élève par ID
   Future<Eleve?> getEleveProfileById(int eleveId) async {
     try {
-      final response = await _dio.get('/api/api/eleve/profil/$eleveId');
+      final response = await _dio.get('/api/eleve/profil/$eleveId');
 
       if (response.statusCode == 200) {
         final eleveData = standardSerializers.deserializeWith(Eleve.serializer, response.data);

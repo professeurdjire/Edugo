@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:edugo/screens/connexion%20et%20inscriptions/login.dart';
+import 'package:edugo/screens/auth/login.dart';
 import 'package:edugo/services/theme_service.dart';
 
 void main() async {

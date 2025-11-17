@@ -1,12 +1,15 @@
-import 'package:edugo/screens/principales/exercice/exercice1.dart';
+import 'package:edugo/screens/main/exercice/exercice1.dart';
 import 'package:flutter/material.dart';
-import 'package:edugo/screens/principales/accueil/accueille.dart';
-import 'package:edugo/screens/principales/bibliotheque/bibliotheque.dart';
-import 'package:edugo/screens/principales/challenge/challenge.dart';
-import 'package:edugo/screens/principales/assistant/assistant1.dart';
+import 'package:edugo/screens/main/accueil/accueille.dart';
+import 'package:edugo/screens/main/bibliotheque/bibliotheque.dart';
+import 'package:edugo/screens/main/challenge/challenge.dart';
+import 'package:edugo/screens/main/assistant/assistant1.dart';
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final int? eleveId;
+  final dynamic themeService; // Using dynamic to avoid import issues
+
+  const MainNavigation({super.key, this.eleveId, this.themeService});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -16,13 +19,23 @@ class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
   // Liste des écrans
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const LibraryScreen(),
-    const ChallengeScreen(),
-    const MatiereListScreen(),
-    const AssistanceScreen(),
-  ];
+  late List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeScreens();
+  }
+
+  void _initializeScreens() {
+    _screens = [
+      HomeScreen(eleveId: widget.eleveId, themeService: widget.themeService),
+      LibraryScreen(eleveId: widget.eleveId),
+      ChallengeScreen(eleveId: widget.eleveId),
+      MatiereListScreen(eleveId: widget.eleveId),
+      AssistanceScreen(eleveId: widget.eleveId),
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {

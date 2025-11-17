@@ -1,20 +1,17 @@
 import 'package:dio/dio.dart';
+import 'package:edugo/services/auth_service.dart';
 
 class SchoolService {
   static final SchoolService _instance = SchoolService._internal();
-  late Dio _dio;
-
   factory SchoolService() => _instance;
 
-  SchoolService._internal() {
-    _dio = Dio();
-    // Pour Chrome (web) - utilisez localhost directement
-    _dio.options.baseUrl = 'http://localhost:8080';
-    _dio.options.contentType = 'application/json';
-    _dio.options.connectTimeout = const Duration(seconds: 10);
-    _dio.options.receiveTimeout = const Duration(seconds: 10);
+  late Dio _dio;
 
-    // Ajout des intercepteurs pour le debug
+  SchoolService._internal() {
+    // Use the shared Dio instance from AuthService to ensure consistent base URL and headers
+    _dio = AuthService().dio;
+    
+    // Add interceptors for debugging
     _dio.interceptors.add(LogInterceptor(
       request: true,
       requestBody: true,
@@ -27,7 +24,7 @@ class SchoolService {
   Future<List<Map<String, dynamic>>> getNiveaux() async {
     try {
       print('Appel API: GET /api/niveaux');
-      final response = await _dio.get('/api/api/niveaux');
+      final response = await _dio.get('/api/niveaux');
       print('Réponse niveaux: ${response.statusCode}');
       print('Données niveaux: ${response.data}');
 
@@ -57,7 +54,7 @@ class SchoolService {
   Future<List<Map<String, dynamic>>> getClasses(int niveauId) async {
     try {
       print('Appel API: GET /api/classes/niveau/$niveauId');
-      final response = await _dio.get('/api/api/classes/niveau/$niveauId'); // <- correction ici
+      final response = await _dio.get('/api/classes/niveau/$niveauId');
       print('Réponse classes: ${response.statusCode}');
       print('Données classes: ${response.data}');
 
