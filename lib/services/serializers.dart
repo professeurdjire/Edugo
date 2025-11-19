@@ -108,5 +108,57 @@ part 'serializers.g.dart';
 Serializers serializers = _$serializers;
 
 Serializers standardSerializers = (serializers.toBuilder()
-  ..addPlugin(StandardJsonPlugin())
-).build();
+      ..addPlugin(StandardJsonPlugin())
+      ..add(FlexibleDateTimeSerializer())
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(DefiResponse)]),
+        () => ListBuilder<DefiResponse>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(EleveDefiResponse)]),
+        () => ListBuilder<EleveDefiResponse>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ExerciceResponse)]),
+        () => ListBuilder<ExerciceResponse>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(MatiereResponse)]),
+        () => ListBuilder<MatiereResponse>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ProgressionResponse)]),
+        () => ListBuilder<ProgressionResponse>(),
+      )
+    )
+    .build();
+
+class FlexibleDateTimeSerializer implements PrimitiveSerializer<DateTime> {
+  @override
+  final Iterable<Type> types = const [DateTime];
+
+  @override
+  final String wireName = 'DateTime';
+
+  @override
+  Object serialize(Serializers serializers, DateTime dateTime,
+      {FullType specifiedType = FullType.unspecified}) {
+    return dateTime.toIso8601String();
+  }
+
+  @override
+  DateTime deserialize(Serializers serializers, Object serialized,
+      {FullType specifiedType = FullType.unspecified}) {
+    if (serialized is DateTime) return serialized;
+    if (serialized is String) {
+      return DateTime.parse(serialized);
+    }
+    if (serialized is int) {
+      return DateTime.fromMillisecondsSinceEpoch(serialized);
+    }
+    if (serialized is double) {
+      return DateTime.fromMillisecondsSinceEpoch(serialized.toInt());
+    }
+    throw ArgumentError('Cannot deserialize $serialized to DateTime');
+  }
+}

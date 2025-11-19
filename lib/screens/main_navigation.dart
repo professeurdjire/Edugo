@@ -4,6 +4,7 @@ import 'package:edugo/screens/main/accueil/accueille.dart';
 import 'package:edugo/screens/main/bibliotheque/bibliotheque.dart';
 import 'package:edugo/screens/main/challenge/challenge.dart';
 import 'package:edugo/screens/main/assistant/assistant1.dart';
+import 'package:edugo/screens/main/connectivity_test_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   final int? eleveId;
@@ -34,6 +35,7 @@ class _MainNavigationState extends State<MainNavigation> {
       ChallengeScreen(eleveId: widget.eleveId),
       MatiereListScreen(eleveId: widget.eleveId),
       AssistanceScreen(eleveId: widget.eleveId),
+      ConnectivityTestScreen(), // Add connectivity test screen
     ];
   }
 
@@ -60,6 +62,7 @@ class _MainNavigationState extends State<MainNavigation> {
           BottomNavigationBarItem(icon: Icon(Icons.emoji_events_outlined), label: 'Challenge'),
           BottomNavigationBarItem(icon: Icon(Icons.checklist), label: 'Exercice'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Assistance'),
+          BottomNavigationBarItem(icon: Icon(Icons.network_check), label: 'Connexion'), // Add connectivity test item
         ],
       ),
     );

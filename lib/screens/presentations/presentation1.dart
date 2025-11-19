@@ -96,10 +96,10 @@ class WelcomeScreen extends StatelessWidget {
                       onPressed: () {
                         // Action à exécuter lors du clic
                         debugPrint('Démarrage de l\'application...');
-                         Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-            );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppConst.purpleBackground,

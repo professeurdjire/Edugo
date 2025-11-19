@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/main/exercice/exercice2.dart';
-import 'package:edugo/services/exercice_service.dart';
 import 'package:edugo/services/auth_service.dart';
-import 'package:edugo/models/exercice_response.dart';
+import 'package:edugo/services/matiere_service.dart';
+import 'package:edugo/models/matiere_response.dart';
 import 'package:built_collection/built_collection.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
@@ -10,7 +10,7 @@ const Color _colorBlack = Color(0xFF000000); // Texte noir
 const String _fontFamily = 'Roboto'; // Police principale
 const Color _purpleAppbar = Color(0xFFA885D8); // Violet de la barre d'app
 const Color _shadowColor = Color(0xFFE5E5E5); // Gris clair d'ombre
-const Color _colorBackground = Color(0xFFF8F9FA);
+const Color _colorBackground = Color(0xFFF8F9FA); // Background color
 
 class MatiereListScreen extends StatefulWidget {
   final int? eleveId;
@@ -22,10 +22,10 @@ class MatiereListScreen extends StatefulWidget {
 }
 
 class _MatiereListScreenState extends State<MatiereListScreen> {
-  final ExerciceService _exerciceService = ExerciceService();
+  final MatiereService _matiereService = MatiereService();
   final AuthService _authService = AuthService();
   
-  BuiltList<ExerciceResponse>? _exercices;
+  BuiltList<MatiereResponse>? _matieres;
   bool _isLoading = true;
   int? _currentEleveId;
 
@@ -33,83 +33,57 @@ class _MatiereListScreenState extends State<MatiereListScreen> {
   void initState() {
     super.initState();
     _currentEleveId = widget.eleveId ?? _authService.currentUserId;
-    _loadExercices();
+    _loadMatieres();
   }
 
-  Future<void> _loadExercices() async {
-    if (_currentEleveId == null) return;
-    
+  Future<void> _loadMatieres() async {
     setState(() {
       _isLoading = true;
     });
     
     try {
-      // Load available exercises for the student
-      final exercices = await _exerciceService.getExercicesDisponibles(_currentEleveId!);
-      
+      final matieres = await _matiereService.getAllMatieres();
       if (mounted) {
         setState(() {
-          _exercices = exercices;
+          _matieres = matieres;
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('Error loading exercises: $e');
+      print('Error loading matieres: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur lors du chargement des matières')),
+        );
       }
     }
-  }
-
-  // Liste des matières à afficher (will be populated from backend data)
-  List<String> _getMatieresFromExercices() {
-    if (_exercices == null) {
-      // Fallback to simulated data
-      return [
-        'Histoire',
-        'Géographie',
-        'Mathématique',
-        'Français',
-        'Physique',
-        'Chimie',
-        'Education Familiale',
-        'Education physique et morale',
-      ];
-    }
-    
-    // Extract unique subjects from exercises
-    final matieres = <String>{};
-    for (final exercice in _exercices!) {
-      if (exercice.matiereNom != null) {
-        matieres.add(exercice.matiereNom!);
-      }
-    }
-    
-    return matieres.toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final matieres = _getMatieresFromExercices();
-    
+    final matiereList = _matieres?.toList() ?? [];
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _colorBackground,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80.0),
         child: _buildCustomAppBar(context),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Liste des cartes de matière
-                  _buildMatiereList(context, matieres),
-                ],
-              ),
-            ),
+          : matiereList.isEmpty
+              ? _buildEmptyState()
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildMatiereList(context, matiereList),
+                    ],
+                  ),
+                ),
     );
   }
 
@@ -156,8 +130,56 @@ class _MatiereListScreenState extends State<MatiereListScreen> {
     );
   }
 
+  // --- WIDGET EMPTY STATE ---
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.book_outlined,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Aucune matière disponible',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: _colorBlack,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Il n\'y a actuellement aucune matière avec des exercices disponibles.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loadMatieres,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _purpleAppbar,
+              ),
+              child: const Text(
+                'Réessayer',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // --- WIDGET LISTE DES MATIÈRES ---
-  Widget _buildMatiereList(BuildContext context, List<String> matieres) {
+  Widget _buildMatiereList(BuildContext context, List<MatiereResponse> matieres) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
       child: Column(
@@ -186,18 +208,26 @@ class _MatiereListScreenState extends State<MatiereListScreen> {
             itemCount: matieres.length,
             itemBuilder: (context, index) {
               final matiere = matieres[index];
+              final matiereId = matiere.id;
+              final matiereNom = matiere.nom ?? 'Matière';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ExerciseMatiereListScreen(matiere: matiere),
-                      ),
-                    );
-                  },
+                  onTap: matiereId == null
+                      ? null
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ExerciseMatiereListScreen(
+                                matiereId: matiereId,
+                                matiereName: matiereNom,
+                                eleveId: _currentEleveId,
+                              ),
+                            ),
+                          );
+                        },
                   // Effet de survol avec MouseRegion pour un meilleur contrôle
                   child: MouseRegion(
                     cursor: SystemMouseCursors.click,
@@ -209,7 +239,7 @@ class _MatiereListScreenState extends State<MatiereListScreen> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: _shadowColor.withOpacity(0.8),
+                            color: _shadowColor.withValues(alpha: 0.8),
                             spreadRadius: 1,
                             blurRadius: 8,
                             offset: const Offset(0, 2),
@@ -224,7 +254,7 @@ class _MatiereListScreenState extends State<MatiereListScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            matiere,
+                            matiereNom,
                             style: const TextStyle(
                               color: _colorBlack,
                               fontSize: 16,

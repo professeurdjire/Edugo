@@ -23,7 +23,7 @@ class SchoolService {
   /// Récupérer la liste des niveaux scolaires
   Future<List<Map<String, dynamic>>> getNiveaux() async {
     try {
-      print('Appel API: GET /api/niveaux');
+      print('Appel API: GET /niveaux');
       final response = await _dio.get('/api/niveaux');
       print('Réponse niveaux: ${response.statusCode}');
       print('Données niveaux: ${response.data}');
@@ -53,7 +53,7 @@ class SchoolService {
   /// Récupérer les classes d'un niveau spécifique
   Future<List<Map<String, dynamic>>> getClasses(int niveauId) async {
     try {
-      print('Appel API: GET /api/classes/niveau/$niveauId');
+      print('Appel API: GET /classes/niveau/$niveauId');
       final response = await _dio.get('/api/classes/niveau/$niveauId');
       print('Réponse classes: ${response.statusCode}');
       print('Données classes: ${response.data}');

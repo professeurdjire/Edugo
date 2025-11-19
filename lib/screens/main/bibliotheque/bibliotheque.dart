@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/main/bibliotheque/telechargement.dart';
 import 'package:edugo/screens/main/bibliotheque/lectureLivre.dart';
+import 'package:edugo/screens/main/bibliotheque/pdf_viewer.dart';
+import 'package:edugo/screens/main/quiz/take_quiz_screen.dart';
 import 'package:edugo/services/livre_service.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/book_file_service.dart';
+import 'package:edugo/services/quiz_service.dart';
+import 'package:edugo/models/livre.dart';
 import 'package:edugo/models/livre_response.dart';
 import 'package:edugo/models/fichier_livre.dart';
 import 'package:edugo/models/progression_response.dart';
@@ -30,10 +34,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
   final LivreService _livreService = LivreService();
   final AuthService _authService = AuthService();
   final BookFileService _bookFileService = BookFileService();
+  final QuizService _quizService = QuizService();
   
   // Liste complète des livres disponibles
-  BuiltList<LivreResponse>? _allBooks;
-  BuiltList<LivreResponse>? _filteredBooks;
+  BuiltList<Livre>? _allBooks;
+  BuiltList<Livre>? _filteredBooks;
   
   // Progression de lecture pour chaque livre
   Map<int, ProgressionResponse?> _bookProgressions = {};
@@ -67,7 +72,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     });
     
     try {
-      BuiltList<LivreResponse>? books;
+      BuiltList<Livre>? books;
       
       // If we have a user ID, get books available for that user
       if (_currentEleveId != null) {
@@ -595,23 +600,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
               final fichiers = await _livreService.getFichiersLivre(book.id!);
               
               if (fichiers != null && fichiers.isNotEmpty) {
-                // Navigate to the book reader screen which will handle downloading and opening
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BookReaderScreen(
-                      bookTitle: book.titre ?? 'Livre sans titre',
-                      livreId: book.id,
-                      eleveId: _currentEleveId,
-                      fichiers: fichiers.toList(),
-                    ),
-                  ),
-                );
+                // Download the file first and then open it
+                final file = fichiers.first;
+                final filePath = await _bookFileService.downloadBookFile(file);
+                
+                if (filePath != null) {
+                  // Open the file based on its type
+                  await _bookFileService.openBookFile(file, filePath, context);
+                } else {
+                  // Show error if download failed
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Erreur lors du téléchargement du livre')),
+                    );
+                  }
+                }
               } else {
                 // Show error if no files available
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Aucun fichier disponible pour ce livre')),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Aucun fichier disponible pour ce livre')),
+                  );
+                }
               }
             },
             onDownload: () async {
@@ -633,6 +643,69 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Erreur lors du téléchargement')),
+                  );
+                }
+              }
+            },
+            onQuiz: () async {
+              // Handle quiz logic here
+              if (_currentEleveId != null) {
+                try {
+                  // Check if the book has a quiz directly
+                  if (book.quiz != null && book.quiz!.id != null) {
+                    // Navigate to the real quiz screen
+                    if (context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TakeQuizScreen(
+                            quizId: book.quiz!.id!,
+                            eleveId: _currentEleveId!,
+                          ),
+                        ),
+                      );
+                    }
+                  } else {
+                    // If no direct quiz, try to fetch quizzes for this student and filter by book
+                    final quizzes = await _quizService.getQuizzesForEleve(_currentEleveId!);
+                    final bookQuizzes = quizzes?.where((quiz) => quiz.livre?.id == book.id).toList();
+                    
+                    if (bookQuizzes != null && bookQuizzes.isNotEmpty) {
+                      // For now, take the first quiz
+                      final quiz = bookQuizzes.first;
+                      
+                      // Navigate to the real quiz screen
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TakeQuizScreen(
+                              quizId: quiz.id!,
+                              eleveId: _currentEleveId!,
+                            ),
+                          ),
+                        );
+                      }
+                    } else {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Aucun quiz disponible pour ce livre')),
+                        );
+                      }
+                    }
+                  }
+                } catch (e) {
+                  print('Error fetching quizzes: $e');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Erreur lors du chargement du quiz')),
+                    );
+                  }
+                }
+              } else {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Veuillez vous connecter pour accéder aux quiz')),
                   );
                 }
               }
@@ -812,6 +885,7 @@ class _BookCard extends StatelessWidget {
   final bool isVerySmallScreen;
   final VoidCallback onTap;
   final VoidCallback onDownload;
+  final VoidCallback? onQuiz;
 
   const _BookCard({
     required this.title,
@@ -825,6 +899,7 @@ class _BookCard extends StatelessWidget {
     required this.isVerySmallScreen,
     required this.onTap,
     required this.onDownload,
+    this.onQuiz,
   });
 
   @override
@@ -973,6 +1048,39 @@ class _BookCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                  SizedBox(height: isVerySmallScreen ? 4 : 6),
+                  // Quiz button
+                  if (onQuiz != null)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton.icon(
+                        onPressed: onQuiz,
+                        icon: Icon(
+                          Icons.quiz,
+                          size: isVerySmallScreen ? 12 : 14,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          'Quiz',
+                          style: TextStyle(
+                            fontSize: isVerySmallScreen ? 10 : 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _purpleMain,
+                          minimumSize: Size.zero,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isVerySmallScreen ? 8 : 12,
+                            vertical: isVerySmallScreen ? 4 : 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -983,9 +1091,9 @@ class _BookCard extends StatelessWidget {
   }
   
   // Helper method to build book image with error handling
-  Widget _buildBookImage(String imagePath) {
+  Widget _buildBookImage(String? imagePath) {
     // Check if the image path is valid
-    if (imagePath.isEmpty || imagePath == "Chemin de l'image") {
+    if (imagePath == null || imagePath.isEmpty || imagePath == "Chemin de l'image") {
       return _getDefaultBookImage();
     }
     
@@ -1001,10 +1109,17 @@ class _BookCard extends StatelessWidget {
     }
     
     // For relative paths from the backend (assuming they're served from the same server)
+    final baseUrl = AuthService().dio.options.baseUrl;
+    // Remove trailing slash if present
+    final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    // Remove leading slash from imagePath if present
+    final cleanImagePath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+    
     return Image.network(
-      '${AuthService().dio.options.baseUrl}/$imagePath',
+      '$cleanBaseUrl/$cleanImagePath',
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
+        print('Error loading image: $error');
         return _getDefaultBookImage();
       },
     );
@@ -1022,3 +1137,4 @@ class _BookCard extends StatelessWidget {
     );
   }
 }
+ 

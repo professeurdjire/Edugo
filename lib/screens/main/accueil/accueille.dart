@@ -14,6 +14,9 @@ import 'package:edugo/services/objectifService.dart';
 import 'package:edugo/models/objectifRequest.dart';
 import 'package:edugo/models/objectifResponse.dart';
 import 'package:edugo/services/theme_service.dart';
+import 'package:edugo/services/livre_service.dart';
+import 'package:edugo/models/progression_response.dart';
+import 'package:built_collection/built_collection.dart';
 
 // --- CONSTANTES DE STYLES ---
 const Color _colorBlack = Color(0xFF000000);
@@ -52,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
   final EleveService _eleveService = EleveService();
   final ObjectifService _objectifService = ObjectifService();
+  final LivreService _livreService = LivreService();
 
   // Données réelles de l'utilisateur
   String _userName = 'Chargement...';
@@ -70,17 +74,20 @@ class _HomeScreenState extends State<HomeScreen> {
   final int _totalBooksGoal = 5;
   final int _daysRemaining = 3;
 
-  final List<Map<String, dynamic>> _recentActivities = const [
+  final List<Map<String, dynamic>> _defaultRecentActivities = const [
     {'icon': Icons.check_circle, 'color': _colorSuccessCheck, 'text': 'Quiz sur le livre Harry Potter à l\'école, il y a 2 jours'},
     {'icon': Icons.book, 'color': _colorBookIcon, 'text': 'Nouveau livre débuté, il y a 4 jours'},
     {'icon': Icons.emoji_events, 'color': _colorTrophyIcon, 'text': 'Dernière challenge participé, il y a 2 jours'},
   ];
 
-  final List<CurrentReading> _currentReadings = const [
+  final List<CurrentReading> _defaultCurrentReadings = const [
     CurrentReading(title: 'Le Petit Prince', progress: 0.75),
     CurrentReading(title: 'Le jardin invisible', progress: 0.45),
     CurrentReading(title: 'Le coeur se souvient', progress: 0.25),
   ];
+
+  BuiltList<ProgressionResponse>? _readingProgress;
+  bool _isLoadingReadings = false;
 
   @override
   void initState() {
@@ -100,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _updateUIWithEleveData(eleveData);
           _authService.setCurrentEleve(eleveData);
           await _loadCurrentObjectif();
+          await _loadReadingProgress();
           return;
         }
       }
@@ -110,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _updateUIWithEleveData(eleve);
         _currentEleveId = eleve.id;
         await _loadCurrentObjectif();
+        await _loadReadingProgress();
         return;
       }
 
@@ -122,6 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _updateUIWithEleveData(eleveData);
           _authService.setCurrentEleve(eleveData);
           await _loadCurrentObjectif();
+          await _loadReadingProgress();
           return;
         }
       }
@@ -169,6 +179,30 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _isLoadingObjectif = false;
       });
+    }
+  }
+
+  Future<void> _loadReadingProgress() async {
+    if (_currentEleveId == null) return;
+    setState(() {
+      _isLoadingReadings = true;
+    });
+
+    try {
+      final progressions = await _livreService.getProgressionLecture(_currentEleveId!);
+      if (mounted) {
+        setState(() {
+          _readingProgress = progressions;
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement des lectures: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingReadings = false;
+        });
+      }
     }
   }
 
@@ -703,6 +737,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentActivitySection(BuildContext context, Color primaryColor) {
+    final activities = _recentActivitiesList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -733,7 +768,7 @@ class _HomeScreenState extends State<HomeScreen> {
             border: Border.all(color: Colors.grey.shade200),
           ),
           child: Column(
-            children: _recentActivities.map((activity) =>
+            children: activities.map((activity) =>
                 _ActivityRow(icon: activity['icon'], color: activity['color'], text: activity['text'])
             ).toList(),
           ),
@@ -746,25 +781,28 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Recommandation pour toi',
-          style: TextStyle(
-            color: _colorBlack,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        TextButton(
-          onPressed: () {},
-          child: Text(
-            'Voir tout',
-            style: TextStyle(
-              color: primaryColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Recommandation pour toi',
+              style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold),
             ),
-          ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) =>   RecentActivitiesScreen(themeService: widget.themeService)),
+                );
+              },
+              child: Text(
+                'Voir tout',
+                style: TextStyle(color: primaryColor, fontSize: 14, fontWeight: FontWeight.w500)
+              ),
+            ),
+          ],
         ),
+        
         const SizedBox(height: 15),
         SizedBox(
           height: 200,
@@ -798,7 +836,53 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  List<CurrentReading> _currentReadingList() {
+    final data = _readingProgress;
+    if (data == null || data.isEmpty) {
+      return _defaultCurrentReadings;
+    }
+    return data.map((progress) {
+      final percent = ((progress.pourcentageCompletion ?? 0).clamp(0, 100)) / 100;
+      return CurrentReading(
+        title: progress.livreTitre ?? 'Livre',
+        author: progress.eleveNom,
+        progress: percent,
+      );
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _recentActivitiesList() {
+    final data = _readingProgress;
+    if (data == null || data.isEmpty) {
+      return _defaultRecentActivities;
+    }
+    return data.take(3).map((progress) {
+      final text = 'Progression sur ${progress.livreTitre ?? 'un livre'} ${_relativeTime(progress.dateMiseAJour)}';
+      return {
+        'icon': Icons.book_outlined,
+        'color': _colorBookIcon,
+        'text': text,
+      };
+    }).toList();
+  }
+
+  String _relativeTime(DateTime? date) {
+    if (date == null) return 'récemment';
+    final diff = DateTime.now().difference(date);
+    if (diff.inDays > 0) {
+      return 'il y a ${diff.inDays} j';
+    }
+    if (diff.inHours > 0) {
+      return 'il y a ${diff.inHours} h';
+    }
+    if (diff.inMinutes > 0) {
+      return 'il y a ${diff.inMinutes} min';
+    }
+    return 'à l’instant';
+  }
+
   Widget _buildCurrentReadingsSection(BuildContext context, Color primaryColor) {
+    final readings = _currentReadingList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -829,9 +913,20 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         const SizedBox(height: 10),
-        ..._currentReadings.map((reading) =>
-            _ReadingProgressRow(reading: reading, primaryColor: primaryColor)
-        ).toList(),
+        if (_isLoadingReadings)
+          const Center(child: CircularProgressIndicator())
+        else if (readings.isEmpty)
+          const Text(
+            'Aucune lecture en cours pour le moment.',
+            style: TextStyle(color: Colors.grey),
+          )
+        else
+          ...readings.map(
+            (reading) => _ReadingProgressRow(
+              reading: reading,
+              primaryColor: primaryColor,
+            ),
+          ),
       ],
     );
   }

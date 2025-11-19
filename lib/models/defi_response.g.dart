@@ -8,6 +8,8 @@ part of 'defi_response.dart';
 
 class _$DefiResponse extends DefiResponse {
   @override
+  final String? description;
+  @override
   final int? id;
   @override
   final String? titre;
@@ -28,6 +30,7 @@ class _$DefiResponse extends DefiResponse {
       (DefiResponseBuilder()..update(updates))._build();
 
   _$DefiResponse._({
+    this.description,
     this.id,
     this.titre,
     this.pointDefi,
@@ -48,6 +51,7 @@ class _$DefiResponse extends DefiResponse {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is DefiResponse &&
+        description == other.description &&
         id == other.id &&
         titre == other.titre &&
         pointDefi == other.pointDefi &&
@@ -61,6 +65,7 @@ class _$DefiResponse extends DefiResponse {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, description.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, titre.hashCode);
     _$hash = $jc(_$hash, pointDefi.hashCode);
@@ -76,6 +81,7 @@ class _$DefiResponse extends DefiResponse {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'DefiResponse')
+          ..add('description', description)
           ..add('id', id)
           ..add('titre', titre)
           ..add('pointDefi', pointDefi)
@@ -91,6 +97,10 @@ class _$DefiResponse extends DefiResponse {
 class DefiResponseBuilder
     implements Builder<DefiResponse, DefiResponseBuilder> {
   _$DefiResponse? _$v;
+
+  String? _description;
+  String? get description => _$this._description;
+  set description(String? description) => _$this._description = description;
 
   int? _id;
   int? get id => _$this._id;
@@ -132,6 +142,7 @@ class DefiResponseBuilder
   DefiResponseBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _description = $v.description;
       _id = $v.id;
       _titre = $v.titre;
       _pointDefi = $v.pointDefi;
@@ -162,6 +173,7 @@ class DefiResponseBuilder
     final _$result =
         _$v ??
         _$DefiResponse._(
+          description: description,
           id: id,
           titre: titre,
           pointDefi: pointDefi,

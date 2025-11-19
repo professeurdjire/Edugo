@@ -21,7 +21,7 @@ class AssistantService {
   Future<AssistantMessage?> sendMessage(String message, int eleveId) async {
     try {
       final response = await _dio.post(
-        '/api/api/ia/chat',
+        '/api/ia/chat',
         data: {
           'message': message,
           'eleveId': eleveId,
@@ -43,7 +43,7 @@ class AssistantService {
   /// Récupérer l'historique des sessions de chat
   Future<BuiltList<AssistantMessage>?> getChatSessions(int eleveId) async {
     try {
-      final response = await _dio.get('/api/api/ia/chat/sessions?eleveId=$eleveId');
+      final response = await _dio.get('/api/ia/chat/sessions?eleveId=$eleveId');
       
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;

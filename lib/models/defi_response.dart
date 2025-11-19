@@ -21,6 +21,9 @@ part 'defi_response.g.dart';
 /// * [typeDefi] 
 @BuiltValue()
 abstract class DefiResponse implements Built<DefiResponse, DefiResponseBuilder> {
+  @BuiltValueField(wireName: r'description')
+  String? get description;
+
   @BuiltValueField(wireName: r'id')
   int? get id;
 

@@ -50,37 +50,76 @@ class BookFileService {
         return filePath;
       }
       
-      print('Downloading file from API...');
-      // Download the file using the correct endpoint
+      // Get the file download URL
+      final fileId = fichier.id;
+      final downloadUrl = '/api/livres/fichiers/$fileId/download';
+      print('📥 URL de téléchargement: ${_dio.options.baseUrl}$downloadUrl');
+      
+      // Download the file using the correct endpoint with authentication
       final response = await _dio.get(
-        '/api/api/livres/fichiers/${fichier.id}/download',
+        downloadUrl,
         options: Options(
           responseType: ResponseType.bytes,
-          followRedirects: false,
+          followRedirects: true,
           validateStatus: (status) {
             return status! < 500;
+          },
+          headers: {
+            'Authorization': _dio.options.headers['Authorization']?.toString() ?? '',
           },
         ),
       );
       
-      print('Download response status: ${response.statusCode}');
+      print('✅ Download response status: ${response.statusCode}');
       
-      if (response.statusCode == 200) {
-        print('Saving file to disk...');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('💾 Saving file to disk...');
+        // Vérifier que les données sont bien des bytes
+        if (response.data == null) {
+          print('❌ Response data is null');
+          return null;
+        }
+        
         // Save the file
-        await file.writeAsBytes(response.data);
-        print('File saved successfully');
-        return filePath;
+        await file.writeAsBytes(response.data as List<int>);
+        print('✅ File saved successfully to: $filePath');
+        
+        // Vérifier que le fichier existe bien
+        if (await file.exists()) {
+          final fileSize = await file.length();
+          print('✅ File verified: ${fileSize} bytes');
+          return filePath;
+        } else {
+          print('❌ File was not created');
+          return null;
+        }
       } else {
-        print('Download failed with status: ${response.statusCode}');
-        print('Response data: ${response.data}');
+        print('❌ Download failed with status: ${response.statusCode}');
+        if (response.data != null) {
+          print('Response data: ${response.data}');
+        }
+        // Handle 401 Unauthorized specifically
+        if (response.statusCode == 401) {
+          print('⚠️ Authentication required for download. Please check if user is logged in.');
+        }
       }
     } catch (e) {
-      print('Error downloading book file: $e');
+      print('❌ Error downloading book file: $e');
       if (e is DioException) {
-        print('Dio error: ${e.message}');
-        print('Response: ${e.response?.data}');
-        print('Status code: ${e.response?.statusCode}');
+        print('   Dio error type: ${e.type}');
+        print('   Dio error message: ${e.message}');
+        print('   Request URL: ${e.requestOptions.baseUrl}${e.requestOptions.path}');
+        print('   Request method: ${e.requestOptions.method}');
+        if (e.response != null) {
+          print('   Response status: ${e.response?.statusCode}');
+          print('   Response data: ${e.response?.data}');
+          print('   Response headers: ${e.response?.headers}');
+        } else {
+          print('   No response received (connection error)');
+        }
+      } else {
+        print('   Exception type: ${e.runtimeType}');
+        print('   Stack trace: ${StackTrace.current}');
       }
     }
     return null;

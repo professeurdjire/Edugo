@@ -25,26 +25,46 @@ class AuthService {
     _dio = Dio();
     
     // Configuration for different environments
-    String baseUrl = 'http://192.168.1.3:8080'; // Physical device - your machine's IP
+    // Backend Spring Boot écoute sur http://192.168.10.117:8080/api (context-path=/api)
+    // Pour BlueStacks/émulateur Android, utiliser 10.0.2.2:8080/api (localhost de la machine hôte)
+    // Pour appareil physique Android, utiliser 192.168.10.117:8080/api
+    
+    // TODO: Définir IS_EMULATOR à true pour BlueStacks, false pour appareil physique
+    const bool IS_EMULATOR = true; // ← MODIFIER ICI: true pour BlueStacks, false pour appareil physique
+    
+    String baseUrl;
     
     try {
       if (Platform.isAndroid) {
-        // Check if we're likely on a physical device or emulator
-        // For physical Android devices, use your machine's IP address
-        // baseUrl = 'http://192.168.1.3:8080'; // Physical device
-        baseUrl = 'http://10.0.2.2:8080'; // Emulator - uncomment this for BlueStacks
+        if (IS_EMULATOR) {
+          // BlueStacks ou autre émulateur Android - utilise 10.0.2.2 pour accéder au localhost de la machine hôte
+          baseUrl = 'http://10.0.2.2:8080/api';
+        } else {
+          // Appareil Android physique - utilise l'IP réseau de la machine où tourne Spring Boot
+          baseUrl = 'http://192.168.1.7:8080/api';
+        }
       } else if (Platform.isIOS) {
-        // For iOS simulator
-        baseUrl = 'http://192.168.1.3:8080'; // Physical device
-        // baseUrl = 'http://localhost:8080'; // Simulator - uncomment this for iOS simulator
+        // iOS - utiliser localhost pour simulateur ou IP réseau pour appareil physique
+        baseUrl = 'http://192.168.10.117:8080/api';
+        // Pour iOS simulator: baseUrl = 'http://localhost:8080/api';
+      } else {
+        // Web ou autre plateforme
+        baseUrl = 'http://192.168.1.7:8080/api';
       }
     } catch (e) {
-      // Platform detection may not work in web, default to localhost
-      baseUrl = 'http://192.168.1.3:8080';
+      // Platform detection may not work, default to emulator address
+      baseUrl = 'http://10.0.2.2:8080/api';
     }
     
     _dio.options.baseUrl = baseUrl;
     _dio.options.contentType = 'application/json';
+    _dio.options.connectTimeout = const Duration(seconds: 30);
+    _dio.options.receiveTimeout = const Duration(seconds: 30);
+    
+    print('🔧 Configuration du service d\'authentification:');
+    print('   Plateforme: ${Platform.isAndroid ? (IS_EMULATOR ? "Android Emulator (BlueStacks)" : "Android Physical") : "iOS/Other"}');
+    print('   Base URL: $baseUrl');
+    print('   Content-Type: ${_dio.options.contentType}');
   }
 
   Dio get dio => _dio; // Getter public pour l'instance Dio
@@ -58,7 +78,8 @@ class AuthService {
   // ✅ MÉTHODE CORRIGÉE : Utilise EleveProfileData
   Future<EleveProfileData?> getCurrentUserProfile() async {
     try {
-      final response = await _dio.get('/api/auth/me');
+      print('🔄 Tentative de récupération du profil utilisateur depuis: ${_dio.options.baseUrl}/auth/me');
+      final response = await _dio.get('/auth/me');
 
       if (response.statusCode == 200) {
         print('✅ Réponse /auth/me reçue: ${response.data}');
@@ -70,9 +91,18 @@ class AuthService {
         _updateCurrentEleveFromProfile(profileData);
 
         return profileData;
+      } else {
+        print('⚠️ Code de statut inattendu: ${response.statusCode}');
       }
     } catch (e) {
       print('❌ Erreur lors de la récupération du profil via /auth/me: $e');
+      if (e is DioException) {
+        print('🌐 Détails de l\'erreur réseau:');
+        print('   Type: ${e.type}');
+        print('   Message: ${e.message}');
+        print('   Réponse: ${e.response?.data}');
+        print('   Code de statut: ${e.response?.statusCode}');
+      }
     }
     return null;
   }
@@ -121,6 +151,9 @@ class AuthService {
   // Méthode login
   Future<LoginResponse?> login(String email, String password) async {
     try {
+      print('🔄 Tentative de connexion avec l\'email: $email');
+      print('🌐 URL de connexion: ${_dio.options.baseUrl}/auth/login');
+      
       final loginRequest = LoginRequest((b) => b
         ..email = email
         ..motDePasse = password);
@@ -128,16 +161,26 @@ class AuthService {
       final serialized = standardSerializers.serialize(loginRequest);
       final response = await _dio.post('/api/auth/login', data: serialized);
 
+      print('✅ Réponse de connexion reçue avec code: ${response.statusCode}');
+      
       final loginResponse = standardSerializers.deserializeWith(LoginResponse.serializer, response.data);
 
       if (loginResponse != null && loginResponse.token != null) {
+        print('🔑 Token JWT reçu, configuration de l\'authentification...');
         setAuthToken(loginResponse.token!);
         await getCurrentUserProfile(); // ✅ Charge les données automatiquement
       }
 
       return loginResponse;
     } catch (e) {
-      print('Login error: $e');
+      print('❌ Erreur de connexion: $e');
+      if (e is DioException) {
+        print('🌐 Détails de l\'erreur réseau:');
+        print('   Type: ${e.type}');
+        print('   Message: ${e.message}');
+        print('   Réponse: ${e.response?.data}');
+        print('   Code de statut: ${e.response?.statusCode}');
+      }
       return null;
     }
   }
@@ -156,7 +199,10 @@ class AuthService {
   }) async {
     try {
       print('🎯 DONNÉES REÇUES DANS register():');
+      print('📧 Email: $email');
+      print('👤 Nom: $nom, Prénom: $prenom');
       print('🏙️ Ville reçue: "$ville"');
+      print('🌐 URL d\'inscription: ${_dio.options.baseUrl}/auth/register');
 
       final registerRequest = RegisterRequest((b) => b
         ..email = email
@@ -173,10 +219,13 @@ class AuthService {
       final serialized = standardSerializers.serialize(registerRequest);
       final response = await _dio.post('/api/auth/register', data: serialized);
 
+      print('✅ Réponse d\'inscription reçue avec code: ${response.statusCode}');
+
       final loginResponse = standardSerializers.deserializeWith(LoginResponse.serializer, response.data);
 
       // Après l'inscription, récupérez aussi le profil
       if (loginResponse != null && loginResponse.token != null) {
+        print('🔑 Token JWT reçu, configuration de l\'authentification...');
         setAuthToken(loginResponse.token!);
         await getCurrentUserProfile(); // ✅ Charge les données automatiquement
       }
@@ -185,8 +234,11 @@ class AuthService {
     } catch (e) {
       print('❌ ERREUR INSCRIPTION: $e');
       if (e is DioException) {
-        print('🔍 STATUT ERREUR: ${e.response?.statusCode}');
-        print('🔍 DONNÉES ERREUR: ${e.response?.data}');
+        print('🌐 Détails de l\'erreur réseau:');
+        print('   Type: ${e.type}');
+        print('   Message: ${e.message}');
+        print('   Réponse: ${e.response?.data}');
+        print('   Code de statut: ${e.response?.statusCode}');
       }
       return null;
     }
@@ -222,5 +274,33 @@ class AuthService {
   /// Set the authorization token for subsequent API calls
   void setAuthToken(String token) {
     _dio.options.headers['Authorization'] = 'Bearer $token';
+  }
+  
+  /// Test the connection to the backend server
+  Future<bool> testConnection() async {
+    try {
+      print('🔍 Test de connexion au serveur backend...');
+      print('🌐 URL de test: ${_dio.options.baseUrl}/auth/me');
+      
+      final response = await _dio.get('/api/auth/me', options: Options(
+        receiveTimeout: const Duration(seconds: 10),
+        sendTimeout: const Duration(seconds: 10),
+      ));
+      
+      print('✅ Test de connexion réussi. Code de statut: ${response.statusCode}');
+      return response.statusCode == 200 || response.statusCode == 401; // 401 means server is reachable but requires auth
+    } catch (e) {
+      print('❌ Échec du test de connexion: $e');
+      if (e is DioException) {
+        print('🌐 Détails de l\'erreur:');
+        print('   Type: ${e.type}');
+        print('   Message: ${e.message}');
+        if (e.response != null) {
+          print('   Code de statut: ${e.response?.statusCode}');
+          print('   Réponse: ${e.response?.data}');
+        }
+      }
+      return false;
+    }
   }
 }

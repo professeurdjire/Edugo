@@ -25,29 +25,61 @@ class LivreService {
   
   Dio get _dio => _authService.dio;
   
-  /// Récupérer tous les livres
-  Future<BuiltList<LivreResponse>?> getAllLivres() async {
+  /// Récupérer tous les livres avec gestion des images de couverture
+  Future<BuiltList<Livre>?> getAllLivres() async {
     try {
+      print('🔄 Récupération de tous les livres...');
       final response = await _dio.get('/api/livres');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        return data
-            .map((json) => standardSerializers.deserializeWith(
-                  LivreResponse.serializer,
-                  json,
-                ))
-            .whereType<LivreResponse>()
-            .toList()
-            .toBuiltList();
+      print('✅ Réponse livres: ${response.statusCode}');
+      
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is List) {
+          final List<dynamic> data = response.data;
+          print('📚 ${data.length} livre(s) récupéré(s)');
+          
+          final livres = data
+              .map((json) {
+                try {
+                  // Handle image cover URL properly
+                  if (json is Map<String, dynamic> && json.containsKey('imageCouverture')) {
+                    final imageCover = json['imageCouverture'] as String?;
+                    if (imageCover != null && imageCover.isNotEmpty) {
+                      // If it's a relative path, make it absolute with the correct base URL
+                      if (imageCover.startsWith('/')) {
+                        final baseUrl = _dio.options.baseUrl;
+                        // Remove '/api' prefix if it exists to avoid double prefix
+                        final cleanPath = imageCover.startsWith('/api/') ? imageCover.substring(4) : imageCover;
+                        json['imageCouverture'] = '$baseUrl$cleanPath';
+                      }
+                    }
+                  }
+                  
+                  return standardSerializers.deserializeWith(Livre.serializer, json);
+                } catch (e) {
+                  print('⚠️ Erreur désérialisation livre: $e');
+                  print('   JSON: $json');
+                  return null;
+                }
+              })
+              .whereType<Livre>()
+              .toList();
+          
+          print('✅ ${livres.length} livre(s) traité(s) avec succès');
+          return livres.toBuiltList();
+        } else {
+          print('⚠️ Format de réponse inattendu: ${response.data.runtimeType}');
+        }
       }
     } catch (e) {
-      print('Error fetching all books: $e');
+      print('❌ Erreur lors de la récupération des livres: $e');
       if (e is DioException) {
-        print('Response data: ${e.response?.data}');
-        print('Status code: ${e.response?.statusCode}');
+        print('   Type: ${e.type}');
+        print('   Message: ${e.message}');
+        print('   Status: ${e.response?.statusCode}');
+        print('   Data: ${e.response?.data}');
       }
     }
-    return null;
+    return BuiltList<Livre>();
   }
   
   /// Récupérer un livre par ID with full details including files
@@ -87,91 +119,147 @@ class LivreService {
   }
   
   /// Récupérer les livres par classe
-  Future<BuiltList<LivreResponse>?> getLivresByClasse(int classeId) async {
+  Future<BuiltList<Livre>?> getLivresByClasse(int classeId) async {
     try {
       final response = await _dio.get('/api/livres/classe/$classeId');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         return data
-            .map((json) => standardSerializers.deserializeWith(
-                  LivreResponse.serializer,
-                  json,
-                ))
-            .whereType<LivreResponse>()
+            .map((json) {
+              // Handle image cover URL properly
+              if (json is Map<String, dynamic> && json.containsKey('imageCouverture')) {
+                final imageCover = json['imageCouverture'] as String?;
+                if (imageCover != null && imageCover.isNotEmpty) {
+                  // If it's a relative path, make it absolute with the correct base URL
+                  if (imageCover.startsWith('/')) {
+                    final baseUrl = _dio.options.baseUrl;
+                    // Remove '/api' prefix if it exists to avoid double prefix
+                    final cleanPath = imageCover.startsWith('/api/') ? imageCover.substring(4) : imageCover;
+                    json['imageCouverture'] = '$baseUrl$cleanPath';
+                  }
+                }
+              }
+              return standardSerializers.deserializeWith(
+                Livre.serializer,
+                json,
+              );
+            })
+            .whereType<Livre>()
             .toList()
             .toBuiltList();
       }
     } catch (e) {
       print('Error fetching books by class: $e');
     }
-    return null;
+    return BuiltList<Livre>();
   }
   
   /// Récupérer les livres par matière
-  Future<BuiltList<LivreResponse>?> getLivresByMatiere(int matiereId) async {
+  Future<BuiltList<Livre>?> getLivresByMatiere(int matiereId) async {
     try {
       final response = await _dio.get('/api/livres/matiere/$matiereId');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         return data
-            .map((json) => standardSerializers.deserializeWith(
-                  LivreResponse.serializer,
-                  json,
-                ))
-            .whereType<LivreResponse>()
+            .map((json) {
+              // Handle image cover URL properly
+              if (json is Map<String, dynamic> && json.containsKey('imageCouverture')) {
+                final imageCover = json['imageCouverture'] as String?;
+                if (imageCover != null && imageCover.isNotEmpty) {
+                  // If it's a relative path, make it absolute with the correct base URL
+                  if (imageCover.startsWith('/')) {
+                    final baseUrl = _dio.options.baseUrl;
+                    // Remove '/api' prefix if it exists to avoid double prefix
+                    final cleanPath = imageCover.startsWith('/api/') ? imageCover.substring(4) : imageCover;
+                    json['imageCouverture'] = '$baseUrl$cleanPath';
+                  }
+                }
+              }
+              return standardSerializers.deserializeWith(
+                Livre.serializer,
+                json,
+              );
+            })
+            .whereType<Livre>()
             .toList()
             .toBuiltList();
       }
     } catch (e) {
       print('Error fetching books by subject: $e');
     }
-    return null;
+    return BuiltList<Livre>();
   }
   
   /// Récupérer les livres par niveau
-  Future<BuiltList<LivreResponse>?> getLivresByNiveau(int niveauId) async {
+  Future<BuiltList<Livre>?> getLivresByNiveau(int niveauId) async {
     try {
       final response = await _dio.get('/api/livres/niveau/$niveauId');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         return data
-            .map((json) => standardSerializers.deserializeWith(
-                  LivreResponse.serializer,
-                  json,
-                ))
-            .whereType<LivreResponse>()
+            .map((json) {
+              // Handle image cover URL properly
+              if (json is Map<String, dynamic> && json.containsKey('imageCouverture')) {
+                final imageCover = json['imageCouverture'] as String?;
+                if (imageCover != null && imageCover.isNotEmpty) {
+                  // If it's a relative path, make it absolute with the correct base URL
+                  if (imageCover.startsWith('/')) {
+                    final baseUrl = _dio.options.baseUrl;
+                    // Remove '/api' prefix if it exists to avoid double prefix
+                    final cleanPath = imageCover.startsWith('/api/') ? imageCover.substring(4) : imageCover;
+                    json['imageCouverture'] = '$baseUrl$cleanPath';
+                  }
+                }
+              }
+              return standardSerializers.deserializeWith(
+                Livre.serializer,
+                json,
+              );
+            })
+            .whereType<Livre>()
             .toList()
             .toBuiltList();
       }
     } catch (e) {
       print('Error fetching books by level: $e');
     }
-    return null;
+    return BuiltList<Livre>();
   }
   
   /// Récupérer les livres disponibles pour un élève
-  Future<BuiltList<LivreResponse>?> getLivresDisponibles(int eleveId) async {
+  Future<BuiltList<Livre>?> getLivresDisponibles(int eleveId) async {
     try {
       final response = await _dio.get('/api/livres/disponibles/$eleveId');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         return data
-            .map((json) => standardSerializers.deserializeWith(
-                  LivreResponse.serializer,
-                  json,
-                ))
-            .whereType<LivreResponse>()
+            .map((json) {
+              // Handle image cover URL properly
+              if (json is Map<String, dynamic> && json.containsKey('imageCouverture')) {
+                final imageCover = json['imageCouverture'] as String?;
+                if (imageCover != null && imageCover.isNotEmpty) {
+                  // If it's a relative path, make it absolute with the correct base URL
+                  if (imageCover.startsWith('/')) {
+                    final baseUrl = _dio.options.baseUrl;
+                    // Remove '/api' prefix if it exists to avoid double prefix
+                    final cleanPath = imageCover.startsWith('/api/') ? imageCover.substring(4) : imageCover;
+                    json['imageCouverture'] = '$baseUrl$cleanPath';
+                  }
+                }
+              }
+              return standardSerializers.deserializeWith(
+                Livre.serializer,
+                json,
+              );
+            })
+            .whereType<Livre>()
             .toList()
             .toBuiltList();
       }
     } catch (e) {
       print('Error fetching available books: $e');
-      if (e is DioException) {
-        print('Response data: ${e.response?.data}');
-        print('Status code: ${e.response?.statusCode}');
-      }
     }
-    return null;
+    return BuiltList<Livre>();
   }
   
   /// Récupérer les livres populaires
@@ -355,7 +443,7 @@ class LivreService {
       
       final serialized = standardSerializers.serialize(request);
       final response = await _dio.post(
-        '/api/livres/progression/$eleveId/$livreId',
+        '/livres/progression/$eleveId/$livreId',
         data: serialized,
       );
       
@@ -372,24 +460,95 @@ class LivreService {
   }
   
   /// Récupérer les fichiers d'un livre
+  /// Essaie d'abord /livres/{id}/fichiers, sinon récupère le livre complet et extrait les fichiers
   Future<BuiltList<FichierLivre>?> getFichiersLivre(int livreId) async {
     try {
-      final response = await _dio.get('/api/livres/$livreId/fichiers');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        return data
-            .map((json) => standardSerializers.deserializeWith(
-                  FichierLivre.serializer,
-                  json,
-                ))
-            .whereType<FichierLivre>()
-            .toList()
-            .toBuiltList();
+      print('🔍 Récupération des fichiers pour le livre $livreId');
+      
+      // Essayer d'abord l'endpoint spécifique pour les fichiers (baseUrl contient déjà /api)
+      try {
+        final response = await _dio.get('/api/livres/$livreId/fichiers');
+        print('📡 URL complète: ${_dio.options.baseUrl}/livres/$livreId/fichiers');
+        print('✅ Réponse fichiers: ${response.statusCode}');
+        
+        if (response.statusCode == 200 && response.data != null) {
+          if (response.data is List) {
+            final List<dynamic> data = response.data;
+            print('📋 ${data.length} fichier(s) dans la réponse');
+            
+            // Debug: afficher la structure du premier fichier
+            if (data.isNotEmpty) {
+              print('📄 Structure du premier fichier: ${data[0]}');
+              print('📄 Clés du premier fichier: ${(data[0] as Map<String, dynamic>).keys.toList()}');
+            }
+            
+            final fichiers = data
+                .map((json) {
+                  try {
+                    // Debug: afficher les clés de chaque fichier
+                    if (json is Map<String, dynamic>) {
+                      print('🔑 Clés du fichier: ${json.keys.toList()}');
+                      // Handle both 'chemin' and 'cheminFichier' keys
+                      if (json.containsKey('chemin') && !json.containsKey('cheminFichier')) {
+                        json['cheminFichier'] = json['chemin'];
+                      }
+                      print('📁 Chemin disponible: ${json['cheminFichier'] ?? json['chemin']}');
+                    }
+                    
+                    final fichier = standardSerializers.deserializeWith(
+                      FichierLivre.serializer,
+                      json,
+                    );
+                    
+                    // Debug: vérifier le chemin après désérialisation
+                    print('📁 Fichier désérialisé - ID: ${fichier?.id}, Nom: ${fichier?.nom}, Chemin: ${fichier?.cheminFichier}');
+                    
+                    return fichier;
+                  } catch (e) {
+                    print('⚠️ Erreur désérialisation fichier: $e');
+                    print('   JSON: $json');
+                    return null;
+                  }
+                })
+                .whereType<FichierLivre>()
+                .toList();
+            
+            if (fichiers.isNotEmpty) {
+              print('✅ ${fichiers.length} fichier(s) trouvé(s) via /fichiers');
+              return fichiers.toBuiltList();
+            }
+          } else {
+            print('⚠️ Format de réponse inattendu pour fichiers: ${response.data.runtimeType}');
+            print('   Contenu: ${response.data}');
+          }
+        }
+      } catch (e) {
+        print('⚠️ Endpoint /livres/$livreId/fichiers non disponible: $e');
       }
+      
+      // Si l'endpoint spécifique échoue, récupérer le livre complet et extraire les fichiers
+      print('🔄 Tentative alternative: récupération du livre complet...');
+      final livre = await getLivreById(livreId);
+      
+      if (livre != null && livre.fichiers != null && livre.fichiers!.isNotEmpty) {
+        print('✅ ${livre.fichiers!.length} fichier(s) trouvé(s) dans le livre complet');
+        return livre.fichiers;
+      }
+      
+      print('❌ Aucun fichier trouvé pour le livre $livreId');
+      return BuiltList<FichierLivre>();
+      
     } catch (e) {
-      print('Error fetching book files: $e');
+      print('❌ Erreur lors de la récupération des fichiers: $e');
+      if (e is DioException) {
+        print('   Type: ${e.type}');
+        print('   Message: ${e.message}');
+        print('   Status: ${e.response?.statusCode}');
+        print('   Data: ${e.response?.data}');
+        print('   URL: ${e.requestOptions.baseUrl}${e.requestOptions.path}');
+      }
+      return BuiltList<FichierLivre>();
     }
-    return null;
   }
   
   /// Télécharger un fichier de livre

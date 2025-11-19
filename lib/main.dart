@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:edugo/screens/auth/login.dart';
+import 'package:edugo/screens/onboarding/splash_screen.dart';
 import 'package:edugo/services/theme_service.dart';
+import 'package:edugo/services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -8,8 +9,37 @@ void main() async {
   // Initialiser le service de thème
   final themeService = ThemeService();
   await themeService.initialize();
+  
+  // Test de connexion au backend
+  await _testBackendConnection();
 
   runApp(MyApp(themeService: themeService));
+}
+
+/// Teste la connexion au backend au démarrage de l'application
+Future<void> _testBackendConnection() async {
+  try {
+    print('🚀 Démarrage du test de connexion au backend...');
+    final authService = AuthService();
+    
+    // Attendre un peu pour s'assurer que le service est prêt
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    final isConnected = await authService.testConnection();
+    
+    if (isConnected) {
+      print('✅ Connexion au backend établie avec succès!');
+    } else {
+      print('⚠️ Impossible de se connecter au backend. Vérifiez:');
+      print('   1. Que le serveur backend est en cours d\'exécution');
+      print('   2. Que l\'adresse IP est correcte (10.0.2.2:8080 pour BlueStacks, 192.168.10.117:8080 pour appareil physique)');
+      print('   3. Que les deux appareils sont sur le même réseau');
+      print('   4. Que le firewall autorise les connexions sur le port 8080');
+      print('   5. Pour BlueStacks: vérifiez que IS_EMULATOR=true dans auth_service.dart');
+    }
+  } catch (e) {
+    print('❌ Erreur lors du test de connexion: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -142,19 +172,8 @@ class MyApp extends StatelessWidget {
             fontFamily: 'Roboto',
             useMaterial3: true,
           ),
-          home: LoginScreen(themeService: themeService),
+          home: SplashScreen(themeService: themeService),
           debugShowCheckedModeBanner: false,
-
-          // Gestion des routes (optionnel)
-          onGenerateRoute: (settings) {
-            // Toutes vos routes bénéficieront du thème dynamique
-            return MaterialPageRoute(
-              builder: (context) {
-                // Ici vous pouvez retourner les différents écrans de votre app
-                return  LoginScreen(themeService: themeService);
-              },
-            );
-          },
         );
       },
     );

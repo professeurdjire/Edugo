@@ -178,6 +178,11 @@ class _ChallengeParticipeScreenState extends State<ChallengeParticipeScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                if (_defiDetails != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: _buildDefiHeader(),
+                  ),
                 // Timer et progression en haut
                 Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -267,6 +272,107 @@ class _ChallengeParticipeScreenState extends State<ChallengeParticipeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDefiHeader() {
+    final details = _defiDetails;
+    if (details == null) {
+      return const SizedBox.shrink();
+    }
+
+    String _formatHeaderDate(DateTime? date) {
+      if (date == null) return 'Date inconnue';
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _colorLightPurple.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _purpleMain.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            details.titre ?? 'Défi',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: _fontFamily,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            details.ennonce ?? 'Aucune description disponible',
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _DefiHeaderStat(
+                label: 'Points',
+                value: '${details.pointDefi ?? 0}',
+                icon: Icons.star,
+              ),
+              _DefiHeaderStat(
+                label: 'Participants',
+                value: '${details.nbreParticipations ?? 0}',
+                icon: Icons.people_alt_outlined,
+              ),
+              _DefiHeaderStat(
+                label: 'Ajouté le',
+                value: _formatHeaderDate(details.dateAjout),
+                icon: Icons.event,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DefiHeaderStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _DefiHeaderStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: _purpleMain, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            fontFamily: _fontFamily,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+            fontFamily: _fontFamily,
+          ),
+        ),
+      ],
     );
   }
 }

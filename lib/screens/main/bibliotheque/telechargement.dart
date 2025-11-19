@@ -34,6 +34,11 @@ class _TelechargementsScreenState extends State<TelechargementsScreen> {
 
   // Contrôleur de texte pour la recherche
   final TextEditingController _searchController = TextEditingController();
+  
+  // Tri et filtrage
+  String _sortOption = 'date'; // date, name, size
+  bool _sortAscending = false;
+  String _filterType = 'all'; // all, pdf, epub, audio, image, video
 
   @override
   void initState() {
@@ -51,7 +56,7 @@ class _TelechargementsScreenState extends State<TelechargementsScreen> {
       final downloadedBooks = await _bookFileService.getDownloadedBooks();
       setState(() {
         _downloadItems = downloadedBooks;
-        _filteredItems = downloadedBooks;
+        _sortAndFilterItems();
         _isLoading = false;
       });
     } catch (e) {
@@ -60,6 +65,62 @@ class _TelechargementsScreenState extends State<TelechargementsScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _sortAndFilterItems() {
+    List<Map<String, dynamic>> items = List.from(_downloadItems);
+    
+    // Apply file type filter
+    if (_filterType != 'all') {
+      items = items.where((item) {
+        final fileName = item['fileName'].toString().toLowerCase();
+        switch (_filterType) {
+          case 'pdf':
+            return fileName.endsWith('.pdf');
+          case 'epub':
+            return fileName.endsWith('.epub');
+          case 'audio':
+            return fileName.endsWith('.mp3') || fileName.endsWith('.wav') || fileName.endsWith('.aac');
+          case 'image':
+            return fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.gif');
+          case 'video':
+            return fileName.endsWith('.mp4') || fileName.endsWith('.avi') || fileName.endsWith('.mov');
+          default:
+            return true;
+        }
+      }).toList();
+    }
+    
+    // Apply search filter
+    final query = _searchController.text.toLowerCase();
+    if (query.isNotEmpty) {
+      items = items.where((item) {
+        final fileName = item['fileName'].toString().toLowerCase();
+        return fileName.contains(query);
+      }).toList();
+    }
+    
+    // Apply sorting
+    items.sort((a, b) {
+      int compareResult;
+      switch (_sortOption) {
+        case 'name':
+          compareResult = a['fileName'].toString().compareTo(b['fileName'].toString());
+          break;
+        case 'size':
+          compareResult = (a['size'] as int).compareTo(b['size'] as int);
+          break;
+        case 'date':
+        default:
+          compareResult = (b['modified'] as DateTime).compareTo(a['modified'] as DateTime);
+          break;
+      }
+      return _sortAscending ? compareResult : -compareResult;
+    });
+    
+    setState(() {
+      _filteredItems = items;
+    });
   }
 
   @override
@@ -71,17 +132,28 @@ class _TelechargementsScreenState extends State<TelechargementsScreen> {
 
   // --- LOGIQUE DE RECHERCHE/FILTRE ---
   void _filterItems() {
-    final query = _searchController.text.toLowerCase();
+    _sortAndFilterItems();
+  }
+
+  void _changeSort(String option) {
+    if (_sortOption == option) {
+      setState(() {
+        _sortAscending = !_sortAscending;
+      });
+    } else {
+      setState(() {
+        _sortOption = option;
+        _sortAscending = option == 'name'; // Default ascending for name, descending for others
+      });
+    }
+    _sortAndFilterItems();
+  }
+
+  void _changeFilter(String type) {
     setState(() {
-      if (query.isEmpty) {
-        _filteredItems = _downloadItems;
-      } else {
-        _filteredItems = _downloadItems.where((item) {
-          final fileName = item['fileName'].toString().toLowerCase();
-          return fileName.contains(query);
-        }).toList();
-      }
+      _filterType = type;
     });
+    _sortAndFilterItems();
   }
 
   // --- LOGIQUE DE SUPPRESSION ---
@@ -181,7 +253,9 @@ class _TelechargementsScreenState extends State<TelechargementsScreen> {
               children: [
                 const SizedBox(height: 10),
                 _buildSearchBar(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
+                _buildFilterAndSortBar(),
+                const SizedBox(height: 10),
               ],
             ),
           ),
@@ -195,22 +269,110 @@ class _TelechargementsScreenState extends State<TelechargementsScreen> {
             )
           else
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.only(top: 10, left: 20, right: 20, bottom: 40),
-                itemCount: _filteredItems.length,
-                itemBuilder: (context, index) {
-                  final item = _filteredItems[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 15.0),
-                    child: _DownloadListItem(
-                      item: item,
-                      onOpen: () => _openItem(item),
-                      onDelete: () => _showDeleteDialog(item),
+              child: _filteredItems.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(top: 10, left: 20, right: 20, bottom: 40),
+                      itemCount: _filteredItems.length,
+                      itemBuilder: (context, index) {
+                        final item = _filteredItems[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 15.0),
+                          child: _DownloadListItem(
+                            item: item,
+                            onOpen: () => _openItem(item),
+                            onDelete: () => _showDeleteDialog(item),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterAndSortBar() {
+    return Row(
+      children: [
+        // Filter dropdown
+        DropdownButton<String>(
+          value: _filterType,
+          items: const [
+            DropdownMenuItem(value: 'all', child: Text('Tous')),
+            DropdownMenuItem(value: 'pdf', child: Text('PDF')),
+            DropdownMenuItem(value: 'epub', child: Text('EPUB')),
+            DropdownMenuItem(value: 'audio', child: Text('Audio')),
+            DropdownMenuItem(value: 'image', child: Text('Images')),
+            DropdownMenuItem(value: 'video', child: Text('Vidéo')),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              _changeFilter(value);
+            }
+          },
+          icon: const Icon(Icons.filter_list, size: 20),
+          underline: Container(),
+        ),
+        const SizedBox(width: 10),
+        
+        // Sort dropdown
+        DropdownButton<String>(
+          value: _sortOption,
+          items: const [
+            DropdownMenuItem(value: 'date', child: Text('Date')),
+            DropdownMenuItem(value: 'name', child: Text('Nom')),
+            DropdownMenuItem(value: 'size', child: Text('Taille')),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              _changeSort(value);
+            }
+          },
+          icon: Icon(
+            _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+            size: 20,
+          ),
+          underline: Container(),
+        ),
+        const Spacer(),
+        
+        // Refresh button
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _loadDownloadedBooks,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.download_done,
+            size: 60,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Aucun téléchargement',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Les livres que vous téléchargez apparaîtront ici',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
