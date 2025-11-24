@@ -53,8 +53,10 @@ class _ProfilScreenState extends State<ProfilScreen> {
           appBar: AppBar(
             backgroundColor: Colors.white,
             elevation: 0,
+            foregroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.black),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black, size: 20),
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
               onPressed: () {
                 Navigator.pop(context);
               },

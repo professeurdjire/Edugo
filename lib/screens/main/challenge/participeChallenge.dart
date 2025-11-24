@@ -3,6 +3,7 @@ import 'package:dotted_border/dotted_border.dart';
 import 'package:edugo/screens/main/challenge/resumeChallenge.dart';
 import 'package:edugo/services/defi_service.dart';
 import 'package:edugo/services/auth_service.dart';
+import 'package:edugo/services/theme_service.dart';
 import 'package:edugo/models/defi_detail_response.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
@@ -155,25 +156,31 @@ class _ChallengeParticipeScreenState extends State<ChallengeParticipeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          _defiDetails?.titre ?? 'Challenge : Défi Mathématiques',
-          style: const TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
+    return ValueListenableBuilder<Color>(
+      valueListenable: ThemeService().primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            title: Text(
+              _defiDetails?.titre ?? 'Challenge : Défi Mathématiques',
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontFamily: 'Roboto',
+              ),
+            ),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            centerTitle: true,
+            iconTheme: const IconThemeData(color: Colors.black),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -207,6 +214,8 @@ class _ChallengeParticipeScreenState extends State<ChallengeParticipeScreen> {
                 _buildNavigationButtons(),
               ],
             ),
+        );
+      },
     );
   }
 

@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/services/theme_service.dart';
 
 // Vous pouvez nommer ce fichier 'password_reset_success_screen.dart'
 
 class SuccesReenitialisation extends StatelessWidget {
   const SuccesReenitialisation({super.key});
 
-  // Placeholder colors for a close visual match
-  final Color primaryPurple = const Color(0xFFA885D8);
-  final Color lightPurple = const Color(0xFFF3EDFC);
-  final Color checkMarkColor = const Color(0xFF9B7DE4); // Checkmark color matches the button/circle border
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-    backgroundColor: Colors.white,
+    final ThemeService _themeService = ThemeService();
+    
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        // Couleurs dynamiques basées sur le thème
+        final Color lightPurple = primaryColor.withOpacity(0.1);
+        final Color checkMarkColor = primaryColor;
+
+        return Scaffold(
+          backgroundColor: Colors.white,
       // Pas d'AppBar pour un écran de succès plein écran, mais j'utilise un widget pour centrer.
       body: Center(
         child: Padding(
@@ -29,14 +34,12 @@ class SuccesReenitialisation extends StatelessWidget {
                   width: 160,
                   height: 160,
                   decoration: BoxDecoration(
-                    color: lightPurple, // Light background circle
+                    color: lightPurple,
                     shape: BoxShape.circle,
-                    // Optional: Add a subtle border to match the image's shading
-                    // border: Border.all(color: primaryPurple.withOpacity(0.3), width: 1),
                   ),
                   child: Center(
                     child: Icon(
-                      Icons.check, // The checkmark icon
+                      Icons.check,
                       size: 100,
                       color: checkMarkColor,
                     ),
@@ -77,7 +80,7 @@ class SuccesReenitialisation extends StatelessWidget {
                     print('Se connecter maintenant button pressed');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryPurple, // Background color from the image
+                    backgroundColor: primaryColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -97,6 +100,8 @@ class SuccesReenitialisation extends StatelessWidget {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }

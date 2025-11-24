@@ -47,6 +47,7 @@ Serializers _$serializers =
           ..add(Niveau.serializer)
           ..add(NiveauResponse.serializer)
           ..add(OptionsConversion.serializer)
+          ..add(Partenaire.serializer)
           ..add(Participation.serializer)
           ..add(Progression.serializer)
           ..add(ProgressionResponse.serializer)

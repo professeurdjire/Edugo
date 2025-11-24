@@ -23,15 +23,18 @@ class ObjectifService {
   }) async {
     try {
       print('🔄 Création d\'objectif pour élève $eleveId');
+
       final request = ObjectifRequest(
         typeObjectif: typeObjectif,
         nbreLivre: nbreLivre,
         dateEnvoie: dateEnvoie,
       );
 
-      // L'endpoint devrait être /eleve/{eleveId}/objectifs ou /objectifs avec eleveId dans le body
+      // Utiliser le même schéma que les autres endpoints: /api/eleve/{eleveId}/objectifs
       final response = await _dio.post(
+        // Note: baseUrl already contains /api, et les autres méthodes utilisent /api/eleve/...
         '/api/eleve/$eleveId/objectifs',
+
         data: request.toJson(),
         options: Options(
           headers: {'Content-Type': 'application/json'},
@@ -60,18 +63,32 @@ class ObjectifService {
   Future<ObjectifResponse?> getObjectifEnCours(int eleveId) async {
     try {
       print('🔄 Récupération de l\'objectif en cours pour élève $eleveId');
+      // Note: baseUrl contains /api, and endpoints need /api/api/... (double /api)
       final response = await _dio.get('/api/eleve/$eleveId/objectifs/en-cours');
 
       print('✅ Réponse objectif en cours: ${response.statusCode}');
       if (response.statusCode == 200) {
         return ObjectifResponse.fromJson(response.data);
       }
+      // For 404 or 500, return null (no current objective)
+      if (response.statusCode == 404 || response.statusCode == 500) {
+        print('ℹ️ Aucun objectif en cours trouvé pour cet élève');
+        return null;
+      }
       return null;
     } catch (e) {
-      print('❌ Erreur lors de la récupération de l\'objectif en cours: $e');
+      // Don't log as error for 500/404, just return null
       if (e is DioException) {
-        print('   Status: ${e.response?.statusCode}');
-        print('   Data: ${e.response?.data}');
+        final statusCode = e.response?.statusCode;
+        if (statusCode == 404 || statusCode == 500) {
+          print('ℹ️ Aucun objectif en cours trouvé pour cet élève');
+        } else {
+          print('❌ Erreur lors de la récupération de l\'objectif en cours: $e');
+          print('   Status: $statusCode');
+          print('   Data: ${e.response?.data}');
+        }
+      } else {
+        print('❌ Erreur lors de la récupération de l\'objectif en cours: $e');
       }
       return null;
     }
@@ -81,6 +98,7 @@ class ObjectifService {
   Future<List<ObjectifResponse>?> getObjectifsByEleve(int eleveId) async {
     try {
       print('🔄 Récupération de tous les objectifs pour élève $eleveId');
+      // Note: baseUrl contains /api, and endpoints need /api/api/... (double /api)
       final response = await _dio.get('/api/eleve/$eleveId/objectifs');
 
       print('✅ Réponse objectifs: ${response.statusCode}');
@@ -103,6 +121,7 @@ class ObjectifService {
   Future<ObjectifResponse?> getObjectifById(int id, int eleveId) async {
     try {
       print('🔄 Récupération de l\'objectif $id pour élève $eleveId');
+      // Note: baseUrl contains /api, and endpoints need /api/api/... (double /api)
       final response = await _dio.get('/api/eleve/$eleveId/objectifs/$id');
 
       if (response.statusCode == 200) {
@@ -122,6 +141,7 @@ class ObjectifService {
   Future<List<ObjectifResponse>?> getHistoriqueObjectifs(int eleveId) async {
     try {
       print('🔄 Récupération de l\'historique des objectifs pour élève $eleveId');
+      // Note: baseUrl contains /api, and endpoints need /api/api/... (double /api)
       final response = await _dio.get('/api/eleve/$eleveId/objectifs/historique');
 
       if (response.statusCode == 200) {
@@ -142,6 +162,7 @@ class ObjectifService {
   Future<bool> deleteObjectif(int id, int eleveId) async {
     try {
       print('🔄 Suppression de l\'objectif $id pour élève $eleveId');
+      // Note: baseUrl contains /api, and endpoints need /api/api/... (double /api)
       final response = await _dio.delete('/api/eleve/$eleveId/objectifs/$id');
       final success = response.statusCode == 200 || response.statusCode == 204;
       if (success) {

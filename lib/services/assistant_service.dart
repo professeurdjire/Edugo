@@ -20,6 +20,7 @@ class AssistantService {
   /// Envoyer un message au chatbot
   Future<AssistantMessage?> sendMessage(String message, int eleveId) async {
     try {
+      // Note: baseUrl contains /api, and endpoints need /api/api/... (double /api)
       final response = await _dio.post(
         '/api/ia/chat',
         data: {
@@ -43,6 +44,7 @@ class AssistantService {
   /// Récupérer l'historique des sessions de chat
   Future<BuiltList<AssistantMessage>?> getChatSessions(int eleveId) async {
     try {
+      // Note: baseUrl contains /api, and endpoints need /api/api/... (double /api)
       final response = await _dio.get('/api/ia/chat/sessions?eleveId=$eleveId');
       
       if (response.statusCode == 200) {

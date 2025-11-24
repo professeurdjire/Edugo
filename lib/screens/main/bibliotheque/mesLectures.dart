@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:edugo/services/theme_service.dart';
+import 'package:edugo/services/livre_service.dart';
+import 'package:edugo/services/auth_service.dart';
+import 'package:edugo/models/progression_response.dart';
+import 'package:built_collection/built_collection.dart';
 
 // --- CONSTANTES DE STYLES ---
 const Color _colorBlack = Color(0xFF000000);
@@ -42,16 +46,93 @@ class MyReadingsScreen extends StatefulWidget {
 
 class _MyReadingsScreenState extends State<MyReadingsScreen> {
   ReadingFilter _currentFilter = ReadingFilter.all; // État de filtre initial
-
-  // Données de lectures simulées (maintenant comme objets ReadingItem)
-  final List<ReadingItem> _allReadings = [
-    ReadingItem(title: 'Le jardin invisible', author: 'Auteur : C.S.Lewis', progress: 1.0, imagePath: 'assets/images/book1.png'),
-    ReadingItem(title: 'Rêves du Feu', author: 'Auteur : C.S.Lewis', progress: 0.75, imagePath: 'assets/images/book1.png'),
-    ReadingItem(title: 'Les larmes du lac', author: 'Marie Havard', progress: 1.0, imagePath: 'assets/images/book1.png'),
-    ReadingItem(title: 'La peine de Fer', author: 'Auteur : C.S.Lewis', progress: 0.45, imagePath: 'assets/images/book1.png'),
-    ReadingItem(title: 'Le jardin invisible', author: 'Auteur : C.S.Lewis', progress: 1.0, imagePath: 'assets/images/book1.png'),
-    ReadingItem(title: 'Les contes du Mandé', author: 'Auteur : Marie Paule Huet', progress: 0.10, imagePath: 'assets/images/book1.png'),
-  ];
+  
+  final LivreService _livreService = LivreService();
+  final AuthService _authService = AuthService();
+  
+  BuiltList<ProgressionResponse>? _readingProgress;
+  bool _isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadReadingProgress();
+  }
+  
+  Future<void> _loadReadingProgress() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final eleveId = _authService.currentUserId;
+      if (eleveId != null) {
+        final progressions = await _livreService.getProgressionLecture(eleveId);
+        if (mounted) {
+          setState(() {
+            _readingProgress = progressions;
+            _isLoading = false;
+          });
+          
+          // Charger les détails des livres si le titre est manquant
+          if (progressions != null && progressions.isNotEmpty) {
+            for (var progression in progressions) {
+              if ((progression.livreTitre == null || progression.livreTitre!.isEmpty) && progression.livreId != null) {
+                // Charger les détails du livre pour obtenir le titre
+                try {
+                  final livre = await _livreService.getLivreById(progression.livreId!);
+                  if (livre != null && mounted) {
+                    // Mettre à jour la progression avec le titre du livre
+                    // Note: On ne peut pas modifier directement ProgressionResponse, donc on doit le refaire
+                    setState(() {
+                      // Recharger les progressions pour avoir les titres à jour
+                    });
+                  }
+                } catch (e) {
+                  print('Error loading book details for ${progression.livreId}: $e');
+                }
+              }
+            }
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading reading progress: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+  
+  // Convertir les progressions en ReadingItem
+  List<ReadingItem> get _allReadings {
+    if (_readingProgress == null || _readingProgress!.isEmpty) {
+      // Retourner une liste vide ou des données par défaut
+      return [];
+    }
+    
+    return _readingProgress!.map((progression) {
+      final progress = (progression.pourcentageCompletion ?? 0) / 100.0;
+      // Utiliser le titre du livre, ou "Livre sans titre" si manquant
+      final title = progression.livreTitre ?? 'Livre sans titre';
+      // Note: eleveNom est le nom de l'élève, pas l'auteur du livre
+      // Pour l'auteur, il faudrait charger les détails du livre, mais pour l'instant on affiche juste le titre
+      return ReadingItem(
+        title: title,
+        author: 'Page ${progression.pageActuelle ?? 0} / ${progression.pourcentageCompletion ?? 0}%', // Afficher la page actuelle et le pourcentage
+        progress: progress.clamp(0.0, 1.0),
+        imagePath: 'assets/images/book1.png', // ProgressionResponse n'a pas d'image, utiliser une image par défaut
+      );
+    }).toList();
+  }
 
   // --- LOGIQUE DE FILTRAGE ---
   List<ReadingItem> get _filteredReadings {
@@ -59,78 +140,84 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
       case ReadingFilter.all:
         return _allReadings;
       case ReadingFilter.inProgress:
-        return _allReadings.where((item) => !item.isFinished).toList();
+        // Livres en cours: progression > 0% et < 100%
+        return _allReadings.where((item) => item.progress > 0.0 && item.progress < 1.0).toList();
       case ReadingFilter.finished:
-        return _allReadings.where((item) => item.isFinished).toList();
+        // Livres terminés: progression = 100%
+        return _allReadings.where((item) => item.progress >= 1.0).toList();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = widget.themeService.currentPrimaryColor;
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          _buildCustomAppBar(context),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  _buildSearchBar(primaryColor),
-                  const SizedBox(height: 20),
-                  _buildStatusFilters(primaryColor), // Contient maintenant la logique onTap
-                  const SizedBox(height: 20),
-                  _buildReadingsList(primaryColor), // Utilise la liste filtrée
-                  const SizedBox(height: 40),
-                ],
+    return ValueListenableBuilder<Color>(
+      valueListenable: ThemeService().primaryColorNotifier,
+      builder: (context, primaryColor, _) {
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            title: const Text(
+              'Toutes mes Lectures',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontFamily: 'Roboto',
               ),
             ),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            centerTitle: true,
+            iconTheme: const IconThemeData(color: Colors.black),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-        ],
-      ),
+          body: _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                  ),
+                )
+              : _allReadings.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.book_outlined, size: 64, color: Colors.grey.shade400),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Aucune lecture en cours',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 10),
+                          _buildSearchBar(primaryColor),
+                          const SizedBox(height: 20),
+                          _buildStatusFilters(primaryColor), // Contient maintenant la logique onTap
+                          const SizedBox(height: 20),
+                          _buildReadingsList(primaryColor), // Utilise la liste filtrée
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
+        );
+      },
     );
   }
 
   // --- WIDGETS DE STRUCTURE ET FILTRES ---
-
-  Widget _buildCustomAppBar(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_sharp, color: _colorBlack), // Flèche en noir
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Expanded(
-                  child: Center(
-                    child: Text(
-                      'Toutes mes Lectures',
-                      style: TextStyle(
-                        color: _colorBlack, // Titre en noir
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: _fontFamily,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 48),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildSearchBar(Color primaryColor) {
     return Container(

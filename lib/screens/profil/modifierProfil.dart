@@ -444,10 +444,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
-            backgroundColor: appBarColor,
+            backgroundColor: Colors.white,
             elevation: 0,
+            foregroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.black),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
               onPressed: () {
                 Navigator.pop(context);
               },
@@ -457,6 +459,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
+                fontSize: 20,
                 fontFamily: fontFamily,
               ),
             ),

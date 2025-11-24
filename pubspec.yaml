@@ -49,6 +49,11 @@ dependencies:
   syncfusion_flutter_pdfviewer: ^28.1.35
   url_launcher: ^6.2.5
   flutter_tts: ^4.0.2
+  webview_flutter: ^4.4.2
+  onesignal_flutter: ^5.0.4
+  app_links: ^6.3.3
+  connectivity_plus: ^6.0.5
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

@@ -128,17 +128,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_currentIndex == _pages.length - 1) {
       _finishOnboarding();
     } else {
-      _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 400), 
+        curve: Curves.easeInOut
+      );
     }
   }
 
   Future<void> _finishOnboarding() async {
+    // Appeler onFinished s'il existe (pour sauvegarder l'état onboarding)
     if (widget.onFinished != null) {
       await widget.onFinished!();
-      return;
     }
 
+    // Toujours rediriger vers la page de login
     if (!mounted) return;
+    
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => LoginScreen(themeService: widget.themeService),
@@ -214,4 +219,3 @@ class _OnboardingPage extends StatelessWidget {
     );
   }
 }
-

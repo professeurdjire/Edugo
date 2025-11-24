@@ -1,45 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:edugo/services/theme_service.dart';
+import 'package:edugo/screens/profil/reenitialiserMotDePasse/reenitialisationB.dart';
 
 class MotPasseOublieA extends StatelessWidget {
   const MotPasseOublieA({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Définition des couleurs utilisées sur l'écran
-    final Color primaryPurple = const Color(0xFFA885D8); // Violet principal cohérent
-    final Color lightPurple = const Color(0xFFF3EDFC);
-    final Color iconColor = const Color(0xFF7042C9);
+    final ThemeService _themeService = ThemeService();
+    final String _fontFamily = 'Roboto';
 
-    // NOUVELLES COULEURS POUR CORRESPONDRE À L'INSCRIPTION
-    final Color _borderColor = const Color(0xFFD1C4E9); // Bordure douce violette
-    final Color _fillColor = const Color(0xFFF5F5F5);   // Fond gris clair
-    final String _fontFamily = 'Roboto'; // Police par défaut
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        // Couleurs dynamiques basées sur le thème
+        final Color lightPurple = primaryColor.withOpacity(0.1);
+        final Color iconColor = primaryColor;
+        final Color _borderColor = primaryColor.withOpacity(0.3);
+        final Color _fillColor = const Color(0xFFF5F5F5);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      // Barre supérieure (AppBar)
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text(
-          'Mot De Passe Oublié',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
+        return Scaffold(
+          backgroundColor: Colors.white,
+          // Barre supérieure (AppBar)
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.black),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            title: const Text(
+              'Mot De Passe Oublié',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontFamily: 'Roboto',
+              ),
+            ),
+            centerTitle: true,
           ),
-        ),
-        centerTitle: false,
-      ),
 
-      // Corps principal de l'écran
-      body: SingleChildScrollView(
+          // Corps principal de l'écran
+          body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -113,31 +120,31 @@ class MotPasseOublieA extends StatelessWidget {
                 filled: true,
                 fillColor: _fillColor,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                suffixIcon: const Padding(
-                  padding: EdgeInsets.only(right: 8.0),
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
                   child: Icon(
                     Icons.email_outlined,
-                    color: Color(0xFFA582E5), // Violet cohérent
+                    color: iconColor,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1C4E9),
+                  borderSide: BorderSide(
+                    color: _borderColor,
                     width: 1.0,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1C4E9),
-                    width: 1.0,
+                  borderSide: BorderSide(
+                    color: primaryColor,
+                    width: 2.0,
                   ),
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1C4E9),
+                  borderSide: BorderSide(
+                    color: _borderColor,
                     width: 1.0,
                   ),
                 ),
@@ -150,17 +157,22 @@ class MotPasseOublieA extends StatelessWidget {
               height: 55,
               child: ElevatedButton(
                 onPressed: () {
-                  print('Bouton "Envoyer le lien" pressé');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MotPasseOublieB(),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryPurple,
+                  backgroundColor: primaryColor,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12), // Coins arrondis à 12px
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 0,
                 ),
                 child: const Text(
-                  'Envoyer le lien de réinitialisation',
+                  'Continuer',
                   style: TextStyle(
                     fontSize: 18,
                     color: Colors.white,
@@ -173,6 +185,8 @@ class MotPasseOublieA extends StatelessWidget {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }

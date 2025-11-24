@@ -1,4 +1,4 @@
-package com.example.edugo
+package com.edugo.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

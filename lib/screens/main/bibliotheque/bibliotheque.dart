@@ -2,20 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:edugo/screens/main/bibliotheque/telechargement.dart';
 import 'package:edugo/screens/main/bibliotheque/lectureLivre.dart';
 import 'package:edugo/screens/main/bibliotheque/pdf_viewer.dart';
+import 'package:edugo/screens/main/bibliotheque/lecture_audio.dart'; // Add audio reader import
 import 'package:edugo/screens/main/quiz/take_quiz_screen.dart';
 import 'package:edugo/services/livre_service.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/book_file_service.dart';
 import 'package:edugo/services/quiz_service.dart';
+import 'package:edugo/services/theme_service.dart';
 import 'package:edugo/models/livre.dart';
 import 'package:edugo/models/livre_response.dart';
 import 'package:edugo/models/fichier_livre.dart';
 import 'package:edugo/models/progression_response.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+import 'package:dio/dio.dart'; // Add Dio import
+import 'dart:typed_data'; // Add Uint8List import
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8);
-const Color _purpleLight = Color(0xFFE1D4F5);
 const Color _colorBlack = Color(0xFF000000);
 const Color _colorGrey = Color(0xFF757575);
 const Color _colorBackground = Color(0xFFF8F9FA);
@@ -35,6 +39,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   final AuthService _authService = AuthService();
   final BookFileService _bookFileService = BookFileService();
   final QuizService _quizService = QuizService();
+  final ThemeService _themeService = ThemeService();
   
   // Liste complète des livres disponibles
   BuiltList<Livre>? _allBooks;
@@ -42,6 +47,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
   
   // Progression de lecture pour chaque livre
   Map<int, ProgressionResponse?> _bookProgressions = {};
+  
+  // Download status for each book
+  Map<int, bool> _bookDownloadStatus = {};
   
   // Loading states
   bool _isLoading = true;
@@ -53,7 +61,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
   String _selectedLevel = 'Tous';
   String _selectedSubject = 'Tous';
   String _selectedClass = 'Tous';
-  bool _showDownloadedOnly = false;
   
   // Current user ID
   int? _currentEleveId;
@@ -83,14 +90,42 @@ class _LibraryScreenState extends State<LibraryScreen> {
         books = await _livreService.getAllLivres();
       }
       
-      // Load progressions for each book
+      // Check if we received any books
+      if (books == null) {
+        print('No books received from service');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Erreur lors du chargement des livres')),
+          );
+        }
+      } else {
+        print('Received ${books.length} books from service');
+      }
+      
+      // Load progressions and download status for each book
       if (books != null && _currentEleveId != null) {
         for (var book in books) {
           if (book.id != null) {
+            // Load progression
             final progression = await _livreService.getProgressionLivre(_currentEleveId!, book.id!);
-            setState(() {
-              _bookProgressions[book.id!] = progression;
-            });
+            
+            // Check download status
+            bool isDownloaded = false;
+            try {
+              final fichiers = await _livreService.getFichiersLivre(book.id!);
+              if (fichiers != null && fichiers.isNotEmpty) {
+                isDownloaded = await _bookFileService.isBookDownloaded(fichiers.first);
+              }
+            } catch (e) {
+              print('Error checking download status for book ${book.id}: $e');
+            }
+            
+            if (mounted) {
+              setState(() {
+                _bookProgressions[book.id!] = progression;
+                _bookDownloadStatus[book.id!] = isDownloaded;
+              });
+            }
           }
         }
       }
@@ -108,6 +143,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
         setState(() {
           _isLoading = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur lors du chargement des livres. Veuillez réessayer.')),
+        );
       }
     }
   }
@@ -140,16 +178,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
         // Filtre par niveau - for now we'll use a simple approach
         bool matchesLevel = _selectedLevel == 'Tous';
 
-        // Filtre par matière - for now we'll use a simple approach
-        bool matchesSubject = _selectedSubject == 'Tous';
+        // Filtre par matière
+        bool matchesSubject = _selectedSubject == 'Tous' || 
+            (book.matiere?.nom?.toLowerCase().contains(_selectedSubject.toLowerCase()) ?? false);
 
-        // Filtre par classe - for now we'll use a simple approach
+        // Filtre par classe
         bool matchesClass = _selectedClass == 'Tous';
 
-        // Filtre par téléchargement - for now we'll use a simple approach
-        bool matchesDownload = !_showDownloadedOnly;
-
-        return matchesSearch && matchesLevel && matchesSubject && matchesClass && matchesDownload;
+        return matchesSearch && matchesLevel && matchesSubject && matchesClass;
       }).toBuiltList();
     });
   }
@@ -159,10 +195,23 @@ class _LibraryScreenState extends State<LibraryScreen> {
       _selectedLevel = 'Tous';
       _selectedSubject = 'Tous';
       _selectedClass = 'Tous';
-      _showDownloadedOnly = false;
       _searchController.clear();
     });
     _filterBooks();
+  }
+  
+  Future<void> _refreshBookDownloadStatus(int bookId) async {
+    try {
+      final fichiers = await _livreService.getFichiersLivre(bookId);
+      if (fichiers != null && fichiers.isNotEmpty) {
+        final isDownloaded = await _bookFileService.isBookDownloaded(fichiers.first);
+        setState(() {
+          _bookDownloadStatus[bookId] = isDownloaded;
+        });
+      }
+    } catch (e) {
+      print('Error refreshing download status for book $bookId: $e');
+    }
   }
 
   @override
@@ -173,11 +222,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final bool isSmallScreen = constraints.maxWidth < 600;
-        final bool isVerySmallScreen = constraints.maxWidth < 400;
-        final bool isLargeScreen = constraints.maxWidth > 900;
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final bool isSmallScreen = constraints.maxWidth < 600;
+            final bool isVerySmallScreen = constraints.maxWidth < 400;
+            final bool isLargeScreen = constraints.maxWidth > 900;
 
         // Adaptation dynamique du nombre de colonnes
         int crossAxisCount;
@@ -193,40 +245,58 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
         return Scaffold(
           backgroundColor: _colorBackground,
+          appBar: AppBar(
+            title: const Text(
+              'Bibliothèque',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontFamily: 'Roboto',
+              ),
+            ),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            centerTitle: true,
+            iconTheme: const IconThemeData(color: Colors.black),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.download_outlined, color: Colors.black),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TelechargementsScreen()),
+                  );
+                },
+                tooltip: 'Téléchargements',
+              ),
+            ],
+          ),
           body: SafeArea(
             child: Column(
               children: [
-                // --- HEADER ---
-                _buildHeader(isSmallScreen),
                 SizedBox(height: isVerySmallScreen ? 8 : 12),
 
                 // --- BARRE DE RECHERCHE ---
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0),
-                  child: _buildSearchBar(isSmallScreen, isVerySmallScreen),
+                  child: _buildSearchBar(isSmallScreen, isVerySmallScreen, primaryColor),
                 ),
                 SizedBox(height: isVerySmallScreen ? 8 : 12),
 
-                // --- BOUTON TÉLÉCHARGEMENTS ---
+                // --- TAB BAR FILTERS ---
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0),
-                  child: _buildDownloadsButton(context, isSmallScreen, isVerySmallScreen),
+                  child: _buildFilterTabs(isSmallScreen, isVerySmallScreen, primaryColor),
                 ),
-                SizedBox(height: isVerySmallScreen ? 12 : 16),
-
-                // --- SECTION FILTRES ---
-                if (_filteredBooks != null)
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0),
-                    child: _buildFiltersSection(isSmallScreen, isVerySmallScreen),
-                  ),
                 SizedBox(height: isVerySmallScreen ? 8 : 12),
 
                 // --- COMPTEUR DE RÉSULTATS ---
                 if (_filteredBooks != null)
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0),
-                    child: _buildResultsCounter(isSmallScreen, isVerySmallScreen),
+                    child: _buildResultsCounter(isSmallScreen, isVerySmallScreen, primaryColor),
                   ),
                 SizedBox(height: isVerySmallScreen ? 8 : 12),
 
@@ -238,7 +308,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(_purpleMain),
+                            valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
                           ),
                           SizedBox(height: 16),
                           Text(
@@ -255,61 +325,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   )
                 else if (_filteredBooks == null || _filteredBooks!.isEmpty)
                   Expanded(
-                    child: _buildEmptyState(isSmallScreen, isVerySmallScreen),
+                    child: _buildEmptyState(isSmallScreen, isVerySmallScreen, primaryColor),
                   )
                 else
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: _refreshBooks,
-                      child: _buildBookGrid(context, crossAxisCount, isSmallScreen, isVerySmallScreen),
+                      child: _buildBookGrid(context, crossAxisCount, isSmallScreen, isVerySmallScreen, primaryColor),
                     ),
                   ),
               ],
             ),
           ),
         );
+          },
+        );
       },
     );
   }
 
-  // --- HEADER CUSTOMISÉ ---
-  Widget _buildHeader(bool isSmallScreen) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16.0 : 20.0),
-      child: Row(
-        children: [
-          // Titre de la bibliothèque
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Bibliothèque",
-                  style: TextStyle(
-                    color: _colorBlack,
-                    fontSize: isSmallScreen ? 24 : 28,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: _fontFamily,
-                  ),
-                ),
-                Text(
-                  "Découvrez et lisez des livres",
-                  style: TextStyle(
-                    color: _colorGrey,
-                    fontSize: isSmallScreen ? 14 : 16,
-                    fontFamily: _fontFamily,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // --- BARRE DE RECHERCHE ---
-  Widget _buildSearchBar(bool isSmallScreen, bool isVerySmallScreen) {
+  Widget _buildSearchBar(bool isSmallScreen, bool isVerySmallScreen, Color primaryColor) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -327,7 +364,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         children: [
           Icon(
             Icons.search,
-            color: _purpleMain,
+            color: primaryColor,
             size: isVerySmallScreen ? 18 : isSmallScreen ? 20 : 24
           ),
           SizedBox(width: isVerySmallScreen ? 6 : 10),
@@ -363,170 +400,123 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  // --- BOUTON TÉLÉCHARGEMENTS ---
-  Widget _buildDownloadsButton(BuildContext context, bool isSmallScreen, bool isVerySmallScreen) {
-    // For now, we'll use a placeholder count
-    final downloadedCount = 0;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const TelechargementsScreen()),
-        );
-      },
-      child: Container(
-        padding: EdgeInsets.all(isVerySmallScreen ? 10 : isSmallScreen ? 12 : 16),
-        decoration: BoxDecoration(
-          color: _purpleMain,
-          borderRadius: BorderRadius.circular(isVerySmallScreen ? 10 : 12),
-          boxShadow: [
-            BoxShadow(
-              color: _purpleMain.withOpacity(0.3),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(isVerySmallScreen ? 4 : 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.download_rounded,
-                color: Colors.white,
-                size: isVerySmallScreen ? 16 : isSmallScreen ? 18 : 20,
-              ),
-            ),
-            SizedBox(width: isVerySmallScreen ? 8 : 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Mes Téléchargements",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: isVerySmallScreen ? 12 : isSmallScreen ? 14 : 16,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: _fontFamily,
-                    ),
-                  ),
-                  Text(
-                    "$downloadedCount livre${downloadedCount > 1 ? 's' : ''} téléchargé${downloadedCount > 1 ? 's' : ''}",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: isVerySmallScreen ? 10 : isSmallScreen ? 12 : 13,
-                      fontFamily: _fontFamily,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: Colors.white,
-              size: isVerySmallScreen ? 14 : isSmallScreen ? 16 : 18,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- SECTION FILTRES ---
-  Widget _buildFiltersSection(bool isSmallScreen, bool isVerySmallScreen) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              "Filtres actifs:",
-              style: TextStyle(
-                color: _colorGrey,
-                fontSize: isVerySmallScreen ? 11 : isSmallScreen ? 13 : 14,
-                fontWeight: FontWeight.w500,
-                fontFamily: _fontFamily,
-              ),
-            ),
-            const Spacer(),
-            if (_selectedLevel != 'Tous' || _selectedSubject != 'Tous' || _selectedClass != 'Tous' || _showDownloadedOnly)
-              GestureDetector(
-                onTap: _resetFilters,
-                child: Text(
-                  "Tout effacer",
-                  style: TextStyle(
-                    color: _purpleMain,
-                    fontSize: isVerySmallScreen ? 11 : isSmallScreen ? 13 : 14,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: _fontFamily,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        SizedBox(height: isVerySmallScreen ? 6 : 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_selectedLevel != 'Tous') _buildActiveFilterChip('Niveau: $_selectedLevel', isSmallScreen, isVerySmallScreen),
-              if (_selectedSubject != 'Tous') _buildActiveFilterChip('Matière: $_selectedSubject', isSmallScreen, isVerySmallScreen),
-              if (_selectedClass != 'Tous') _buildActiveFilterChip('Classe: $_selectedClass', isSmallScreen, isVerySmallScreen),
-              if (_showDownloadedOnly) _buildActiveFilterChip('Téléchargés', isSmallScreen, isVerySmallScreen),
-              if (_selectedLevel == 'Tous' && _selectedSubject == 'Tous' && _selectedClass == 'Tous' && !_showDownloadedOnly)
-                Text(
-                  "Aucun filtre actif",
-                  style: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: isVerySmallScreen ? 11 : isSmallScreen ? 13 : 14,
-                    fontFamily: _fontFamily,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActiveFilterChip(String label, bool isSmallScreen, bool isVerySmallScreen) {
+  // --- TAB BAR FILTERS ---
+  Widget _buildFilterTabs(bool isSmallScreen, bool isVerySmallScreen, Color primaryColor) {
     return Container(
-      margin: EdgeInsets.only(right: isVerySmallScreen ? 6 : 8),
-      padding: EdgeInsets.symmetric(
-        horizontal: isVerySmallScreen ? 8 : 12,
-        vertical: isVerySmallScreen ? 4 : 6
-      ),
+      height: isVerySmallScreen ? 40 : 48,
       decoration: BoxDecoration(
-        color: _purpleLight,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _purpleMain),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(isVerySmallScreen ? 10 : 12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: _purpleMain,
-              fontSize: isVerySmallScreen ? 10 : isSmallScreen ? 12 : 13,
-              fontWeight: FontWeight.w500,
-              fontFamily: _fontFamily,
+          // General filter
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedLevel = 'Tous';
+                  _selectedSubject = 'Tous';
+                  _selectedClass = 'Tous';
+                });
+                _filterBooks();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _selectedLevel == 'Tous' && _selectedSubject == 'Tous' && _selectedClass == 'Tous' 
+                    ? primaryColor 
+                    : Colors.transparent,
+                  borderRadius: BorderRadius.circular(isVerySmallScreen ? 10 : 12),
+                ),
+                child: Center(
+                  child: Text(
+                    'Général',
+                    style: TextStyle(
+                      color: _selectedLevel == 'Tous' && _selectedSubject == 'Tous' && _selectedClass == 'Tous' 
+                        ? Colors.white 
+                        : _colorGrey,
+                      fontSize: isVerySmallScreen ? 12 : 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-          SizedBox(width: isVerySmallScreen ? 3 : 4),
-          GestureDetector(
-            onTap: _resetFilters,
-            child: Icon(
-              Icons.close,
-              size: isVerySmallScreen ? 12 : isSmallScreen ? 14 : 16,
-              color: _purpleMain
+          // Subject filter
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                _showSubjectFilterDialog();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(color: Colors.grey.shade200),
+                    right: BorderSide(color: Colors.grey.shade200),
+                  ),
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _selectedSubject == 'Tous' ? 'Matière' : _selectedSubject,
+                        style: TextStyle(
+                          color: _selectedSubject == 'Tous' ? _colorGrey : primaryColor,
+                          fontSize: isVerySmallScreen ? 12 : 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Icon(
+                        Icons.arrow_drop_down,
+                        color: _colorGrey,
+                        size: isVerySmallScreen ? 16 : 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Class filter
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                _showClassFilterDialog();
+              },
+              child: Container(
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _selectedClass == 'Tous' ? 'Classe' : _selectedClass,
+                        style: TextStyle(
+                          color: _selectedClass == 'Tous' ? _colorGrey : primaryColor,
+                          fontSize: isVerySmallScreen ? 12 : 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Icon(
+                        Icons.arrow_drop_down,
+                        color: _colorGrey,
+                        size: isVerySmallScreen ? 16 : 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -534,8 +524,101 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
+  // --- DIALOGS FOR FILTERS ---
+  void _showSubjectFilterDialog() {
+    final subjects = ['Tous', 'Littérature', 'Philosophie', 'Science-Fiction', 'Aventure', 'Fantastique', 'Mathématiques', 'Physique', 'Chimie', 'Biologie'];
+    
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Filtrer par Matière',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: subjects.length,
+                  itemBuilder: (context, index) {
+                    final subject = subjects[index];
+                    return RadioListTile<String>(
+                      title: Text(subject),
+                      value: subject,
+                      groupValue: _selectedSubject,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedSubject = value!;
+                        });
+                        _filterBooks();
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showClassFilterDialog() {
+    final classes = ['Tous', 'Collège', 'Seconde', 'Première', 'Terminale', 'Général', 'Technologique'];
+    
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Filtrer par Classe',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: classes.length,
+                  itemBuilder: (context, index) {
+                    final classItem = classes[index];
+                    return RadioListTile<String>(
+                      title: Text(classItem),
+                      value: classItem,
+                      groupValue: _selectedClass,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedClass = value!;
+                        });
+                        _filterBooks();
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // --- COMPTEUR DE RÉSULTATS ---
-  Widget _buildResultsCounter(bool isSmallScreen, bool isVerySmallScreen) {
+  Widget _buildResultsCounter(bool isSmallScreen, bool isVerySmallScreen, Color primaryColor) {
     return Row(
       children: [
         Text(
@@ -562,17 +645,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   // --- GRILLE DES LIVRES ---
-  Widget _buildBookGrid(BuildContext context, int crossAxisCount, bool isSmallScreen, bool isVerySmallScreen) {
+  Widget _buildBookGrid(BuildContext context, int crossAxisCount, bool isSmallScreen, bool isVerySmallScreen, Color primaryColor) {
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: isVerySmallScreen ? 8.0 : isSmallScreen ? 12.0 : 16.0),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          crossAxisSpacing: isVerySmallScreen ? 8.0 : isSmallScreen ? 10.0 : 12.0,
-          mainAxisSpacing: isVerySmallScreen ? 8.0 : isSmallScreen ? 10.0 : 12.0,
-          childAspectRatio: isVerySmallScreen ? 0.55 : isSmallScreen ? 0.6 : 0.65,
+          crossAxisCount: 2, // Toujours 2 colonnes comme demandé
+          crossAxisSpacing: isVerySmallScreen ? 12.0 : isSmallScreen ? 14.0 : 16.0,
+          mainAxisSpacing: isVerySmallScreen ? 12.0 : isSmallScreen ? 14.0 : 16.0,
+          childAspectRatio: isVerySmallScreen ? 0.5 : isSmallScreen ? 0.55 : 0.6, // Ajusté pour 2 colonnes
         ),
         itemCount: _filteredBooks?.length ?? 0,
         itemBuilder: (context, index) {
@@ -584,44 +667,83 @@ class _LibraryScreenState extends State<LibraryScreen> {
               ? progression!.pourcentageCompletion! / 100.0 
               : 0.0;
 
+          // Check if the book is downloaded
+          final isDownloaded = book.id != null ? _bookDownloadStatus[book.id!] ?? false : false;
+          
+          // Debug book image path
+          print('Book: ${book.titre}, Image path: ${book.imageCouverture}');
+          
           return _BookCard(
             title: book.titre ?? 'Livre sans titre',
             author: book.auteur ?? 'Auteur inconnu',
             imagePath: book.imageCouverture ?? '',
             progress: progressValue,
-            category: 'Littérature', // Placeholder for now
+            category: book.matiere?.nom ?? 'Matière inconnue',
             pages: book.totalPages ?? 0,
-            isDownloaded: false,
+            isDownloaded: isDownloaded,
             isSmallScreen: isSmallScreen,
             isVerySmallScreen: isVerySmallScreen,
+            primaryColor: primaryColor,
             onTap: () async {
-              // Get full book details and files
-              final fullBook = await _livreService.getLivreById(book.id!);
+              // Ouvrir le livre directement depuis le serveur (lecture en ligne)
+              // Le téléchargement est un concept séparé géré par onDownload
+              if (book.id == null) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Livre invalide')),
+                  );
+                }
+                return;
+              }
+
+              // Récupérer les fichiers du livre
               final fichiers = await _livreService.getFichiersLivre(book.id!);
               
-              if (fichiers != null && fichiers.isNotEmpty) {
-                // Download the file first and then open it
-                final file = fichiers.first;
-                final filePath = await _bookFileService.downloadBookFile(file);
-                
-                if (filePath != null) {
-                  // Open the file based on its type
-                  await _bookFileService.openBookFile(file, filePath, context);
-                } else {
-                  // Show error if download failed
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Erreur lors du téléchargement du livre')),
-                    );
-                  }
-                }
-              } else {
-                // Show error if no files available
+              if (fichiers == null || fichiers.isEmpty) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Aucun fichier disponible pour ce livre')),
                   );
                 }
+                return;
+              }
+
+              // Vérifier si le livre est téléchargé
+              bool isDownloaded = _bookDownloadStatus[book.id!] ?? false;
+              
+              if (isDownloaded) {
+                // Si téléchargé, ouvrir depuis le fichier local en transmettant les infos pour la progression
+                final file = fichiers.first;
+                final filePath = await _bookFileService.getDownloadedBookPath(file);
+                if (filePath != null) {
+                  await _bookFileService.openBookFile(
+                    file,
+                    filePath,
+                    context,
+                    livreId: book.id,
+                    eleveId: _currentEleveId,
+                    totalPages: book.totalPages,
+                  );
+                } else {
+                  // Si le fichier local n'existe plus, ouvrir en ligne avec suivi de progression
+                  await _bookFileService.openBookFileOnline(
+                    file,
+                    context,
+                    livreId: book.id,
+                    eleveId: _currentEleveId,
+                    totalPages: book.totalPages,
+                  );
+                }
+              } else {
+                // Ouvrir directement depuis le serveur (lecture en ligne) avec suivi de progression
+                final file = fichiers.first;
+                await _bookFileService.openBookFileOnline(
+                  file,
+                  context,
+                  livreId: book.id,
+                  eleveId: _currentEleveId,
+                  totalPages: book.totalPages,
+                );
               }
             },
             onDownload: () async {
@@ -636,14 +758,70 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Livre téléchargé avec succès')),
                     );
-                    setState(() {
-                      // Refresh the UI to show downloaded status
-                    });
+                    // Refresh the download status
+                    await _refreshBookDownloadStatus(book.id!);
                   }
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Erreur lors du téléchargement')),
                   );
+                }
+              }
+            },
+            onAudio: () async {
+              // Navigate to audio book reader screen with actual book file
+              if (context.mounted) {
+                try {
+                  // Get the book files for THIS specific book
+                  print('[Bibliotheque] Loading files for book ID: ${book.id}, Title: ${book.titre}');
+                  final fichiers = await _livreService.getFichiersLivre(book.id!);
+                  FichierLivre? fichierLivre;
+                  
+                  // Find the first PDF file, or any available file
+                  if (fichiers != null && fichiers.isNotEmpty) {
+                    // Try to find a PDF file first
+                    fichierLivre = fichiers.firstWhere(
+                      (f) => (f.format ?? '').toLowerCase() == 'pdf',
+                      orElse: () => fichiers.first, // Fallback to first file if no PDF
+                    );
+                    print('[Bibliotheque] Selected file for audio: ID=${fichierLivre.id}, Format=${fichierLivre.format}, Nom=${fichierLivre.nom}');
+                  } else {
+                    print('[Bibliotheque] WARNING: No files found for book ${book.id}');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Aucun fichier disponible pour ce livre'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                  
+                  // Navigate to audio reader with the actual file
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AudioBookReaderScreen(
+                          bookTitle: book.titre ?? 'Livre sans titre',
+                          livreId: book.id,
+                          eleveId: _currentEleveId,
+                          fichierLivre: fichierLivre, // Pass the actual file info
+                        ),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  print('[Bibliotheque] Error loading book files: $e');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erreur lors du chargement du livre: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -717,7 +895,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   // --- ÉTAT VIDE ---
-  Widget _buildEmptyState(bool isSmallScreen, bool isVerySmallScreen) {
+  Widget _buildEmptyState(bool isSmallScreen, bool isVerySmallScreen, Color primaryColor) {
     return Padding(
       padding: EdgeInsets.all(isVerySmallScreen ? 20 : 30),
       child: SingleChildScrollView(
@@ -753,7 +931,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ElevatedButton(
               onPressed: _resetFilters,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _purpleMain,
+                backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(isVerySmallScreen ? 8 : 12),
@@ -777,99 +955,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
     );
   }
-
-  // --- DIALOG DE FILTRES ---
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Filtrer les livres", style: TextStyle(fontFamily: _fontFamily)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildFilterDropdown(
-                title: "Niveau",
-                value: _selectedLevel,
-                items: ['Tous', 'Débutant', 'Intermédiaire', 'Avancé', 'Tous niveaux'],
-                onChanged: (value) => setState(() => _selectedLevel = value!),
-              ),
-              _buildFilterDropdown(
-                title: "Matière",
-                value: _selectedSubject,
-                items: ['Tous', 'Littérature', 'Philosophie', 'Science-Fiction', 'Aventure', 'Fantastique'],
-                onChanged: (value) => setState(() => _selectedSubject = value!),
-              ),
-              _buildFilterDropdown(
-                title: "Classe",
-                value: _selectedClass,
-                items: ['Tous', 'Collège', 'Seconde', 'Première', 'Terminale', 'Général'],
-                onChanged: (value) => setState(() => _selectedClass = value!),
-              ),
-              SwitchListTile(
-                title: Text("Livres téléchargés uniquement", style: TextStyle(fontFamily: _fontFamily)),
-                value: _showDownloadedOnly,
-                onChanged: (value) => setState(() => _showDownloadedOnly = value),
-                activeColor: _purpleMain,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Annuler", style: TextStyle(color: _colorGrey, fontFamily: _fontFamily)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _filterBooks();
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: _purpleMain),
-            child: Text("Appliquer", style: TextStyle(fontFamily: _fontFamily)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterDropdown({
-    required String title,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: TextStyle(fontWeight: FontWeight.w500, fontFamily: _fontFamily)),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: DropdownButton<String>(
-              value: value,
-              isExpanded: true,
-              underline: const SizedBox(),
-              items: items.map((String item) {
-                return DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(item, style: TextStyle(fontFamily: _fontFamily)),
-                );
-              }).toList(),
-              onChanged: onChanged,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // --- WIDGET CARTE LIVRE OPTIMISÉ ---
@@ -883,11 +968,13 @@ class _BookCard extends StatelessWidget {
   final bool isDownloaded;
   final bool isSmallScreen;
   final bool isVerySmallScreen;
+  final Color primaryColor;
   final VoidCallback onTap;
   final VoidCallback onDownload;
+  final VoidCallback onAudio; // Add audio callback
   final VoidCallback? onQuiz;
 
-  const _BookCard({
+  _BookCard({
     required this.title,
     required this.author,
     required this.imagePath,
@@ -897,8 +984,10 @@ class _BookCard extends StatelessWidget {
     required this.isDownloaded,
     required this.isSmallScreen,
     required this.isVerySmallScreen,
+    required this.primaryColor,
     required this.onTap,
     required this.onDownload,
+    required this.onAudio, // Add audio callback
     this.onQuiz,
   });
 
@@ -909,48 +998,48 @@ class _BookCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(isVerySmallScreen ? 12 : 15),
+          borderRadius: BorderRadius.circular(isVerySmallScreen ? 16 : 20),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
               spreadRadius: 1,
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image du livre
+            // Image du livre avec bordures arrondies
             Expanded(
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(isVerySmallScreen ? 12 : 15),
+                    top: Radius.circular(isVerySmallScreen ? 16 : 20),
                   ),
                 ),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     // Book cover image with error handling
-                    _buildBookImage(imagePath),
+                    _buildBookImage(imagePath, isVerySmallScreen, primaryColor),
                     // Overlay pour le téléchargement
                     if (isDownloaded)
                       Positioned(
                         top: 8,
                         right: 8,
                         child: Container(
-                          padding: EdgeInsets.all(isVerySmallScreen ? 4 : 6),
+                          padding: EdgeInsets.all(isVerySmallScreen ? 6 : 8),
                           decoration: BoxDecoration(
-                            color: _purpleMain.withOpacity(0.9),
+                            color: primaryColor.withOpacity(0.9),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.download_done,
                             color: Colors.white,
-                            size: isVerySmallScreen ? 14 : 16,
+                            size: isVerySmallScreen ? 16 : 18,
                           ),
                         ),
                       ),
@@ -959,128 +1048,151 @@ class _BookCard extends StatelessWidget {
               ),
             ),
 
-            // Informations du livre
+            // Informations du livre avec padding amélioré
             Padding(
-              padding: EdgeInsets.all(isVerySmallScreen ? 8 : 12),
+              padding: EdgeInsets.all(isVerySmallScreen ? 12 : 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Titre
+                  // Titre avec taille de texte adaptative
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: isVerySmallScreen ? 12 : isSmallScreen ? 14 : 16,
+                      fontSize: isVerySmallScreen ? 14 : isSmallScreen ? 16 : 18,
                       fontWeight: FontWeight.bold,
-                      color: _colorBlack,
-                      fontFamily: _fontFamily,
+                      color: const Color(0xFF000000),
+                      fontFamily: 'Roboto',
                       overflow: TextOverflow.ellipsis,
                     ),
                     maxLines: 2,
                   ),
-                  SizedBox(height: isVerySmallScreen ? 2 : 4),
+                  SizedBox(height: isVerySmallScreen ? 4 : 6),
 
-                  // Auteur
+                  // Auteur avec style amélioré
                   Text(
                     author,
                     style: TextStyle(
-                      fontSize: isVerySmallScreen ? 10 : isSmallScreen ? 12 : 14,
-                      color: _colorGrey,
-                      fontFamily: _fontFamily,
+                      fontSize: isVerySmallScreen ? 12 : isSmallScreen ? 14 : 15,
+                      color: const Color(0xFF757575),
+                      fontFamily: 'Roboto',
+                      fontStyle: FontStyle.italic,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: isVerySmallScreen ? 4 : 6),
+                  SizedBox(height: isVerySmallScreen ? 6 : 8),
 
-                  // Catégorie et pages
+                  // Catégorie et pages avec badges
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Badge catégorie
                       Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: isVerySmallScreen ? 6 : 8,
-                          vertical: isVerySmallScreen ? 2 : 4,
+                          horizontal: isVerySmallScreen ? 8 : 10,
+                          vertical: isVerySmallScreen ? 4 : 6,
                         ),
                         decoration: BoxDecoration(
-                          color: _purpleLight,
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFFE1D4F5),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: primaryColor),
                         ),
                         child: Text(
                           category,
                           style: TextStyle(
-                            fontSize: isVerySmallScreen ? 8 : isSmallScreen ? 10 : 11,
-                            color: _purpleMain,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: _fontFamily,
+                            fontSize: isVerySmallScreen ? 10 : isSmallScreen ? 11 : 12,
+                            color: primaryColor,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Roboto',
                           ),
                         ),
                       ),
-                      Text(
-                        "$pages pages",
-                        style: TextStyle(
-                          fontSize: isVerySmallScreen ? 10 : isSmallScreen ? 12 : 13,
-                          color: _colorGrey,
-                          fontFamily: _fontFamily,
-                        ),
+                      // Pages avec icône
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.menu_book,
+                            size: isVerySmallScreen ? 14 : 16,
+                            color: const Color(0xFF757575),
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            "$pages p",
+                            style: TextStyle(
+                              fontSize: isVerySmallScreen ? 11 : isSmallScreen ? 12 : 13,
+                              color: const Color(0xFF757575),
+                              fontFamily: 'Roboto',
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  SizedBox(height: isVerySmallScreen ? 4 : 6),
+                  SizedBox(height: isVerySmallScreen ? 6 : 8),
 
-                  // Barre de progression
+                  // Barre de progression avec style amélioré
                   if (progress > 0)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        LinearProgressIndicator(
-                          value: progress,
-                          backgroundColor: Colors.grey.shade300,
-                          color: _purpleMain,
-                          minHeight: isVerySmallScreen ? 4 : 6,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Colors.grey.shade300,
+                            color: primaryColor,
+                            minHeight: isVerySmallScreen ? 6 : 8,
+                          ),
                         ),
-                        SizedBox(height: isVerySmallScreen ? 2 : 4),
+                        SizedBox(height: isVerySmallScreen ? 4 : 6),
                         Text(
                           "${(progress * 100).round()}% lu",
                           style: TextStyle(
-                            fontSize: isVerySmallScreen ? 9 : 11,
-                            color: _colorGrey,
-                            fontFamily: _fontFamily,
+                            fontSize: isVerySmallScreen ? 10 : 12,
+                            color: const Color(0xFF757575),
+                            fontFamily: 'Roboto',
                           ),
                         ),
                       ],
                     ),
-                  SizedBox(height: isVerySmallScreen ? 4 : 6),
-                  // Quiz button
-                  if (onQuiz != null)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: ElevatedButton.icon(
-                        onPressed: onQuiz,
+                  SizedBox(height: isVerySmallScreen ? 6 : 8),
+
+                  // Action buttons row avec style amélioré
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Download button
+                      IconButton(
                         icon: Icon(
-                          Icons.quiz,
-                          size: isVerySmallScreen ? 12 : 14,
-                          color: Colors.white,
+                          isDownloaded ? Icons.download_done : Icons.download_outlined,
+                          size: isVerySmallScreen ? 18 : 20,
+                          color: isDownloaded ? primaryColor : const Color(0xFF757575),
                         ),
-                        label: Text(
-                          'Quiz',
-                          style: TextStyle(
-                            fontSize: isVerySmallScreen ? 10 : 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _purpleMain,
-                          minimumSize: Size.zero,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isVerySmallScreen ? 8 : 12,
-                            vertical: isVerySmallScreen ? 4 : 6,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                        onPressed: onDownload,
+                        tooltip: isDownloaded ? 'Téléchargé' : 'Télécharger',
                       ),
-                    ),
+                      // Audio button
+                      IconButton(
+                        icon: Icon(
+                          Icons.headphones_outlined,
+                          size: isVerySmallScreen ? 18 : 20,
+                          color: const Color(0xFF757575),
+                        ),
+                        onPressed: onAudio, // Use dedicated audio handler
+                        tooltip: 'Écouter',
+                      ),
+                      // Quiz button
+                      if (onQuiz != null)
+                        IconButton(
+                          icon: Icon(
+                            Icons.quiz_outlined,
+                            size: isVerySmallScreen ? 18 : 20,
+                            color: const Color(0xFF757575),
+                          ),
+                          onPressed: onQuiz,
+                          tooltip: 'Quiz',
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -1091,50 +1203,128 @@ class _BookCard extends StatelessWidget {
   }
   
   // Helper method to build book image with error handling
-  Widget _buildBookImage(String? imagePath) {
+  Widget _buildBookImage(String? imagePath, bool isVerySmallScreen, Color primaryColor) {
+    print('Attempting to load book image: $imagePath');
+    
     // Check if the image path is valid
     if (imagePath == null || imagePath.isEmpty || imagePath == "Chemin de l'image") {
-      return _getDefaultBookImage();
+      print('Invalid image path, using default image');
+      return _getDefaultBookImage(isVerySmallScreen, primaryColor);
     }
     
-    // For network images (URLs)
+    // For network images (URLs) - already absolute URLs
     if (imagePath.startsWith('http')) {
-      return Image.network(
-        imagePath,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _getDefaultBookImage();
-        },
-      );
+      print('Loading network image: $imagePath');
+      return _buildAuthenticatedImage(imagePath, isVerySmallScreen, primaryColor);
     }
     
-    // For relative paths from the backend (assuming they're served from the same server)
-    final baseUrl = AuthService().dio.options.baseUrl;
-    // Remove trailing slash if present
-    final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-    // Remove leading slash from imagePath if present
-    final cleanImagePath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-    
-    return Image.network(
-      '$cleanBaseUrl/$cleanImagePath',
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        print('Error loading image: $error');
-        return _getDefaultBookImage();
+    // For relative paths from the backend - these should already be handled in the service
+    // But we'll still handle them here as a fallback
+    try {
+      final baseUrl = AuthService().dio.options.baseUrl;
+      print('Base URL: $baseUrl');
+      
+      // Handle different path formats
+      String fullImageUrl;
+      
+      // Check if it's already an absolute path or API path
+      if (imagePath.startsWith('http')) {
+        fullImageUrl = imagePath;
+      } else if (imagePath.startsWith('/api/')) {
+        // Already an API path, prepend base URL
+        final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+        fullImageUrl = '$cleanBaseUrl$imagePath';
+      } else if (imagePath.startsWith('/')) {
+        // Relative path starting with /, prepend base URL
+        final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+        fullImageUrl = '$cleanBaseUrl$imagePath';
+      } else {
+        // Relative path without leading slash, prepend base URL with slash
+        final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+        fullImageUrl = '$cleanBaseUrl/$imagePath';
+      }
+      
+      print('Loading book image from constructed URL: $fullImageUrl');
+      
+      return _buildAuthenticatedImage(fullImageUrl, isVerySmallScreen, primaryColor);
+    } catch (e) {
+      print('Error constructing image URL: $e');
+      return _getDefaultBookImage(isVerySmallScreen, primaryColor);
+    }
+  }
+  
+  // Helper method to build authenticated image
+  Widget _buildAuthenticatedImage(String imageUrl, bool isVerySmallScreen, Color primaryColor) {
+    return FutureBuilder<Uint8List?>(
+      future: _loadImageBytes(imageUrl),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+            ),
+          );
+        }
+        
+        if (snapshot.hasData && snapshot.data != null) {
+          return ClipRRect(
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(isVerySmallScreen ? 16 : 20),
+            ),
+            child: Image.memory(
+              snapshot.data!,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                print('Error displaying image from memory: $error');
+                return _getDefaultBookImage(isVerySmallScreen, primaryColor);
+              },
+            ),
+          );
+        }
+        
+        // Fallback to default image
+        return _getDefaultBookImage(isVerySmallScreen, primaryColor);
       },
     );
   }
   
+  // Helper method to load image bytes with authentication
+  Future<Uint8List?> _loadImageBytes(String imageUrl) async {
+    try {
+      final authService = AuthService();
+      final response = await authService.dio.get(
+        imageUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {
+            'Authorization': authService.dio.options.headers['Authorization']?.toString() ?? '',
+          },
+        ),
+      );
+      
+      if (response.statusCode == 200 && response.data != null) {
+        return response.data as Uint8List;
+      }
+    } catch (e) {
+      print('Error loading image bytes: $e');
+    }
+    return null;
+  }
+  
   // Default book image placeholder
-  Widget _getDefaultBookImage() {
+  Widget _getDefaultBookImage(bool isVerySmallScreen, Color primaryColor) {
     return Container(
-      color: Colors.grey[300],
+      decoration: BoxDecoration(
+        color: const Color(0xFFE1D4F5),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(isVerySmallScreen ? 16 : 20),
+        ),
+      ),
       child: Icon(
         Icons.menu_book,
-        color: Colors.grey[600],
+        color: primaryColor,
         size: 40,
       ),
     );
   }
 }
- 

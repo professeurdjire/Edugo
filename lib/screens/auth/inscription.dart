@@ -4,6 +4,7 @@ import 'package:edugo/screens/auth/login.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/schoolService.dart';
 import 'package:edugo/services/theme_service.dart';
+import 'package:edugo/widgets/dynamic_logo.dart';
 
 // ------------------ ÉCRAN PRINCIPAL ------------------
 class RegistrationStepperScreen extends StatefulWidget {
@@ -111,7 +112,17 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
           body: Column(
             children: [
               SizedBox(height: MediaQuery.of(context).size.height * 0.08),
-              Image.asset('assets/images/logo.png', height: 120, fit: BoxFit.contain),
+              ValueListenableBuilder<Color>(
+                valueListenable: _themeService.primaryColorNotifier,
+                builder: (context, primaryColor, child) {
+                  return DynamicLogoSimple(
+                    assetPath: 'assets/images/logo.svg',
+                    primaryColor: primaryColor,
+                    secondaryColor: Colors.black,
+                    height: 120,
+                  );
+                },
+              ),
               const SizedBox(height: 30),
               _buildStepIndicator(primaryColor, purpleStepInactive),
               Expanded(
@@ -130,36 +141,59 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
 
   Widget _buildStepIndicator(Color primaryColor, Color purpleStepInactive) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(3, (index) {
-          final isCompleted = index < _currentStep;
-          final isCurrent = index == _currentStep;
-          return Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: isCurrent || isCompleted ? primaryColor : purpleStepInactive,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text('${index + 1}', style: TextStyle(color: isCurrent || isCompleted ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
-                ),
-                if (index < 2)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Container(height: 2, color: isCompleted ? primaryColor : purpleStepInactive),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 300),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(3, (index) {
+              final isCompleted = index < _currentStep;
+              final isCurrent = index == _currentStep;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: isCurrent || isCompleted ? primaryColor : purpleStepInactive,
+                      shape: BoxShape.circle,
+                      boxShadow: isCurrent
+                          ? [
+                              BoxShadow(
+                                color: primaryColor.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${index + 1}',
+                      style: TextStyle(
+                        color: isCurrent || isCompleted ? Colors.white : Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-              ],
-            ),
-          );
-        }),
+                  if (index < 2)
+                    Container(
+                      width: 40,
+                      margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: isCompleted ? primaryColor : purpleStepInactive,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                ],
+              );
+            }),
+          ),
+        ),
       ),
     );
   }
@@ -620,7 +654,7 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
             children: [
               // Email
               _buildInputField(
-                label: 'Adresse Email',
+                label: 'Email',
                 hint: 'Entrer votre email',
                 controller: _emailController,
                 onChanged: widget.onEmailChanged,

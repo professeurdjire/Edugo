@@ -49,8 +49,10 @@ class _PointExchangeScreenState extends State<PointExchangeScreen> {
           appBar: AppBar(
             backgroundColor: Colors.white,
             elevation: 0,
+            foregroundColor: Colors.black12,
+            iconTheme: const IconThemeData(color: Colors.black12),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black12),
               onPressed: () {
                 Navigator.pop(context);
               },
@@ -58,7 +60,7 @@ class _PointExchangeScreenState extends State<PointExchangeScreen> {
             title: const Text(
               'Échanger des points',
               style: TextStyle(
-                color: Colors.black,
+                color: Colors.black12,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),

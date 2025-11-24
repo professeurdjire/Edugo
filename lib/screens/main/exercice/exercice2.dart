@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:edugo/services/exercise_service.dart'; // Use new ExerciseService
 import 'package:edugo/models/exercice_response.dart';
 import 'package:edugo/screens/main/exercice/exercice3.dart';
+import 'package:edugo/services/theme_service.dart';
 import 'package:built_collection/built_collection.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
@@ -48,6 +49,7 @@ class ExerciseMatiereListScreen extends StatefulWidget {
 
 class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
   final ExerciseService _exerciceService = ExerciseService(); // Use new ExerciseService
+  final ThemeService _themeService = ThemeService();
   
   BuiltList<ExerciceResponse>? _exercices;
   bool _isLoading = true;
@@ -59,12 +61,19 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
   }
 
   Future<void> _loadExercices() async {
-    setState(() {
+    setState(() { 
       _isLoading = true;
     });
     
     try {
-      final exercices = await _exerciceService.getExercicesByMatiere(widget.matiereId);
+      // Use the new method to get exercises for the specific student and subject
+      BuiltList<ExerciceResponse>? exercices;
+      if (widget.eleveId != null) {
+        exercices = await _exerciceService.getExercicesByMatiereForEleve(widget.eleveId!, widget.matiereId);
+      } else {
+        exercices = await _exerciceService.getExercicesByMatiere(widget.matiereId);
+      }
+      
       if (mounted) {
         setState(() {
           _exercices = exercices;
@@ -116,12 +125,31 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
   Widget build(BuildContext context) {
     final exerciceList = _exercices?.toList() ?? [];
     
-    return Scaffold(
-      backgroundColor: _colorBackground,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80.0),
-        child: _buildCustomAppBar(context),
-      ),
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        return Scaffold(
+          backgroundColor: _colorBackground,
+          appBar: AppBar(
+            title: Text(
+              widget.matiereName,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontFamily: 'Roboto',
+              ),
+            ),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            centerTitle: true,
+            iconTheme: const IconThemeData(color: Colors.black),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : exerciceList.isEmpty
@@ -133,52 +161,11 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
                     ],
                   ),
                 ),
+        );
+      },
     );
   }
 
-  // --- WIDGET APPBAR PERSONNALISÉE ---
-  Widget _buildCustomAppBar(BuildContext context) {
-    return Container(
-      color: _purpleMain,
-      child: SafeArea(
-        bottom: false,
-        child: Container(
-          color: _colorWhite,
-          padding: const EdgeInsets.only(top: 10.0, left: 0, right: 20),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  // Icône de retour (en noir)
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: _colorBlack),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  // Centrer le titre avec le nom de la matière
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        widget.matiereName,
-                        style: const TextStyle(
-                          color: _colorBlack,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: _fontFamily,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48), // Pour équilibrer l'icône de retour
-                ],
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   // --- WIDGET EMPTY STATE ---
   Widget _buildEmptyState() {
@@ -212,15 +199,20 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loadExercices,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _purpleMain,
-              ),
-              child: const Text(
-                'Réessayer',
-                style: TextStyle(color: Colors.white),
-              ),
+            ValueListenableBuilder<Color>(
+              valueListenable: _themeService.primaryColorNotifier,
+              builder: (context, primaryColor, child) {
+                return ElevatedButton(
+                  onPressed: _loadExercices,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                  ),
+                  child: const Text(
+                    'Réessayer',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -282,6 +274,7 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
               builder: (context) => QuizScreen(
                 exerciseId: exercice.id ?? 0,
                 exerciseTitle: exercice.titre ?? 'Exercice sans titre',
+                eleveId: widget.eleveId,
               ),
             ),
           );
@@ -335,9 +328,9 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
               const SizedBox(height: 8),
               
               // Description
-              Text(
-                exercice.titre ?? 'Aucune description disponible',
-                style: const TextStyle(
+              const Text(
+                'Aucune description disponible',
+                style: TextStyle(
                   color: _colorGrey,
                   fontSize: 14,
                 ),
@@ -348,38 +341,38 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Questions count
+                  // Time allocated
                   Row(
                     children: [
                       const Icon(
-                        Icons.question_answer,
+                        Icons.timer,
                         color: _colorGrey,
                         size: 16,
                       ),
                       const SizedBox(width: 4),
-                      const Text(
-                        'Questions count not available',
-                        style: TextStyle(
+                      Text(
+                        '${exercice.tempsAlloue ?? 0} min',
+                        style: const TextStyle(
                           color: _colorGrey,
                           fontSize: 12,
                         ),
                       ),
                     ],
                   ),
-                  // Points
+                  // Subject name
                   Row(
                     children: [
                       const Icon(
-                        Icons.star,
-                        color: _purpleMain,
+                        Icons.school,
+                        color: _colorGrey,
                         size: 16,
                       ),
                       const SizedBox(width: 4),
-                      const Text(
-                        'Points not available',
-                        style: TextStyle(
-                          color: _purpleMain,
-                          fontWeight: FontWeight.bold,
+                      Text(
+                        exercice.matiereNom ?? 'Matière',
+                        style: const TextStyle(
+                          color: _colorGrey,
+                          fontSize: 12,
                         ),
                       ),
                     ],

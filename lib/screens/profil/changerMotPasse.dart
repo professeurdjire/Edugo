@@ -142,8 +142,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           appBar: AppBar(
             backgroundColor: Colors.white,
             elevation: 0,
+            foregroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.black),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
               onPressed: () {
                 if (!_isLoading) Navigator.pop(context);
               },
@@ -153,6 +155,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
+                fontSize: 20,
                 fontFamily: 'Roboto',
               ),
             ),

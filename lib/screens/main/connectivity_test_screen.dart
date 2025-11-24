@@ -67,9 +67,13 @@ class _ConnectivityTestScreenState extends State<ConnectivityTestScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Connectivity Test'),
+        title: const Text(
+          'Connectivity Test',
+          style: TextStyle(color: Colors.black12),
+        ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.black12,
+        iconTheme: const IconThemeData(color: Colors.black12),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

@@ -33,6 +33,7 @@ import 'package:edugo/models/exercice_detail_response.dart';
 import 'package:edugo/models/faire_exercice_response.dart';
 import 'package:edugo/models/eleve_defi_response.dart';
 import 'package:edugo/models/badge.dart';
+import 'package:edugo/models/badge_response.dart';
 import 'package:edugo/models/challenge.dart';
 import 'package:edugo/models/conversion_eleve.dart';
 import 'package:edugo/models/defi.dart';
@@ -47,6 +48,8 @@ import 'package:edugo/models/reponse_eleve.dart';
 import 'package:edugo/models/reponse_possible.dart';
 import 'package:edugo/models/suggestion.dart';
 import 'package:edugo/models/type_question.dart';
+import 'package:edugo/models/partenaire.dart';
+import 'package:edugo/models/submit_result_response.dart';
 
 part 'serializers.g.dart';
 
@@ -86,6 +89,7 @@ part 'serializers.g.dart';
   EleveDefiResponse,
   Badge,
   BadgeTypeEnum,
+  BadgeResponse,
   Challenge,
   ChallengeTypeChallengeEnum,
   ConversionEleve,
@@ -104,12 +108,18 @@ part 'serializers.g.dart';
   Suggestion,
   TypeQuestion,
   QuizStatutEnum,
+  Partenaire,
+  SubmitResultResponse,
+  DetailResultat,
 ])
 Serializers serializers = _$serializers;
 
 Serializers standardSerializers = (serializers.toBuilder()
       ..addPlugin(StandardJsonPlugin())
       ..add(FlexibleDateTimeSerializer())
+      ..add(BadgeResponse.serializer)
+      ..add(SubmitResultResponse.serializer)
+      ..add(DetailResultat.serializer)
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(DefiResponse)]),
         () => ListBuilder<DefiResponse>(),
@@ -129,6 +139,18 @@ Serializers standardSerializers = (serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ProgressionResponse)]),
         () => ListBuilder<ProgressionResponse>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(Partenaire)]),
+        () => ListBuilder<Partenaire>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(BadgeResponse)]),
+        () => ListBuilder<BadgeResponse>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(DetailResultat)]),
+        () => ListBuilder<DetailResultat>(),
       )
     )
     .build();

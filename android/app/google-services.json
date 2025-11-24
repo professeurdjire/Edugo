@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "872629114242",
+    "project_id": "edugo-c8cdc",
+    "storage_bucket": "edugo-c8cdc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:872629114242:android:ad9c6406f626946597eb9b",
+        "android_client_info": {
+          "package_name": "com.edugo.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7wIo1_Go1KhTjGR321z_wmY60Xkc7JLI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

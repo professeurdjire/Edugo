@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/assistant_service.dart';
 import 'package:edugo/services/storage/assistant_storage.dart';
+import 'package:edugo/services/theme_service.dart';
 import 'package:edugo/models/assistant_message.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active)
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const String _fontFamily = 'Roboto'; // Police principale
 
@@ -21,6 +21,7 @@ class AssistanceScreen extends StatefulWidget {
 class _AssistanceScreenState extends State<AssistanceScreen> {
   final AuthService _authService = AuthService();
   final AssistantService _assistantService = AssistantService();
+  final ThemeService _themeService = ThemeService();
   final TextEditingController _messageController = TextEditingController();
   
   bool _isLoading = true;
@@ -173,10 +174,13 @@ class _AssistanceScreenState extends State<AssistanceScreen> {
       final response = await _assistantService.sendMessage(message, _currentEleveId!);
       
       if (response != null && response.messages != null) {
-        // Add all messages from the response to the conversation
-        setState(() {
-          _messages = [..._messages, ...response.messages!];
-        });
+        // Add only the assistant's response (filter out user messages to avoid duplication)
+        final assistantMessages = response.messages!.where((m) => m.role == 'ASSISTANT').toList();
+        if (assistantMessages.isNotEmpty) {
+          setState(() {
+            _messages = [..._messages, ...assistantMessages];
+          });
+        }
       }
     } catch (e) {
       print('Erreur lors de l\'envoi du message: $e');
@@ -200,129 +204,46 @@ class _AssistanceScreenState extends State<AssistanceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // 1. App Bar personnalisé (avec barre de statut et titre)
-          _buildCustomAppBar(context),
-          
-          // 2. Informations utilisateur
-          _buildUserInfoSection(),
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            title: const Text(
+              'Aide',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontFamily: _fontFamily,
+              ),
+            ),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            centerTitle: true,
+            iconTheme: const IconThemeData(color: Colors.black),
+          ),
+          body: Column(
+            children: [
+              // Conversation history
+              _buildConversationHistory(primaryColor),
 
-          // 3. Conversation history
-          _buildConversationHistory(),
-
-          // 4. Champ de saisie du message
-          _buildMessageInput(),
+              // Champ de saisie du message
+              _buildMessageInput(primaryColor),
           
-          const SizedBox(height: 10), // Espace avant la barre de navigation
-        ],
-      ),
+              const SizedBox(height: 10), // Espace avant la barre de navigation
+            ],
+          ),
+        );
+      },
     );
   }
 
   // --- WIDGETS DE STRUCTURE PRINCIPALE ---
 
-  Widget _buildUserInfoSection() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        children: [
-          // Avatar utilisateur
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: _purpleMain.withOpacity(0.2),
-              shape: BoxShape.circle,
-              border: Border.all(color: _purpleMain, width: 1),
-            ),
-            child: _userPhoto.isNotEmpty
-                ? CircleAvatar(
-                    backgroundImage: NetworkImage(_userPhoto),
-                    radius: 25,
-                  )
-                : Icon(
-                    Icons.person,
-                    color: _purpleMain,
-                    size: 30,
-                  ),
-          ),
-          const SizedBox(width: 15),
-          // Informations utilisateur
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _isLoading ? 'Chargement...' : _userName,
-                  style: TextStyle(
-                    color: _colorBlack,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: _fontFamily,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  _isLoading ? 'Chargement...' : _userEmail,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                    fontFamily: _fontFamily,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCustomAppBar(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 10.0, left: 10, right: 20),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-
-            // Titre de la page
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: _colorBlack),
-                  onPressed: () => Navigator.pop(context), 
-                ),
-                const Expanded(
-                  child: Center(
-                    child: Text(
-                      'Aide',
-                      style: TextStyle(
-                        color: _colorBlack,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: _fontFamily,
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: _colorBlack),
-                  onPressed: _loadConversationHistory,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConversationHistory() {
+  Widget _buildConversationHistory(Color primaryColor) {
     return Expanded(
       child: _messages.isEmpty
           ? Center(
@@ -357,7 +278,7 @@ class _AssistanceScreenState extends State<AssistanceScreen> {
                           width: 30,
                           height: 30,
                           decoration: BoxDecoration(
-                            color: _purpleMain.withOpacity(0.2),
+                            color: primaryColor.withOpacity(0.2),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -372,7 +293,7 @@ class _AssistanceScreenState extends State<AssistanceScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isUser ? _purpleMain : Colors.grey[200],
+                            color: isUser ? primaryColor : Colors.grey[200],
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -391,7 +312,7 @@ class _AssistanceScreenState extends State<AssistanceScreen> {
                           width: 30,
                           height: 30,
                           decoration: BoxDecoration(
-                            color: _purpleMain.withOpacity(0.2),
+                            color: primaryColor.withOpacity(0.2),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -409,7 +330,7 @@ class _AssistanceScreenState extends State<AssistanceScreen> {
     );
   }
 
-  Widget _buildMessageInput() {
+  Widget _buildMessageInput(Color primaryColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
       child: Container(
@@ -474,8 +395,14 @@ class _NavBarItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
+  final Color primaryColor;
 
-  const _NavBarItem({required this.icon, required this.label, this.isSelected = false});
+  const _NavBarItem({
+    required this.icon,
+    required this.label,
+    required this.primaryColor,
+    this.isSelected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -484,13 +411,13 @@ class _NavBarItem extends StatelessWidget {
       children: [
         Icon(
           icon,
-          color: isSelected ? _purpleMain : _colorBlack,
+          color: isSelected ? primaryColor : _colorBlack,
           size: 24,
         ),
         Text(
           label,
           style: TextStyle(
-            color: isSelected ? _purpleMain : _colorBlack,
+            color: isSelected ? primaryColor : _colorBlack,
             fontSize: 11,
             fontWeight: FontWeight.w400,
             fontFamily: _fontFamily,

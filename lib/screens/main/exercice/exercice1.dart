@@ -3,12 +3,12 @@ import 'package:edugo/screens/main/exercice/exercice2.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/matiere_service.dart';
 import 'package:edugo/models/matiere_response.dart';
+import 'package:edugo/services/theme_service.dart';
 import 'package:built_collection/built_collection.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const String _fontFamily = 'Roboto'; // Police principale
-const Color _purpleAppbar = Color(0xFFA885D8); // Violet de la barre d'app
 const Color _shadowColor = Color(0xFFE5E5E5); // Gris clair d'ombre
 const Color _colorBackground = Color(0xFFF8F9FA); // Background color
 
@@ -24,6 +24,7 @@ class MatiereListScreen extends StatefulWidget {
 class _MatiereListScreenState extends State<MatiereListScreen> {
   final MatiereService _matiereService = MatiereService();
   final AuthService _authService = AuthService();
+  final ThemeService _themeService = ThemeService();
   
   BuiltList<MatiereResponse>? _matieres;
   bool _isLoading = true;
@@ -42,7 +43,14 @@ class _MatiereListScreenState extends State<MatiereListScreen> {
     });
     
     try {
-      final matieres = await _matiereService.getAllMatieres();
+      // Use the new method to get subjects for the specific student
+      BuiltList<MatiereResponse>? matieres;
+      if (_currentEleveId != null) {
+        matieres = await _matiereService.getMatieresByEleve(_currentEleveId!);
+      } else {
+        matieres = await _matiereService.getAllMatieres();
+      }
+      
       if (mounted) {
         setState(() {
           _matieres = matieres;
@@ -67,16 +75,49 @@ class _MatiereListScreenState extends State<MatiereListScreen> {
   @override
   Widget build(BuildContext context) {
     final matiereList = _matieres?.toList() ?? [];
-    return Scaffold(
-      backgroundColor: _colorBackground,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80.0),
-        child: _buildCustomAppBar(context),
-      ),
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        return Scaffold(
+          backgroundColor: _colorBackground,
+          appBar: AppBar(
+            title: const Text(
+              'Exercices',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontFamily: 'Roboto',
+              ),
+            ),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            centerTitle: true,
+            iconTheme: const IconThemeData(color: Colors.black),
+          ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : matiereList.isEmpty
-              ? _buildEmptyState()
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.school_outlined, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Aucune matière disponible',
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Les matières seront affichées lorsque des exercices seront disponibles',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                )
               : SingleChildScrollView(
                   child: Column(
                     children: [
@@ -84,51 +125,11 @@ class _MatiereListScreenState extends State<MatiereListScreen> {
                     ],
                   ),
                 ),
+        );
+      },
     );
   }
 
-  // --- WIDGET APPBAR PERSONNALISÉE ---
-  Widget _buildCustomAppBar(BuildContext context) {
-    return Container(
-      color: _purpleAppbar,
-      child: SafeArea(
-        bottom: false,
-        child: Container(
-          color: Colors.white,
-          padding: const EdgeInsets.only(top: 10.0, left: 0, right: 20),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  // Icône de retour (en noir)
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: _colorBlack),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  // Centrer le titre "Exercices"
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'Exercices',
-                        style: const TextStyle(
-                          color: _colorBlack,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: _fontFamily,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48), // Pour équilibrer l'icône de retour
-                ],
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   // --- WIDGET EMPTY STATE ---
   Widget _buildEmptyState() {
@@ -162,15 +163,20 @@ class _MatiereListScreenState extends State<MatiereListScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loadMatieres,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _purpleAppbar,
-              ),
-              child: const Text(
-                'Réessayer',
-                style: TextStyle(color: Colors.white),
-              ),
+            ValueListenableBuilder<Color>(
+              valueListenable: _themeService.primaryColorNotifier,
+              builder: (context, primaryColor, child) {
+                return ElevatedButton(
+                  onPressed: _loadMatieres,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                  ),
+                  child: const Text(
+                    'Réessayer',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                );
+              },
             ),
           ],
         ),

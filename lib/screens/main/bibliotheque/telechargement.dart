@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:edugo/services/book_file_service.dart';
 import 'package:edugo/models/fichier_livre.dart';
 import 'package:edugo/screens/main/bibliotheque/pdf_viewer.dart';
+import 'package:edugo/services/theme_service.dart';
 import 'package:path/path.dart' as path;
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
@@ -24,6 +25,7 @@ class TelechargementsScreen extends StatefulWidget {
 
 class _TelechargementsScreenState extends State<TelechargementsScreen> {
   final BookFileService _bookFileService = BookFileService();
+  final ThemeService _themeService = ThemeService();
   
   // Données des téléchargements
   List<Map<String, dynamic>> _downloadItems = [];
@@ -239,56 +241,78 @@ class _TelechargementsScreenState extends State<TelechargementsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80.0),
-        child: _buildCustomAppBar(context),
-      ),
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              children: [
-                const SizedBox(height: 10),
-                _buildSearchBar(),
-                const SizedBox(height: 10),
-                _buildFilterAndSortBar(),
-                const SizedBox(height: 10),
-              ],
+    return ValueListenableBuilder<Color>(
+      valueListenable: _themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Téléchargements',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontFamily: 'Roboto',
+              ),
+            ),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            centerTitle: true,
+            iconTheme: const IconThemeData(color: Colors.black),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
-
-          // Liste des éléments téléchargés (filtrés)
-          if (_isLoading)
-            const Expanded(
-              child: Center(
-                child: CircularProgressIndicator(),
+          backgroundColor: Colors.white,
+          body: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    _buildSearchBar(),
+                    const SizedBox(height: 10),
+                    _buildFilterAndSortBar(),
+                    const SizedBox(height: 10),
+                  ],
+                ),
               ),
-            )
-          else
-            Expanded(
-              child: _filteredItems.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(top: 10, left: 20, right: 20, bottom: 40),
-                      itemCount: _filteredItems.length,
-                      itemBuilder: (context, index) {
-                        final item = _filteredItems[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 15.0),
-                          child: _DownloadListItem(
-                            item: item,
-                            onOpen: () => _openItem(item),
-                            onDelete: () => _showDeleteDialog(item),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-        ],
-      ),
+
+              // Liste des éléments téléchargés (filtrés)
+              if (_isLoading)
+                const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else
+                Expanded(
+                  child: _filteredItems.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(top: 10, left: 20, right: 20, bottom: 40),
+                          itemCount: _filteredItems.length,
+                          itemBuilder: (context, index) {
+                            final item = _filteredItems[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 15.0),
+                              child: _DownloadListItem(
+                                item: item,
+                                onOpen: () => _openItem(item),
+                                onDelete: () => _showDeleteDialog(item),
+                                accentColor: primaryColor,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -380,47 +404,6 @@ class _TelechargementsScreenState extends State<TelechargementsScreen> {
 
   // --- WIDGETS DE STRUCTURE ---
 
-  Widget _buildCustomAppBar(BuildContext context) {
-    return Container(
-      color: _purpleAppbar, // Fond violet pour la barre de statut
-      child: SafeArea(
-        bottom: false,
-        child: Container(
-          color: Colors.white, // Fond blanc pour la zone de navigation/titre
-          padding: const EdgeInsets.only(top: 10.0, left: 0, right: 20),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  // Icône de retour
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: _colorBlack),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  // Centrer le titre "Téléchargements"
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'Téléchargements',
-                        style: TextStyle(
-                          color: _colorBlack,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48), // Espace pour aligner le titre
-                ],
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -451,8 +434,6 @@ class _TelechargementsScreenState extends State<TelechargementsScreen> {
   }
 }
 
-
-// ===================================================================
 // COMPOSANT : ÉLÉMENT DE TÉLÉCHARGEMENT
 // ===================================================================
 
@@ -460,8 +441,14 @@ class _DownloadListItem extends StatelessWidget {
   final Map<String, dynamic> item;
   final VoidCallback onOpen; // Callback pour l'action d'ouverture
   final VoidCallback onDelete; // Callback pour l'action de suppression
+  final Color accentColor;
 
-  const _DownloadListItem({required this.item, required this.onOpen, required this.onDelete});
+  const _DownloadListItem({
+    required this.item,
+    required this.onOpen,
+    required this.onDelete,
+    required this.accentColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -503,12 +490,12 @@ class _DownloadListItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: _purpleAppbar.withOpacity(0.1),
+              color: accentColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               _getFileIcon(fileName),
-              color: _purpleAppbar,
+              color: accentColor,
               size: 30,
             ),
           ),

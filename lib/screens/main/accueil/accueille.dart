@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:edugo/screens/main/accueil/activiteRecente.dart';
+import 'package:edugo/screens/main/bibliotheque/webview_screen.dart';
 import 'package:edugo/screens/main/accueil/partenaire.dart';
 import 'package:edugo/screens/main/bibliotheque/mesLectures.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +17,27 @@ import 'package:edugo/models/objectifResponse.dart';
 import 'package:edugo/services/theme_service.dart';
 import 'package:edugo/services/livre_service.dart';
 import 'package:edugo/models/progression_response.dart';
+import 'package:edugo/models/livre_response.dart';
+import 'package:edugo/models/livre.dart';
+import 'package:edugo/services/badge_service.dart';
+import 'package:edugo/services/statistique_service.dart';
+import 'package:edugo/models/badge.dart' as BadgeModel;
+import 'package:edugo/models/badge_response.dart';
+import 'package:edugo/screens/main/bibliotheque/bibliotheque.dart';
+import 'package:edugo/services/partenaire_service.dart';
+import 'package:edugo/models/partenaire.dart';
+import 'package:edugo/services/defi_service.dart';
+import 'package:edugo/models/defi_response.dart';
+import 'package:edugo/models/eleve_defi_response.dart';
+import 'package:edugo/services/activite_service.dart';
+import 'package:edugo/screens/main/defi/take_defi_screen.dart';
+import 'package:edugo/services/book_file_service.dart';
+import 'package:edugo/models/fichier_livre.dart';
+import 'package:edugo/services/notification_service.dart';
+import 'package:edugo/widgets/notification_badge.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:built_value/json_object.dart';
+import 'dart:async';
 
 // --- CONSTANTES DE STYLES ---
 const Color _colorBlack = Color(0xFF000000);
@@ -37,8 +58,18 @@ class CurrentReading {
   final String title;
   final String? author;
   final double progress;
+  final int? livreId; // ID du livre pour navigation
+  final int? eleveId; // ID de l'élève pour navigation
+  final int? pageActuelle; // Page actuelle de lecture
 
-  const CurrentReading({required this.title, this.author, required this.progress});
+  const CurrentReading({
+    required this.title,
+    this.author,
+    required this.progress,
+    this.livreId,
+    this.eleveId,
+    this.pageActuelle,
+  });
 }
 
 class HomeScreen extends StatefulWidget {
@@ -49,6 +80,14 @@ class HomeScreen extends StatefulWidget {
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
+  
+  // Méthode statique pour rafraîchir depuis l'extérieur
+  static void refresh(BuildContext? context) {
+    if (context != null) {
+      final state = context.findAncestorStateOfType<_HomeScreenState>();
+      state?.refreshData();
+    }
+  }
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -56,6 +95,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final EleveService _eleveService = EleveService();
   final ObjectifService _objectifService = ObjectifService();
   final LivreService _livreService = LivreService();
+  final BadgeService _badgeService = BadgeService();
+  final StatistiqueService _statistiqueService = StatistiqueService();
+  final PartenaireService _partenaireService = PartenaireService();
+  final DefiService _defiService = DefiService();
+  final ActiviteService _activiteService = ActiviteService();
+  final NotificationService _notificationService = NotificationService();
+  
+  // État pour le compteur de notifications
+  int _unreadNotificationCount = 0;
+  Timer? _notificationTimer;
 
   // Données réelles de l'utilisateur
   String _userName = 'Chargement...';
@@ -67,7 +116,9 @@ class _HomeScreenState extends State<HomeScreen> {
   ObjectifResponse? _currentObjectif;
   bool _isLoadingObjectif = false;
 
-  // Données simulées pour les autres sections
+  // Données pour les défis
+  BuiltList<DefiResponse>? _defisDisponibles;
+  bool _isLoadingDefis = false;
   double _dailyChallengeProgress = 0.0;
   bool _isChallengeCompleted = false;
   final int _booksRead = 3;
@@ -88,11 +139,91 @@ class _HomeScreenState extends State<HomeScreen> {
 
   BuiltList<ProgressionResponse>? _readingProgress;
   bool _isLoadingReadings = false;
+  
+  // Activités récentes
+  List<ActiviteRecente> _activites = [];
+  bool _isLoadingActivites = false;
+  Timer? _refreshTimer;
+  
+  // Badges et statistiques
+  BuiltList<BadgeModel.Badge>? _badges; // Badges obtenus
+  BuiltList<BadgeModel.Badge>? _allBadges; // Tous les badges disponibles
+  JsonObject? _statistiques;
+  bool _isLoadingBadges = false;
+  bool _isLoadingStats = false;
+  
+  // Recommandations (livres disponibles non lus)
+  BuiltList<Livre>? _recommendedBooks;
+  bool _isLoadingRecommendations = false;
+  
+  // Partenaires
+  BuiltList<Partenaire>? _partners;
+  bool _isLoadingPartners = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    
+    // Rafraîchir les données périodiquement (toutes les 30 secondes)
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted && _currentEleveId != null) {
+        _loadReadingProgress();
+        _loadActivites();
+        _refreshPoints();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+  
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _notificationTimer?.cancel();
+    super.dispose();
+  }
+  
+  // Recharger les données quand on revient sur cette page
+  void refreshData() {
+    if (_currentEleveId != null) {
+      _refreshPoints();
+      _loadReadingProgress();
+      _loadRecommendations();
+      _loadBadges();
+      _loadStatistiques();
+      _loadActivites();
+      _loadUnreadNotificationCount();
+    }
+  }
+  
+  /// Charger le nombre de notifications non lues
+  Future<void> _loadUnreadNotificationCount() async {
+    if (_currentEleveId == null) return;
+    
+    try {
+      final count = await _notificationService.getUnreadNotificationCount(_currentEleveId!);
+      if (mounted) {
+        setState(() {
+          _unreadNotificationCount = count;
+        });
+        print('[HomeScreen] 📬 Notifications non lues: $count');
+      }
+    } catch (e) {
+      print('[HomeScreen] ❌ Erreur lors du chargement du compteur de notifications: $e');
+    }
+  }
+  
+  /// Démarrer le timer pour rafraîchir le compteur de notifications
+  void _startNotificationTimer() {
+    _notificationTimer?.cancel();
+    _notificationTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+      if (mounted && _currentEleveId != null) {
+        _loadUnreadNotificationCount();
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   Future<void> _loadUserData() async {
@@ -106,8 +237,17 @@ class _HomeScreenState extends State<HomeScreen> {
         if (eleveData != null) {
           _updateUIWithEleveData(eleveData);
           _authService.setCurrentEleve(eleveData);
+          // Rafraîchir les points explicitement
+          await _refreshPoints();
           await _loadCurrentObjectif();
           await _loadReadingProgress();
+          await _loadBadges();
+          await _loadStatistiques();
+          await _loadRecommendations();
+          await _loadPartners();
+          await _loadDefis();
+          await _loadUnreadNotificationCount();
+          _startNotificationTimer();
           return;
         }
       }
@@ -119,6 +259,12 @@ class _HomeScreenState extends State<HomeScreen> {
         _currentEleveId = eleve.id;
         await _loadCurrentObjectif();
         await _loadReadingProgress();
+        await _loadBadges();
+        await _loadStatistiques();
+        await _loadRecommendations();
+        await _loadActivites();
+        await _loadUnreadNotificationCount();
+        _startNotificationTimer();
         return;
       }
 
@@ -130,8 +276,17 @@ class _HomeScreenState extends State<HomeScreen> {
         if (eleveData != null) {
           _updateUIWithEleveData(eleveData);
           _authService.setCurrentEleve(eleveData);
+          // Rafraîchir les points explicitement
+          await _refreshPoints();
           await _loadCurrentObjectif();
           await _loadReadingProgress();
+          await _loadBadges();
+          await _loadStatistiques();
+          await _loadRecommendations();
+          await _loadPartners();
+          await _loadDefis();
+          await _loadUnreadNotificationCount();
+          _startNotificationTimer();
           return;
         }
       }
@@ -206,14 +361,207 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadBadges() async {
+    if (_currentEleveId == null) return;
+    setState(() {
+      _isLoadingBadges = true;
+    });
+
+    try {
+      // Charger les badges obtenus et tous les badges disponibles en parallèle
+      final results = await Future.wait([
+        _badgeService.getBadges(_currentEleveId!),
+        _badgeService.getAllBadges(),
+      ]);
+      
+      final earnedBadges = results[0] as BuiltList<BadgeModel.Badge>?;
+      final allBadgesResponse = results[1] as BuiltList<BadgeResponse>?;
+      
+      if (mounted) {
+        setState(() {
+          _badges = earnedBadges;
+          // Convertir BadgeResponse en Badge pour l'affichage
+          if (allBadgesResponse != null) {
+            final convertedBadges = allBadgesResponse
+                .map((br) => _badgeService.convertBadgeResponseToBadge(br))
+                .whereType<BadgeModel.Badge>()
+                .toList();
+            _allBadges = BuiltList<BadgeModel.Badge>(convertedBadges);
+          }
+        });
+      }
+    } catch (e) {
+      print('Error loading badges: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingBadges = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadStatistiques() async {
+    if (_currentEleveId == null) return;
+    setState(() {
+      _isLoadingStats = true;
+    });
+
+    try {
+      final stats = await _statistiqueService.getStatistiques(_currentEleveId!);
+      if (mounted) {
+        setState(() {
+          _statistiques = stats;
+        });
+      }
+    } catch (e) {
+      print('Error loading statistics: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadDefis() async {
+    if (_currentEleveId == null) return;
+    setState(() {
+      _isLoadingDefis = true;
+    });
+
+    try {
+      final defis = await _defiService.getDefisDisponibles(_currentEleveId!);
+      final defisParticipes = await _defiService.getDefisParticipes(_currentEleveId!);
+      
+      if (mounted) {
+        setState(() {
+          _defisDisponibles = defis;
+          
+          // Déterminer le défi du jour (premier défi disponible)
+          if (defis != null && defis.isNotEmpty) {
+            final defiDuJour = defis.first;
+            
+            // Vérifier si l'élève a participé à ce défi
+            if (defisParticipes != null && defisParticipes.isNotEmpty) {
+              // Chercher la participation pour ce défi
+              EleveDefiResponse? participation;
+              try {
+                participation = defisParticipes.firstWhere(
+                  (p) => p.defiId == defiDuJour.id,
+                );
+              } catch (e) {
+                // Aucune participation trouvée
+                participation = null;
+              }
+              
+              if (participation != null) {
+                // Si l'élève a participé, vérifier si le défi est complété
+                // On considère qu'un défi est complété si le statut est "complété" ou "terminé"
+                final statut = participation.statut?.toLowerCase() ?? '';
+                final estComplete = statut.contains('complété') || 
+                                   statut.contains('terminé') || 
+                                   statut.contains('complete') ||
+                                   statut.contains('termine');
+                
+                _dailyChallengeProgress = estComplete ? 1.0 : 0.5; // 50% si en cours, 100% si complété
+                _isChallengeCompleted = estComplete;
+              } else {
+                // Pas encore participé
+                _dailyChallengeProgress = 0.0;
+                _isChallengeCompleted = false;
+              }
+            } else {
+              // Aucune participation
+              _dailyChallengeProgress = 0.0;
+              _isChallengeCompleted = false;
+            }
+          } else {
+            // Aucun défi disponible
+            _dailyChallengeProgress = 0.0;
+            _isChallengeCompleted = false;
+          }
+        });
+      }
+    } catch (e) {
+      print('Error loading defis: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingDefis = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadRecommendations() async {
+    if (_currentEleveId == null) return;
+    setState(() {
+      _isLoadingRecommendations = true;
+    });
+
+    try {
+      // Récupérer les livres disponibles
+      final availableBooks = await _livreService.getLivresDisponibles(_currentEleveId!);
+      
+      if (availableBooks != null && mounted) {
+        // Filtrer les livres non lus (ceux qui n'ont pas de progression ou progression < 100%)
+        final readBookIds = _readingProgress
+            ?.where((p) => (p.pourcentageCompletion ?? 0) >= 100)
+            .map((p) => p.livreId)
+            .toSet() ?? <int>{};
+        
+        final unreadBooks = availableBooks
+            .where((book) => book.id != null && !readBookIds.contains(book.id))
+            .take(10) // Limiter à 10 livres pour les recommandations
+            .toList();
+        
+        setState(() {
+          _recommendedBooks = BuiltList<Livre>(unreadBooks);
+        });
+      }
+    } catch (e) {
+      print('Error loading recommendations: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingRecommendations = false;
+        });
+      }
+    }
+  }
+  
+  // Recharger les points après un quiz
+  Future<void> _refreshPoints() async {
+    if (_currentEleveId == null) return;
+    try {
+      print('🔄 Rafraîchissement des points pour l\'élève $_currentEleveId');
+      // Utiliser uniquement getElevePoints pour éviter les conflits
+      final points = await _eleveService.getElevePoints(_currentEleveId!);
+      print('📊 Points récupérés: $points');
+      if (points != null && mounted) {
+        setState(() {
+          _userPoints = points;
+        });
+        print('✅ Points mis à jour dans l\'UI: $_userPoints');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du rafraîchissement des points: $e');
+    }
+  }
+
   void _updateUIWithEleveData(Eleve eleve) {
+    final newPoints = eleve.pointAccumule ?? 0;
     setState(() {
       _userName = '${eleve.prenom ?? ''} ${eleve.nom ?? ''}'.trim();
       _userPhotoProfil = eleve.photoProfil ?? '';
-      _userPoints = eleve.pointAccumule ?? 0;
+      // Toujours mettre à jour les points pour éviter qu'ils disparaissent
+      _userPoints = newPoints;
+      print('✅ Points mis à jour: $_userPoints');
       _currentEleveId = eleve.id;
     });
-    print(' Données utilisateur mises à jour: $_userName, Points: $_userPoints');
+    print('✅ Données utilisateur mises à jour: $_userName, Points: $_userPoints');
   }
 
   void _setDefaultData() {
@@ -225,66 +573,63 @@ class _HomeScreenState extends State<HomeScreen> {
     print(' Utilisation des données par défaut');
   }
 
-  // Fonction pour afficher le popup de défi
+  // Fonction pour afficher le popup de défi (redirection vers page dédiée)
   void _showChallengeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return _ChallengePopup(themeService: widget.themeService);
-      },
-    );
+    // Navigation vers la page dédiée au lieu du popup
+    if (_defisDisponibles != null && _defisDisponibles!.isNotEmpty && _currentEleveId != null) {
+      final defiDuJour = _defisDisponibles!.first;
+      if (defiDuJour.id != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TakeDefiScreen(
+              defiId: defiDuJour.id!,
+              eleveId: _currentEleveId!,
+              defiTitle: defiDuJour.titre,
+            ),
+          ),
+        ).then((_) {
+          // Rafraîchir les défis et points après retour
+          _loadDefis();
+          _refreshPoints();
+        });
+      }
+    }
   }
 
-  // Fonction pour compléter le défi (appelée depuis le popup)
+  // Fonction pour compléter le défi (désactivée - gérée par la page dédiée)
   void _completeChallenge(bool isCorrect, BuildContext context) {
-    setState(() {
-      _dailyChallengeProgress = 1.0;
-      _isChallengeCompleted = true;
-    });
-
-    Future.delayed(const Duration(milliseconds: 500), () {
-      Navigator.of(context).pop();
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return isCorrect
-              ? _GoodResultPopup(themeService: widget.themeService)
-              : _BadResultPopup(themeService: widget.themeService);
-        },
-      );
-    });
+    // Ne fait rien - la soumission est gérée dans TakeDefiScreen
   }
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = widget.themeService.currentPrimaryColor;
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          _buildHeader(context, primaryColor),
-          SliverList(
-            delegate: SliverChildListDelegate(
-              [
-                const SizedBox(height: 40),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: _buildReadingGoals(context, primaryColor),
-                ),
-                const SizedBox(height: 30),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: _buildBadgesSection(context, primaryColor),
-                ),
-                const SizedBox(height: 30),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: _buildRecentActivitySection(context, primaryColor),
-                ),
+    return ValueListenableBuilder<Color>(
+      valueListenable: widget.themeService.primaryColorNotifier,
+      builder: (context, primaryColor, child) {
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: CustomScrollView(
+            slivers: [
+              _buildHeader(context, primaryColor),
+              SliverList(
+                delegate: SliverChildListDelegate(
+                  [
+                    const SizedBox(height: 40),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: _buildReadingGoals(context, primaryColor),
+                    ),
+                    const SizedBox(height: 30),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: _buildBadgesSection(context, primaryColor),
+                    ),
+                    const SizedBox(height: 30),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: _buildRecentActivitySection(context, primaryColor),
+                    ),
                 const SizedBox(height: 30),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -306,6 +651,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+        );
+      },
     );
   }
 
@@ -314,7 +661,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // -------------------------------------------------------------------
 
   Widget _buildHeader(BuildContext context, Color primaryColor) {
-    final double effectiveHeaderHeight = 210.0;
+    final double effectiveHeaderHeight = 170.0;
 
     return SliverPersistentHeader(
       pinned: true,
@@ -333,12 +680,12 @@ class _HomeScreenState extends State<HomeScreen> {
         clipBehavior: Clip.none,
         children: [
           Container(
-            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 80),
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 40), // Réduire de 80 à 70 pour remonter l'ellipse/rectangle
             decoration: BoxDecoration(
               color: primaryColor,
               borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+                bottomLeft: Radius.circular(15),
+                bottomRight: Radius.circular(15),
               ),
             ),
             child: SafeArea(
@@ -430,16 +777,38 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 8),
                           GestureDetector(
-                            onTap: () {
+                            onTap: () async {
+                              // Marquer toutes les notifications comme lues lors de l'ouverture
+                              if (_currentEleveId != null && _unreadNotificationCount > 0) {
+                                await _notificationService.markAllAsRead(_currentEleveId!);
+                                // Rafraîchir le compteur
+                                await _loadUnreadNotificationCount();
+                              }
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) =>  NotificationScreen (themeService: widget.themeService)),
-                              );
+                                MaterialPageRoute(
+                                  builder: (context) => NotificationScreen(
+                                    themeService: widget.themeService,
+                                    eleveId: _currentEleveId,
+                                  ),
+                                ),
+                              ).then((_) {
+                                // Rafraîchir le compteur après retour de la page de notifications
+                                _loadUnreadNotificationCount();
+                              });
                             },
-                            child: const Icon(
-                              Icons.notifications,
-                              color: _colorGold,
-                              size: 26,
+                            child: NotificationBadge(
+                              count: _unreadNotificationCount,
+                              badgeColor: Colors.red,
+                              textColor: Colors.white,
+                              badgeSize: 18.0,
+                              fontSize: 11.0,
+                              padding: const EdgeInsets.all(2.0),
+                              child: const Icon(
+                                Icons.notifications,
+                                color: _colorGold,
+                                size: 26,
+                              ),
                             ),
                           ),
                         ],
@@ -451,7 +820,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Positioned(
-            bottom: -30,
+            bottom: -30, // Remonter la carte de défi (de -30 à -20)
             left: 20,
             right: 20,
             child: _buildDailyChallengeCard(primaryColor),
@@ -537,9 +906,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     const Text('Défi du jour', style: TextStyle(color: _colorBlack, fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 5),
-                    if (!_isChallengeCompleted)
+                    if (!_isChallengeCompleted && _defisDisponibles != null && _defisDisponibles!.isNotEmpty)
                       GestureDetector(
-                        onTap: () => _showChallengeDialog(context),
+                        onTap: () {
+                          final defiDuJour = _defisDisponibles!.first;
+                          if (defiDuJour.id != null && _currentEleveId != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TakeDefiScreen(
+                                  defiId: defiDuJour.id!,
+                                  eleveId: _currentEleveId!,
+                                  defiTitle: defiDuJour.titre,
+                                ),
+                              ),
+                            ).then((_) {
+                              // Rafraîchir les défis après retour
+                              _loadDefis();
+                              _refreshPoints();
+                            });
+                          }
+                        },
                         child: const Icon(Icons.edit, color: Colors.grey, size: 18),
                       ),
                   ],
@@ -588,7 +975,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             TextButton(
-              onPressed: () => _showGoalDialog(context),
+              onPressed: () {
+                if (_currentObjectif != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Vous avez déjà un objectif en cours.'),
+                    ),
+                  );
+                } else {
+                  _showGoalDialog(context);
+                }
+              },
               child: Text(
                 'Définir',
                 style: TextStyle(
@@ -724,14 +1121,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         const SizedBox(height: 15),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _BadgeItem(iconColor: _colorGold, label: 'Génie math'),
-            _BadgeItem(iconColor: _colorBronze, label: '20 question/10min'),
-            _BadgeItem(iconColor: _colorSilver, label: 'Calcul mental'),
-          ],
-        ),
+        _isLoadingBadges
+            ? const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()))
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: _buildBadgeItems(primaryColor),
+              ),
       ],
     );
   }
@@ -777,6 +1172,83 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  List<Widget> _buildBadgeItems(Color primaryColor) {
+    // Si on a tous les badges disponibles, les afficher avec ceux obtenus débloqués
+    if (_allBadges != null && _allBadges!.isNotEmpty) {
+      final earnedBadgeIds = _badges?.map((b) => b.id).toSet() ?? <int>{};
+      
+      return _allBadges!.take(3).map((BadgeModel.Badge badge) {
+        final isUnlocked = earnedBadgeIds.contains(badge.id);
+        Color color;
+        switch (badge.type) {
+          case BadgeModel.BadgeTypeEnum.OR:
+            color = _colorGold;
+            break;
+          case BadgeModel.BadgeTypeEnum.ARGENT:
+            color = _colorSilver;
+            break;
+          case BadgeModel.BadgeTypeEnum.BRONZE:
+            color = _colorBronze;
+            break;
+          default:
+            color = primaryColor;
+        }
+        return _BadgeItem(
+          iconColor: color,
+          label: badge.nom ?? 'Badge',
+          isUnlocked: isUnlocked,
+        );
+      }).toList();
+    }
+    
+    // Sinon, afficher les badges obtenus + des badges par défaut verrouillés
+    final items = <Widget>[];
+    
+    if (_badges != null && _badges!.isNotEmpty) {
+      items.addAll(_badges!.take(3).map((BadgeModel.Badge badge) {
+        Color color;
+        switch (badge.type) {
+          case BadgeModel.BadgeTypeEnum.OR:
+            color = _colorGold;
+            break;
+          case BadgeModel.BadgeTypeEnum.ARGENT:
+            color = _colorSilver;
+            break;
+          case BadgeModel.BadgeTypeEnum.BRONZE:
+            color = _colorBronze;
+            break;
+          default:
+            color = primaryColor;
+        }
+        return _BadgeItem(
+          iconColor: color,
+          label: badge.nom ?? 'Badge',
+          isUnlocked: true,
+        );
+      }));
+    }
+    
+    // Ajouter des badges verrouillés pour compléter jusqu'à 3
+    final remaining = 3 - items.length;
+    if (remaining > 0) {
+      final defaultBadges = [
+        {'color': _colorGold, 'label': 'Génie math'},
+        {'color': _colorBronze, 'label': '20 question/10min'},
+        {'color': _colorSilver, 'label': 'Calcul mental'},
+      ];
+      for (int i = 0; i < remaining; i++) {
+        final badge = defaultBadges[i % defaultBadges.length];
+        items.add(_BadgeItem(
+          iconColor: badge['color'] as Color,
+          label: badge['label'] as String,
+          isUnlocked: false,
+        ));
+      }
+    }
+    
+    return items;
+  }
+
   Widget _buildRecommendationsSection(Color primaryColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,10 +1262,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             TextButton(
               onPressed: () {
+                // Rediriger vers la bibliothèque
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) =>   RecentActivitiesScreen(themeService: widget.themeService)),
-                );
+                  MaterialPageRoute(
+                    builder: (context) => LibraryScreen(eleveId: _currentEleveId),
+                  ),
+                ).then((_) {
+                  _loadReadingProgress();
+                  _loadCurrentObjectif();
+                });
               },
               child: Text(
                 'Voir tout',
@@ -804,42 +1282,64 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         
         const SizedBox(height: 15),
-        SizedBox(
-          height: 200,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              _RecommendationCard(
-                title: 'Le jardin invisible',
-                author: 'Auteur : C.S.Lewis',
-                coverAsset: 'book1.png',
-              ),
-              _RecommendationCard(
-                title: 'Le coeur se souvient',
-                author: 'Auteur : C.S.Lewis',
-                coverAsset: 'book1.png',
-              ),
-              _RecommendationCard(
-                title: 'Libre comme l\'ère',
-                author: 'Auteur : C.S.Lewis',
-                coverAsset: 'book1.png',
-              ),
-              _RecommendationCard(
-                title: 'En apnée',
-                author: 'Auteur : C.S.Lewis',
-                coverAsset: 'book1.png',
-              ),
-            ],
-          ),
-        ),
+        _isLoadingRecommendations
+            ? const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : _recommendedBooks == null || _recommendedBooks!.isEmpty
+                ? SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: Text(
+                        'Aucune recommandation disponible',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                    ),
+                  )
+                : SizedBox(
+                    height: 200,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: _recommendedBooks!.map((book) {
+                        // Use default image if imageCouverture is null or invalid
+                        final imageUrl = book.imageCouverture;
+                        // Construire l'URL complète si c'est un chemin relatif
+                        String? coverAsset;
+                        if (imageUrl != null && imageUrl.isNotEmpty && !imageUrl.contains('Chemin')) {
+                          if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                            coverAsset = imageUrl;
+                          } else if (imageUrl.startsWith('/')) {
+                            // Chemin absolu, construire l'URL complète
+                            final baseUrl = _authService.dio.options.baseUrl.replaceAll('/api', '');
+                            coverAsset = '$baseUrl$imageUrl';
+                          } else {
+                            // Chemin relatif
+                            final baseUrl = _authService.dio.options.baseUrl.replaceAll('/api', '');
+                            coverAsset = '$baseUrl/uploads/images/$imageUrl';
+                          }
+                        } else {
+                          coverAsset = 'assets/images/book1.png';
+                        }
+                        return _RecommendationCard(
+                          title: book.titre ?? 'Livre sans titre',
+                          author: 'Auteur : ${book.auteur ?? 'Inconnu'}',
+                          coverAsset: coverAsset ?? 'assets/images/book1.png',
+                          livreId: book.id,
+                        );
+                      }).toList(),
+                    ),
+                  ),
       ],
     );
   }
 
   List<CurrentReading> _currentReadingList() {
     final data = _readingProgress;
+    // Toujours retourner les vraies progressions, même si vides
     if (data == null || data.isEmpty) {
-      return _defaultCurrentReadings;
+      // Retourner une liste vide au lieu des données par défaut
+      return [];
     }
     return data.map((progress) {
       final percent = ((progress.pourcentageCompletion ?? 0).clamp(0, 100)) / 100;
@@ -847,21 +1347,27 @@ class _HomeScreenState extends State<HomeScreen> {
         title: progress.livreTitre ?? 'Livre',
         author: progress.eleveNom,
         progress: percent,
+        livreId: progress.livreId,
+        eleveId: progress.eleveId,
+        pageActuelle: progress.pageActuelle,
       );
     }).toList();
   }
 
   List<Map<String, dynamic>> _recentActivitiesList() {
-    final data = _readingProgress;
-    if (data == null || data.isEmpty) {
+    // Utiliser les vraies activités depuis ActiviteService
+    if (_activites.isEmpty) {
       return _defaultRecentActivities;
     }
-    return data.take(3).map((progress) {
-      final text = 'Progression sur ${progress.livreTitre ?? 'un livre'} ${_relativeTime(progress.dateMiseAJour)}';
+    
+    // Prendre les 3 premières activités les plus récentes
+    final recentActivites = _activites.take(3).toList();
+    return recentActivites.map((activite) {
+      final timeText = _relativeTime(activite.date);
       return {
-        'icon': Icons.book_outlined,
-        'color': _colorBookIcon,
-        'text': text,
+        'icon': activite.icon,
+        'color': activite.iconColor,
+        'text': '${activite.description} $timeText',
       };
     }).toList();
   }
@@ -899,7 +1405,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             TextButton(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context)=>  MyReadingsScreen(themeService: widget.themeService)));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context)=>  MyReadingsScreen(themeService: widget.themeService),
+                  ),
+                ).then((_) {
+                  _loadReadingProgress();
+                  _loadCurrentObjectif();
+                });
               },
               child: Text(
                 'Voir tout',
@@ -929,6 +1443,51 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
       ],
     );
+  }
+
+  Future<void> _loadPartners() async {
+    setState(() {
+      _isLoadingPartners = true;
+    });
+    
+    try {
+      final partners = await _partenaireService.getPartenairesActifs();
+      if (mounted) {
+        setState(() {
+          _partners = partners;
+          _isLoadingPartners = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading partners: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingPartners = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadActivites() async {
+    if (_currentEleveId == null) return;
+    // Ne pas mettre à jour l'état de chargement pour éviter les rebuilds inutiles
+    // Charger en arrière-plan
+    try {
+      final activites = await _activiteService.getActivitesRecentess(_currentEleveId!);
+      if (mounted) {
+        setState(() {
+          _activites = activites;
+          _isLoadingActivites = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading activities: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingActivites = false;
+        });
+      }
+    }
   }
 
   Widget _buildPartnersSection(BuildContext context, Color primaryColor) {
@@ -963,22 +1522,26 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 15),
         SizedBox(
-          height: 150,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              _PartnerCard(
-                title: 'Khan Academy',
-                description: 'Des milliers de leçons gratuites sur tous les sujets',
-                backgroundColor: _colorPartnerKhaki,
-              ),
-              _PartnerCard(
-                title: 'Duolingo',
-                description: 'Apprendre des leçons gratuites en s\'amusant !',
-                backgroundColor: _colorPartnerGreen,
-              ),
-            ],
-          ),
+          height: 260, // Hauteur ajustée pour la nouvelle card plus grande
+          child: _isLoadingPartners
+              ? const Center(child: CircularProgressIndicator())
+              : _partners == null || _partners!.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Aucun partenaire disponible',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      children: _partners!.map((partner) {
+                        return _HomePartnerCard(
+                          partner: partner,
+                          primaryColor: primaryColor,
+                        );
+                      }).toList(),
+                    ),
         ),
       ],
     );
@@ -1524,15 +2087,36 @@ class _BadResultPopup extends StatelessWidget {
 class _BadgeItem extends StatelessWidget {
   final Color iconColor;
   final String label;
-  const _BadgeItem({required this.iconColor, required this.label});
+  final bool isUnlocked;
+  const _BadgeItem({
+    required this.iconColor, 
+    required this.label,
+    this.isUnlocked = true,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Griser si non débloqué
+    final effectiveColor = isUnlocked ? iconColor : Colors.grey.shade300;
+    final textColor = isUnlocked ? _colorBlack : Colors.grey.shade400;
+    
     return Column(
       children: [
-        Icon(Icons.emoji_events, color: iconColor, size: 50),
+        Icon(
+          Icons.emoji_events, 
+          color: effectiveColor, 
+          size: 50,
+        ),
         const SizedBox(height: 5),
-        Text(label, textAlign: TextAlign.center, style: const TextStyle(color: _colorBlack, fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(
+          label, 
+          textAlign: TextAlign.center, 
+          style: TextStyle(
+            color: textColor, 
+            fontSize: 14, 
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -1563,38 +2147,73 @@ class _RecommendationCard extends StatelessWidget {
   final String title;
   final String author;
   final String coverAsset;
-  const _RecommendationCard({required this.title, required this.author, required this.coverAsset});
+  final int? livreId;
+  const _RecommendationCard({
+    required this.title,
+    required this.author,
+    required this.coverAsset,
+    this.livreId,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 120,
-      margin: const EdgeInsets.only(right: 15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              'assets/images/$coverAsset',
-              height: 140,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 140,
-                  color: Colors.grey.shade200,
-                  child: const Center(
-                    child: Icon(Icons.broken_image, color: Colors.grey),
-                  ),
-                );
-              },
+    return GestureDetector(
+      onTap: livreId != null
+          ? () {
+              // Naviguer vers la bibliothèque
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LibraryScreen(eleveId: null),
+                ),
+              );
+            }
+          : null,
+      child: Container(
+        width: 120,
+        margin: const EdgeInsets.only(right: 15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: coverAsset.startsWith('http')
+                  ? Image.network(
+                      coverAsset,
+                      height: 140,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 140,
+                          color: Colors.grey.shade200,
+                          child: const Center(
+                            child: Icon(Icons.broken_image, color: Colors.grey),
+                          ),
+                        );
+                      },
+                    )
+                  : Image.asset(
+                      coverAsset.startsWith('assets/') ? coverAsset : 'assets/images/$coverAsset',
+                      height: 140,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 140,
+                          color: Colors.grey.shade200,
+                          child: const Center(
+                            child: Icon(Icons.broken_image, color: Colors.grey),
+                          ),
+                        );
+                      },
+                    ),
             ),
-          ),
-          const SizedBox(height: 5),
-          Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-          Text(author, style: const TextStyle(fontSize: 12, color: Colors.grey), overflow: TextOverflow.ellipsis),
-        ],
+            const SizedBox(height: 5),
+            Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+            Text(author, style: const TextStyle(fontSize: 12, color: Colors.grey), overflow: TextOverflow.ellipsis),
+          ],
+        ),
       ),
     );
   }
@@ -1608,73 +2227,399 @@ class _ReadingProgressRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     int percentage = (reading.progress * 100).toInt();
-    Color progressColor = reading.progress < 0.40 ? Colors.orange : primaryColor;
+    final isFinished = reading.progress >= 1.0;
+    Color progressColor = isFinished 
+        ? Colors.green 
+        : (reading.progress < 0.40 ? Colors.orange : primaryColor);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+    return GestureDetector(
+      onTap: reading.livreId != null && reading.eleveId != null
+          ? () => _openBook(context, reading.livreId!, reading.eleveId!)
+          : null,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(
+                        reading.title,
+                        style: TextStyle(
+                          color: _colorBlack,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          decoration: isFinished ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      if (isFinished) ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                      ],
+                    ],
+                  ),
+                ),
+                Text(
+                  isFinished ? 'Terminé' : '$percentage%',
+                  style: TextStyle(
+                    color: progressColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            if (reading.pageActuelle != null && reading.pageActuelle! > 0 && !isFinished) ...[
+              const SizedBox(height: 4),
               Text(
-                reading.title,
-                style: const TextStyle(color: _colorBlack, fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-              Text(
-                '$percentage%',
-                style: TextStyle(color: progressColor, fontSize: 14, fontWeight: FontWeight.bold),
+                'Page ${reading.pageActuelle}',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
               ),
             ],
-          ),
-          const SizedBox(height: 5),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(50),
-            child: LinearProgressIndicator(
-              value: reading.progress,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-              minHeight: 6,
+            const SizedBox(height: 5),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(50),
+              child: LinearProgressIndicator(
+                value: reading.progress,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                minHeight: 6,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+  
+  Future<void> _openBook(BuildContext context, int livreId, int eleveId) async {
+    try {
+      final livreService = LivreService();
+      final bookFileService = BookFileService();
+      
+      // Charger les détails du livre pour obtenir les fichiers
+      final livre = await livreService.getLivreById(livreId);
+      if (livre == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Impossible de charger les détails du livre')),
+          );
+        }
+        return;
+      }
+      
+      // Obtenir les fichiers du livre
+      final fichiers = await livreService.getFichiersLivre(livreId);
+      if (fichiers == null || fichiers.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Aucun fichier disponible pour ce livre')),
+          );
+        }
+        return;
+      }
+      
+      // Trouver le premier fichier PDF
+      final pdfFile = fichiers.firstWhere(
+        (f) => f.type == FichierLivreTypeEnum.PDF,
+        orElse: () => fichiers.first,
+      );
+      
+      // Ouvrir le livre avec la progression
+      if (context.mounted) {
+        await bookFileService.openBookFileOnline(
+          pdfFile,
+          context,
+          livreId: livreId,
+          eleveId: eleveId,
+          totalPages: livre.totalPages,
+        );
+      }
+    } catch (e) {
+      print('Error opening book: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'ouverture du livre: $e')),
+        );
+      }
+    }
+  }
 }
 
-class _PartnerCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final Color backgroundColor;
-  const _PartnerCard({required this.title, required this.description, required this.backgroundColor});
+// Nouvelle belle card de partenaire pour la page d'accueil (identique à celle de partenaire.dart)
+class _HomePartnerCard extends StatelessWidget {
+  final Partenaire partner;
+  final Color primaryColor;
+
+  const _HomePartnerCard({
+    required this.partner,
+    required this.primaryColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 250,
-      margin: const EdgeInsets.only(right: 15),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(15),
+    final name = partner.nom ?? 'Partenaire';
+    final description = partner.description ?? '';
+    final logoUrl = partner.logoUrl;
+    final siteWeb = partner.siteWeb;
+    final domaine = partner.domaine;
+    final type = partner.type;
+    final pays = partner.pays;
+    
+    return GestureDetector(
+      onTap: siteWeb != null && siteWeb!.isNotEmpty
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WebViewScreen(
+                    url: siteWeb!.startsWith('http') ? siteWeb! : 'https://$siteWeb',
+                    title: name,
+                  ),
+                ),
+              );
+            }
+          : null,
+      child: Container(
+        width: 260, // Largeur ajustée pour l'affichage côte à côte avec hauteur 220
+        height: 220, // Hauteur fixe comme demandé
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              primaryColor.withOpacity(0.1),
+              primaryColor.withOpacity(0.05),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: primaryColor.withOpacity(0.15),
+              spreadRadius: 2,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: primaryColor.withOpacity(0.2),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Preview du site (header avec logo) - Réduit pour s'adapter à 220
+            Container(
+              height: 70,
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  // Background pattern
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            primaryColor.withOpacity(0.1),
+                            primaryColor.withOpacity(0.05),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Logo centré
+                  Center(
+                    child: logoUrl != null && logoUrl!.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 5,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Image.network(
+                                logoUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(
+                                  Icons.business,
+                                  color: primaryColor,
+                                  size: 30,
+                                  );
+                                },
+                              ),
+                            ),
+                          )
+                        : Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                                  Icons.business,
+                                  color: primaryColor,
+                                  size: 30,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Contenu de la card - Ajusté pour hauteur 220
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Nom du partenaire
+                  Text(
+                    name,
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: _fontFamily,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  
+                  // Description
+                  if (description.isNotEmpty) ...[
+                    Text(
+                      description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 12,
+                        fontFamily: _fontFamily,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  
+                  // Attributs supplémentaires - Réduits
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      if (domaine != null && domaine!.isNotEmpty)
+                        _buildPartnerAttributeChip(
+                          Icons.category,
+                          domaine!,
+                          primaryColor,
+                        ),
+                      if (type != null && type!.isNotEmpty)
+                        _buildPartnerAttributeChip(
+                          Icons.business_center,
+                          type!,
+                          primaryColor,
+                        ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 8), // Remplace Spacer() pour éviter l'erreur de layout
+                  
+                  // Bouton Visiter - Réduit
+                  if (siteWeb != null && siteWeb!.isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.open_in_new, color: Colors.white, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Visiter',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: _fontFamily,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+  
+  Widget _buildPartnerAttributeChip(IconData icon, String label, Color primaryColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: primaryColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          Icon(icon, size: 14, color: primaryColor),
+          const SizedBox(width: 4),
           Text(
-            title,
-            style: const TextStyle(color: _colorWhite, fontSize: 18, fontWeight: FontWeight.bold),
+            label,
+            style: TextStyle(
+              color: primaryColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              fontFamily: _fontFamily,
+            ),
           ),
-          const SizedBox(height: 5),
-          Text(
-            description,
-            style: TextStyle(color: _colorWhite.withOpacity(0.8), fontSize: 14),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const Spacer(),
         ],
       ),
     );

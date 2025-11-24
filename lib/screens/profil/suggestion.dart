@@ -52,11 +52,23 @@ class _SuggestionScreenState extends State<SuggestionScreen> {
 
     setState(() => _isLoading = true);
 
-    final success = await _suggestionService.envoyerSuggestion(contenu);
+    final eleveId = _authService.currentUserId;
+    if (eleveId == null) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erreur: Utilisateur non connecté.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final result = await _suggestionService.envoyerSuggestion(contenu, eleveId);
 
     setState(() => _isLoading = false);
 
-    if (success) {
+    if (result != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Suggestion envoyée avec succès !'),
@@ -94,7 +106,7 @@ class _SuggestionScreenState extends State<SuggestionScreen> {
             backgroundColor: Colors.white,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
               onPressed: () => Navigator.pop(context),
             ),
             title: const Text(
@@ -102,9 +114,12 @@ class _SuggestionScreenState extends State<SuggestionScreen> {
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
+                fontSize: 20,
                 fontFamily: 'Roboto',
               ),
             ),
+            foregroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.black),
             centerTitle: true,
           ),
           body: SingleChildScrollView(

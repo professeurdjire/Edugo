@@ -21,6 +21,7 @@ class EleveService {
   // Récupérer le profil d'un élève par ID
   Future<Eleve?> getEleveProfile(int eleveId) async {
     try {
+      // Note: baseUrl contains /api, and endpoints need /api/api/... (double /api)
       final response = await _dio.get('/api/eleve/profil/$eleveId');
 
       if (response.statusCode == 200) {
@@ -38,7 +39,8 @@ class EleveService {
       print('🔄 Mise à jour du profil élève $eleveId: $updateData');
 
       final response = await _dio.put(
-        '/api/eleve/profil/$eleveId',
+          // Note: baseUrl already contains /api
+          '/eleve/profil/$eleveId',
         data: updateData
       );
 
@@ -81,7 +83,8 @@ class EleveService {
         };
 
         final response = await _dio.post(
-          '/api/eleve/profil/$eleveId/change-password',
+          // Note: baseUrl already contains /api
+          '/eleve/profil/$eleveId/change-password',
           data: passwordData,
         );
 
@@ -113,6 +116,7 @@ class EleveService {
   // Récupérer les points de l'élève
   Future<int?> getElevePoints(int eleveId) async {
     try {
+      // Note: baseUrl contains /api, and endpoints need /api/api/... (double /api)
       final response = await _dio.get('/api/eleve/points/$eleveId');
 
       if (response.statusCode == 200) {

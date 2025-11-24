@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/models/auth_models.dart';
 import 'package:edugo/services/theme_service.dart';
+import 'package:edugo/widgets/dynamic_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   final ThemeService? themeService;
@@ -142,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         fontFamily: _fontFamily,
-                        decoration: TextDecoration.underline,
+                        // decoration: TextDecoration.underline,
                         decorationColor: primaryColor.withOpacity(0.8),
                       ),
                     ),
@@ -164,10 +165,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Image.asset(
-          'assets/images/logo.png',
+        DynamicLogoSimple(
+          assetPath: 'assets/images/logo.svg',
+          primaryColor: primaryColor,
+          secondaryColor: Colors.black,
           height: 120,
-          fit: BoxFit.contain,
         ),
       ],
     );
@@ -179,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Adresse Email',
+          'Email',
           style: TextStyle(
             color: primaryColor,
             fontSize: 16,
@@ -245,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Mot De Passe',
+          'Mot de passe',
           style: TextStyle(
             color: primaryColor,
             fontSize: 16,
@@ -381,7 +383,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: _isLoading
             ? const CircularProgressIndicator(color: Colors.white)
             : Text(
-                'Se Connecter',
+                'Se connecter',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
