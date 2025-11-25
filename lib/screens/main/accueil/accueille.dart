@@ -934,7 +934,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   progressText,
                   style: TextStyle(
-                      color: _isChallengeCompleted ? Colors.green : Colors.grey,
+                      color: _isChallengeCompleted ? primaryColor : Colors.grey,
                       fontSize: 16,
                       fontWeight: FontWeight.bold
                   ),
@@ -948,7 +948,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 value: _dailyChallengeProgress,
                 backgroundColor: Colors.grey.shade200,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                    _isChallengeCompleted ? Colors.green : _colorWarning
+                    _isChallengeCompleted ? primaryColor : _colorWarning
                 ),
                 minHeight: 8,
               ),

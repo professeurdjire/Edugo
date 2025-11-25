@@ -15,14 +15,24 @@ class ThemeService {
       ValueNotifier<Color>(Color(int.parse(_defaultPrimaryColor)));
 
   // Liste des couleurs disponibles pour le sélecteur
+  // final List<Color> availableColors = [
+  //   const Color(0xFFA885D8), // Violet original
+  //   const Color(0xFF4CAF50), // Vert
+  //   const Color(0xFF2196F3), // Bleu
+  //   const Color(0xFFFF9800), // Orange
+  //   const Color(0xFFE91E63), // Rose
+  //   const Color(0xFF9C27B0), // Violet foncé
+  // ];
+
   final List<Color> availableColors = [
-    const Color(0xFFA885D8), // Violet original
-    const Color(0xFF4CAF50), // Vert
-    const Color(0xFF2196F3), // Bleu
-    const Color(0xFFFF9800), // Orange
-    const Color(0xFFE91E63), // Rose
-    const Color(0xFF9C27B0), // Violet foncé
-  ];
+  const Color(0xFF6A3FA8), // Violet principal
+  const Color(0xFFFF7900), // Digital Orange
+  const Color(0xFF50BE87), // Vert
+  const Color(0xFF527EDB), // Bleu classique
+  const Color(0xFFA885D8), // 
+  const Color(0xFFFFB4E6), // Rose
+];
+
 
   Future<void> initialize() async {
     final colorValue = await getPrimaryColor();

@@ -66,15 +66,39 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       print('Using student ID: $studentId');
       
       print('Loading challenges for student ID: $studentId');
-      final challenges = await _challengeService.getChallengesDisponibles(studentId);
-      print('Received challenges: ${challenges?.length ?? 0} items');
-      if (challenges != null) {
-        print('Challenge titles: ${challenges.map((c) => c.titre).toList()}');
+      final challengesDisponibles = await _challengeService.getChallengesDisponibles(studentId);
+      print('Received available challenges: ${challengesDisponibles?.length ?? 0} items');
+
+      // Récupérer aussi les challenges auxquels l'élève a déjà participé
+      final participations = await _challengeService.getChallengesParticipes(studentId);
+      print('Received participated challenges: ${participations?.length ?? 0} items');
+
+      // Fusionner les listes pour afficher tous les challenges (disponibles + déjà faits)
+      final Map<int, Challenge> merged = {};
+
+      if (challengesDisponibles != null) {
+        for (final c in challengesDisponibles) {
+          if (c.id != null) {
+            merged[c.id!] = c;
+          }
+        }
       }
-      
+
+      if (participations != null) {
+        for (final p in participations) {
+          final ch = p.challenge;
+          if (ch != null && ch.id != null) {
+            merged[ch.id!] = ch;
+          }
+        }
+      }
+
+      final mergedList = BuiltList<Challenge>(merged.values.toList());
+      print('Merged challenges count (all states): ${mergedList.length}');
+
       if (mounted) {
         setState(() {
-          _availableChallenges = challenges;
+          _availableChallenges = mergedList;
           _isLoading = false;
         });
       }
@@ -305,18 +329,18 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     print('Building challenge card: ${challenge['title']}');
     print('Challenge data: $challenge');
     
-    // Determine status badge
+    // Determine status badge (use primaryColor for completed/ended challenges)
     String statusText = '';
     Color statusColor = Colors.grey;
     if (_isChallengeActive(challenge)) {
       statusText = 'Actif';
-      statusColor = Colors.green;
+      statusColor = primaryColor; // Challenge en cours
     } else if (_isChallengeUpcoming(challenge)) {
       statusText = 'À venir';
       statusColor = Colors.orange;
     } else if (_isChallengeEnded(challenge)) {
       statusText = 'Terminé';
-      statusColor = Colors.grey;
+      statusColor = primaryColor; // Challenge terminé, mis en avant avec la couleur primaire
     }
     
     return Card(

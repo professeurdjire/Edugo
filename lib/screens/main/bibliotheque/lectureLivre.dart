@@ -322,12 +322,29 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
   bool _isPlaying = false;
   bool _hasQuiz = false;
   int? _quizId;
+  bool _initialFileLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _ttsService.initialize();
     _checkQuizAvailability();
+
+    // Charger automatiquement le premier fichier PDF du livre pour éviter
+    // d'imposer un clic "Télécharger" avant de pouvoir lire.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted && !_initialFileLoaded && widget.fichiers.isNotEmpty) {
+        final FichierLivre? fichierPdf = widget.fichiers.firstWhere(
+          (f) => (f.format ?? '').toLowerCase() == 'pdf',
+          orElse: () => widget.fichiers.first,
+        );
+
+        if (fichierPdf != null) {
+          _initialFileLoaded = true;
+          await _downloadAndExtract(fichierPdf);
+        }
+      }
+    });
   }
   
   Future<void> _checkQuizAvailability() async {
@@ -430,7 +447,8 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
     final fichierPdf = widget.fichiers.isNotEmpty
         ? widget.fichiers.firstWhere(
             (f) => (f.format ?? '').toLowerCase() == 'pdf',
-            orElse: () => widget.fichiers.first)
+            orElse: () => widget.fichiers.first,
+          )
         : null;
 
     return Scaffold(

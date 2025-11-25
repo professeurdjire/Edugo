@@ -4,6 +4,8 @@ import 'package:edugo/services/livre_service.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/models/progression_response.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:edugo/models/fichier_livre.dart';
+import 'package:edugo/screens/main/bibliotheque/lectureLivre.dart';
 
 // --- CONSTANTES DE STYLES ---
 const Color _colorBlack = Color(0xFF000000);
@@ -20,12 +22,14 @@ class ReadingItem {
   final String author;
   final double progress;
   final String imagePath;
+  final int? livreId;
 
   ReadingItem({
     required this.title,
     required this.author,
     required this.progress,
     required this.imagePath,
+    this.livreId,
   });
 
   bool get isFinished => progress >= 1.0;
@@ -49,6 +53,7 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
   
   final LivreService _livreService = LivreService();
   final AuthService _authService = AuthService();
+  final Map<int, int> _bookTotalPages = {};
   
   BuiltList<ProgressionResponse>? _readingProgress;
   bool _isLoading = true;
@@ -120,16 +125,28 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
     }
     
     return _readingProgress!.map((progression) {
-      final progress = (progression.pourcentageCompletion ?? 0) / 100.0;
+      double progress = 0.0;
+
+      final int currentPage = progression.pageActuelle ?? 0;
+      final int? livreId = progression.livreId;
+      final int? totalPages = (livreId != null) ? _bookTotalPages[livreId] : null;
+
+      if (totalPages != null && totalPages > 0 && currentPage > 0) {
+        progress = (currentPage / totalPages).clamp(0.0, 1.0);
+      } else {
+        progress = ((progression.pourcentageCompletion ?? 0) / 100.0).clamp(0.0, 1.0);
+      }
+      
       // Utiliser le titre du livre, ou "Livre sans titre" si manquant
       final title = progression.livreTitre ?? 'Livre sans titre';
       // Note: eleveNom est le nom de l'élève, pas l'auteur du livre
       // Pour l'auteur, il faudrait charger les détails du livre, mais pour l'instant on affiche juste le titre
       return ReadingItem(
         title: title,
-        author: 'Page ${progression.pageActuelle ?? 0} / ${progression.pourcentageCompletion ?? 0}%', // Afficher la page actuelle et le pourcentage
-        progress: progress.clamp(0.0, 1.0),
+        author: 'Page ${progression.pageActuelle ?? 0} / ${((progress) * 100).round()}%',
+        progress: progress,
         imagePath: 'assets/images/book1.png', // ProgressionResponse n'a pas d'image, utiliser une image par défaut
+        livreId: progression.livreId,
       );
     }).toList();
   }
@@ -305,10 +322,70 @@ class _MyReadingsScreenState extends State<MyReadingsScreen> {
             progress: item.progress,
             imagePath: item.imagePath,
             primaryColor: primaryColor,
+            onTap: () => _openBook(item),
           ),
         );
       },
     );
+  }
+
+  Future<void> _openBook(ReadingItem item) async {
+    if (item.livreId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossible d\'ouvrir ce livre')),
+      );
+      return;
+    }
+
+    try {
+      final livre = await _livreService.getLivreById(item.livreId!);
+      if (!mounted) return;
+
+      if (livre == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Détails du livre introuvables')),
+        );
+        return;
+      }
+
+      List<FichierLivre> fichiers =
+          livre.fichiers != null ? livre.fichiers!.toList() : <FichierLivre>[];
+
+      // Si aucun fichier n'est renvoyé avec le livre, essayer l'endpoint dédié des fichiers
+      if (fichiers.isEmpty) {
+        final fichiersFromApi = await _livreService.getFichiersLivre(item.livreId!);
+        if (fichiersFromApi != null) {
+          fichiers = fichiersFromApi.toList();
+        }
+      }
+
+      if (fichiers.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Aucun fichier disponible pour ce livre')),
+        );
+        return;
+      }
+
+      final eleveId = _authService.currentUserId;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BookReaderScreen(
+            bookTitle: item.title,
+            fichiers: fichiers,
+            livreId: item.livreId,
+            eleveId: eleveId,
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error opening book: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur lors de l\'ouverture du livre')),
+      );
+    }
   }
 }
 
@@ -364,6 +441,7 @@ class _ReadingListItem extends StatelessWidget {
   final double progress;
   final String imagePath;
   final Color primaryColor;
+  final VoidCallback? onTap;
 
   const _ReadingListItem({
     super.key,
@@ -372,117 +450,122 @@ class _ReadingListItem extends StatelessWidget {
     required this.progress,
     required this.imagePath,
     required this.primaryColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final bool isFinished = progress >= 1.0;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withOpacity(0.1), // Ombre adaptée au thème
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: primaryColor.withOpacity(0.1), // Ombre adaptée au thème
+              spreadRadius: 2,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+          border: Border.all(
+            color: primaryColor.withOpacity(0.1), // Bordure subtile adaptée
+            width: 1,
           ),
-        ],
-        border: Border.all(
-          color: primaryColor.withOpacity(0.1), // Bordure subtile adaptée
-          width: 1,
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // 1. Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              imagePath,
-              width: 55,
-              height: 75,
-              fit: BoxFit.cover,
-               errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 55,
-                  height: 75,
-                  color: Colors.grey.shade200,
-                  child: Icon(Icons.book, color: primaryColor.withOpacity(0.5)),
-                );
-              },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // 1. Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                imagePath,
+                width: 55,
+                height: 75,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 55,
+                    height: 75,
+                    color: Colors.grey.shade200,
+                    child: Icon(Icons.book, color: primaryColor.withOpacity(0.5)),
+                  );
+                },
+              ),
             ),
-          ),
-          const SizedBox(width: 15),
+            const SizedBox(width: 15),
 
-          // 2. Texte (Titre et Auteur)
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _colorBlack,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: _fontFamily,
-                  ),
-                ),
-                Text(
-                  author,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: primaryColor.withOpacity(0.7), // Auteur adapté au thème
-                    fontSize: 14,
-                    fontFamily: _fontFamily,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 15),
-
-          // 3. Statut (Terminé / En Cours)
-          if (isFinished)
-            const Icon(Icons.check_circle, color: _colorGreen, size: 24)
-          else
-            SizedBox(
-              width: 70,
+            // 2. Texte (Titre et Auteur)
+            Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '${(progress * 100).round()}%',
-                    style: TextStyle(
-                      color: primaryColor, // Pourcentage en couleur du thème
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _colorBlack,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                       fontFamily: _fontFamily,
                     ),
                   ),
-                  const SizedBox(height: 5),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(50),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: Colors.grey.shade300,
-                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor), // Barre de progression adaptée
-                      minHeight: 5,
+                  Text(
+                    author,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: primaryColor.withOpacity(0.7), // Auteur adapté au thème
+                      fontSize: 14,
+                      fontFamily: _fontFamily,
                     ),
                   ),
                 ],
               ),
             ),
-        ],
+            const SizedBox(width: 15),
+
+            // 3. Statut (Terminé / En Cours)
+            if (isFinished)
+              const Icon(Icons.check_circle, color: _colorGreen, size: 24)
+            else
+              SizedBox(
+                width: 70,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${(progress * 100).round()}%',
+                      style: TextStyle(
+                        color: primaryColor, // Pourcentage en couleur du thème
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: _fontFamily,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(50),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: Colors.grey.shade300,
+                        valueColor: AlwaysStoppedAnimation<Color>(primaryColor), // Barre de progression adaptée
+                        minHeight: 5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

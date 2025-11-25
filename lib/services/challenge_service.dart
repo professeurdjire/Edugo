@@ -264,8 +264,13 @@ class ChallengeService {
         final errorData = e.response?.data;
         if (errorData != null) {
           final errorString = errorData.toString().toLowerCase();
-          if (errorString.contains('déjà participé') || errorString.contains('already participated')) {
-            print('[ChallengeService] User has already participated in this challenge');
+          final statusCode = e.response?.statusCode;
+
+          if (statusCode == 409 ||
+              errorString.contains('déjà participé') ||
+              errorString.contains('vous participez déjà') ||
+              errorString.contains('already participated')) {
+            print('[ChallengeService] User has already participated in this challenge (HTTP ${statusCode})');
             // Ne pas retourner null, mais plutôt lancer une exception spécifique
             throw Exception('Vous participez déjà à ce challenge');
           } else if (errorString.contains('pas actuellement disponible') || 

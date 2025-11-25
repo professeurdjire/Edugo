@@ -191,7 +191,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       
       if (progression != null) {
         _lastSavedPage = _currentPage;
-        print('[PdfViewerScreen] ✅ Progression sauvegardée: page $_currentPage (${progression.pourcentageCompletion}%)');
+        final int localPercent = _totalPages > 0
+            ? ((_currentPage * 100.0) / _totalPages).round().clamp(0, 100)
+            : 0;
+        print('[PdfViewerScreen] ✅ Progression sauvegardée: page $_currentPage (${localPercent}%)');
       }
     } catch (e) {
       print('[PdfViewerScreen] ❌ Erreur lors de la sauvegarde de la progression: $e');
@@ -574,13 +577,21 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                   ),
                 ),
                 if (_totalPages > 0)
-                  Text(
-                    'Page $_currentPage / $_totalPages',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.normal,
-                      color: Colors.black87,
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final double ratio = _totalPages > 0
+                          ? (_currentPage / _totalPages).clamp(0.0, 1.0)
+                          : 0.0;
+                      final int percent = (ratio * 100).round();
+                      return Text(
+                        'Page $_currentPage / $_totalPages • ${percent}%',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.normal,
+                          color: Colors.black87,
+                        ),
+                      );
+                    },
                   ),
               ],
             ),
