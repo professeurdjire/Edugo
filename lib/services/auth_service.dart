@@ -49,7 +49,7 @@ class AuthService {
           // ⚠️ IMPORTANT: Vérifiez que cette IP correspond à l'IP de votre machine (voir ipconfig)
           // L'appareil Android et votre PC doivent être sur le même réseau Wi-Fi
           // ⚠️ NOTE: Le backend Swagger contient deux fois /api, donc baseUrl = /api et endpoints = /api/... pour avoir /api/api/...
-          baseUrl = 'http://192.168.10.85:8080/api';
+          baseUrl = 'http://192.168.117.8:8080/api';
         }
       } else if (Platform.isIOS) {
         // iOS - utiliser localhost pour simulateur ou IP réseau pour appareil physique
