@@ -184,7 +184,17 @@ class _TakeDefiScreenState extends State<TakeDefiScreen> {
               selectedAnswers: _selectedAnswers,
             ),
           ),
-        );
+        ).then((_) {
+          // Rafraîchir la page d'accueil quand on revient
+          // pour mettre à jour les points affichés
+          if (mounted) {
+            print('[TakeDefiScreen] User returned from QuizResultScreen, refreshing home screen points...');
+            // Importer HomeScreen pour utiliser la méthode refresh
+            // Note: On doit utiliser un callback ou un ValueNotifier pour rafraîchir
+            // Pour l'instant, on laisse QuizResultScreen rafraîchir les points dans AuthService
+            // La page d'accueil devrait se rafraîchir automatiquement via MainScreen
+          }
+        });
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

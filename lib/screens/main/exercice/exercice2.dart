@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:edugo/services/exercise_service.dart'; // Use new ExerciseService
+import 'package:edugo/services/question_service.dart'; // Add QuestionService
 import 'package:edugo/models/exercice_response.dart';
 import 'package:edugo/screens/main/exercice/exercice3.dart';
 import 'package:edugo/services/theme_service.dart';
@@ -49,10 +50,14 @@ class ExerciseMatiereListScreen extends StatefulWidget {
 
 class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
   final ExerciseService _exerciceService = ExerciseService(); // Use new ExerciseService
+  final QuestionService _questionService = QuestionService(); // Add QuestionService
   final ThemeService _themeService = ThemeService();
   
   BuiltList<ExerciceResponse>? _exercices;
   bool _isLoading = true;
+  
+  // Cache pour les métadonnées des exercices (points et nombre de questions)
+  final Map<int, Map<String, int>> _exerciseMetadata = {};
 
   @override
   void initState() {
@@ -243,13 +248,18 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
             ),
           ),
           // Liste des exercices
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: exercices.length,
-            itemBuilder: (context, index) {
-              final exercice = exercices[index];
-              return _buildExerciseCard(context, exercice);
+          ValueListenableBuilder<Color>(
+            valueListenable: _themeService.primaryColorNotifier,
+            builder: (context, primaryColor, child) {
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: exercices.length,
+                itemBuilder: (context, index) {
+                  final exercice = exercices[index];
+                  return _buildExerciseCard(context, exercice, primaryColor);
+                },
+              );
             },
           ),
         ],
@@ -258,7 +268,7 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
   }
 
   // --- WIDGET CARTE D'EXERCICE ---
-  Widget _buildExerciseCard(BuildContext context, ExerciceResponse exercice) {
+  Widget _buildExerciseCard(BuildContext context, ExerciceResponse exercice, Color primaryColor) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       shape: RoundedRectangleBorder(
@@ -341,39 +351,70 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Time allocated
+                  // Questions count
                   Row(
                     children: [
                       const Icon(
-                        Icons.timer,
+                        Icons.question_answer,
                         color: _colorGrey,
                         size: 16,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        '${exercice.tempsAlloue ?? 0} min',
-                        style: const TextStyle(
-                          color: _colorGrey,
-                          fontSize: 12,
-                        ),
+                      FutureBuilder<int>(
+                        future: _getQuestionsCount(exercice.id),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Text(
+                              '...',
+                              style: TextStyle(
+                                color: _colorGrey,
+                                fontSize: 12,
+                              ),
+                            );
+                          }
+                          final count = snapshot.data ?? 0;
+                          return Text(
+                            count > 0 ? '$count questions' : 'No questions',
+                            style: const TextStyle(
+                              color: _colorGrey,
+                              fontSize: 12,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
-                  // Subject name
+                  // Points
                   Row(
                     children: [
-                      const Icon(
-                        Icons.school,
-                        color: _colorGrey,
+                      Icon(
+                        Icons.star,
+                        color: primaryColor,
                         size: 16,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        exercice.matiereNom ?? 'Matière',
-                        style: const TextStyle(
-                          color: _colorGrey,
-                          fontSize: 12,
-                        ),
+                      FutureBuilder<int>(
+                        future: _getTotalPoints(exercice.id),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Text(
+                              '...',
+                              style: TextStyle(
+                                color: _colorGrey,
+                                fontSize: 12,
+                              ),
+                            );
+                          }
+                          final points = snapshot.data ?? 0;
+                          return Text(
+                            '$points pts',
+                            style: TextStyle(
+                              color: primaryColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -384,5 +425,74 @@ class _ExerciseMatiereListScreenState extends State<ExerciseMatiereListScreen> {
         ),
       ),
     );
+  }
+  
+  // Méthode pour obtenir le nombre de questions d'un exercice
+  Future<int> _getQuestionsCount(int? exerciceId) async {
+    if (exerciceId == null) return 0;
+    
+    // Vérifier le cache
+    if (_exerciseMetadata.containsKey(exerciceId)) {
+      return _exerciseMetadata[exerciceId]!['questionsCount'] ?? 0;
+    }
+    
+    try {
+      final questions = await _questionService.getQuestionsByExercice(exerciceId);
+      final count = questions?.length ?? 0;
+      
+      // Calculer les points totaux
+      int totalPoints = 0;
+      if (questions != null) {
+        for (var question in questions) {
+          totalPoints += question.points ?? 0;
+        }
+      }
+      
+      // Mettre en cache
+      _exerciseMetadata[exerciceId] = {
+        'questionsCount': count,
+        'totalPoints': totalPoints,
+      };
+      
+      return count;
+    } catch (e) {
+      print('Error getting questions count for exercise $exerciceId: $e');
+      return 0;
+    }
+  }
+  
+  // Méthode pour obtenir les points totaux d'un exercice
+  Future<int> _getTotalPoints(int? exerciceId) async {
+    if (exerciceId == null) return 0;
+    
+    // Vérifier le cache
+    if (_exerciseMetadata.containsKey(exerciceId)) {
+      return _exerciseMetadata[exerciceId]!['totalPoints'] ?? 0;
+    }
+    
+    try {
+      final questions = await _questionService.getQuestionsByExercice(exerciceId);
+      
+      // Calculer les points totaux
+      int totalPoints = 0;
+      if (questions != null) {
+        for (var question in questions) {
+          totalPoints += question.points ?? 0;
+        }
+      }
+      
+      final count = questions?.length ?? 0;
+      
+      // Mettre en cache
+      _exerciseMetadata[exerciceId] = {
+        'questionsCount': count,
+        'totalPoints': totalPoints,
+      };
+      
+      return totalPoints;
+    } catch (e) {
+      print('Error getting total points for exercise $exerciceId: $e');
+      return 0;
+    }
   }
 }

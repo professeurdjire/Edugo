@@ -5,6 +5,7 @@ import 'package:edugo/screens/main/challenge/challenge.dart';
 import 'package:edugo/screens/main/exercice/exercice1.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/services/theme_service.dart';
+import 'package:edugo/services/onesignal_service.dart';
 
 class MainScreen extends StatefulWidget {
   final int? eleveId;
@@ -24,11 +25,27 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late List<Widget> _pages;
   int _previousIndex = 0;
+  final OneSignalService _oneSignalService = OneSignalService();
 
   @override
   void initState() {
     super.initState();
     _initializePages();
+    _checkPendingNotifications();
+  }
+  
+  /// Vérifier et traiter les notifications en attente
+  Future<void> _checkPendingNotifications() async {
+    // Attendre un peu pour s'assurer que l'écran est monté
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    if (!mounted) return;
+    
+    try {
+      await _oneSignalService.processPendingNotification(context);
+    } catch (e) {
+      print('[MainScreen] Error checking pending notifications: $e');
+    }
   }
 
   void _initializePages() {
@@ -67,8 +84,6 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildBottomNavBar(Color primaryColor) {
     return Container(
-       margin: const EdgeInsets.only(bottom: 32.0),
-      height: 70,
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -79,15 +94,20 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _navItem(Icons.home, "Accueil", 0, primaryColor),
-          _navItem(Icons.book, "Bibliothèque", 1, primaryColor),
-          _navItem(Icons.emoji_events_outlined, "Challenge", 2, primaryColor),
-          _navItem(Icons.checklist, "Exercice", 3, primaryColor),
-          _navItem(Icons.chat_bubble_outline, "Assistance", 4, primaryColor),
-        ],
+      child: SafeArea(
+        child: SizedBox(
+          height: 70,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _navItem(Icons.home, "Accueil", 0, primaryColor),
+              _navItem(Icons.book, "Bibliothèque", 1, primaryColor),
+              _navItem(Icons.emoji_events_outlined, "Challenge", 2, primaryColor),
+              _navItem(Icons.checklist, "Exercice", 3, primaryColor),
+              _navItem(Icons.chat_bubble_outline, "Assistance", 4, primaryColor),
+            ],
+          ),
+        ),
       ),
     );
   }

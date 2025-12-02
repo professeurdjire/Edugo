@@ -47,31 +47,7 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
       final challenge = await _challengeService.getChallengeById(widget.challengeId);
       
       // Vérifier si l'utilisateur a déjà participé
-      final int? currentUserId = _authService.currentUserId ?? widget.eleveId;
-      Participation? existingParticipation;
-      
-      if (currentUserId != null) {
-        // Utiliser la nouvelle méthode getParticipation pour récupérer la participation spécifique
-        existingParticipation = await _challengeService.getParticipation(currentUserId, widget.challengeId);
-        
-        if (mounted) {
-          setState(() {
-            _hasParticipated = existingParticipation != null;
-          });
-        }
-        
-        // Si l'utilisateur a déjà participé avec statut "EN_COURS", on peut directement naviguer
-        if (existingParticipation != null) {
-          final statut = existingParticipation.statut?.toUpperCase() ?? '';
-          print('[ChallengeDetailsScreen] Existing participation found: Status=$statut, Score=${existingParticipation.score}');
-          
-          if (statut == 'EN_COURS') {
-            print('[ChallengeDetailsScreen] Participation is EN_COURS, user can continue answering questions');
-          } else if (statut == 'TERMINE' || statut == 'VALIDE') {
-            print('[ChallengeDetailsScreen] Participation is TERMINE/VALIDE, challenge already completed');
-          }
-        }
-      }
+      await _refreshParticipationStatus();
       
       if (mounted) {
         setState(() {
@@ -91,6 +67,40 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+    }
+  }
+  
+  /// Rafraîchir l'état de participation de l'utilisateur
+  Future<void> _refreshParticipationStatus() async {
+    final int? currentUserId = _authService.currentUserId ?? widget.eleveId;
+    
+    if (currentUserId != null) {
+      try {
+        // Utiliser la nouvelle méthode getParticipation pour récupérer la participation spécifique
+        final existingParticipation = await _challengeService.getParticipation(currentUserId, widget.challengeId);
+        
+        if (mounted) {
+          setState(() {
+            _hasParticipated = existingParticipation != null;
+          });
+        }
+        
+        // Si l'utilisateur a déjà participé avec statut "EN_COURS", on peut directement naviguer
+        if (existingParticipation != null) {
+          final statut = existingParticipation.statut?.toUpperCase() ?? '';
+          print('[ChallengeDetailsScreen] Existing participation found: Status=$statut, Score=${existingParticipation.score}');
+          
+          if (statut == 'EN_COURS') {
+            print('[ChallengeDetailsScreen] Participation is EN_COURS, user can continue answering questions');
+          } else if (statut == 'TERMINE' || statut == 'VALIDE') {
+            print('[ChallengeDetailsScreen] Participation is TERMINE/VALIDE, challenge already completed');
+          }
+        } else {
+          print('[ChallengeDetailsScreen] No existing participation found for user $currentUserId and challenge ${widget.challengeId}');
+        }
+      } catch (e) {
+        print('[ChallengeDetailsScreen] Error refreshing participation status: $e');
       }
     }
   }
@@ -158,20 +168,32 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
             return;
           }
         } else if (errorMessage.contains('pas actuellement disponible') || 
-                   errorMessage.contains('not currently available')) {
-          if (mounted) {
-            setState(() {
-              _isParticipating = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Ce challenge n\'est pas actuellement disponible'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
-              ),
-            );
+                   errorMessage.contains('not currently available') ||
+                   (e is DioException && e.response?.statusCode == 400)) {
+          // Vérifier si c'est une erreur 400 avec le message spécifique
+          final errorData = e is DioException ? e.response?.data : null;
+          final errorString = errorData?.toString().toLowerCase() ?? '';
+          
+          if (errorString.contains('pas actuellement disponible') || 
+              errorString.contains('not currently available') ||
+              errorMessage.contains('pas actuellement disponible')) {
+            if (mounted) {
+              setState(() {
+                _isParticipating = false;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Ce challenge n\'est pas actuellement disponible. Il est peut-être terminé.'),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            }
+            return;
+          } else {
+            // Autre erreur 400
+            rethrow;
           }
-          return;
         } else {
           // Autre erreur
           rethrow;
@@ -203,10 +225,17 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
             return;
           }
           
+          // Mettre à jour l'état de participation
+          if (mounted) {
+            setState(() {
+              _hasParticipated = true;
+            });
+          }
+          
           // ÉTAPE 2 : Naviguer IMMÉDIATEMENT vers l'écran de questions
           // Les questions seront chargées dans TakeChallengeScreen
           print('[ChallengeDetailsScreen] Navigating to TakeChallengeScreen to load questions...');
-          Navigator.push(
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => TakeChallengeScreen(
@@ -216,6 +245,12 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
               ),
             ),
           );
+          
+          // Rafraîchir l'état de participation quand l'utilisateur revient
+          if (mounted) {
+            print('[ChallengeDetailsScreen] User returned from TakeChallengeScreen, refreshing participation status...');
+            await _refreshParticipationStatus();
+          }
         } else {
           // Aucune participation créée/récupérée
           if (mounted) {
@@ -386,7 +421,7 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
           _buildInfoCard(
             icon: Icons.question_answer,
             title: 'Questions',
-            value: '${_challenge!.questionsChallenge?.length ?? 0}',
+            value: '${_getQuestionsCount(_challenge!)}',
             primaryColor: primaryColor,
           ),
           const SizedBox(height: 12),
@@ -457,7 +492,7 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: _isChallengeEnded() ? null : () {
                   final int? currentUserId = _authService.currentUserId ?? widget.eleveId;
                   if (currentUserId != null) {
                     Navigator.push(
@@ -473,16 +508,16 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4CAF50),
+                  backgroundColor: _isChallengeEnded() ? Colors.grey : const Color(0xFF4CAF50),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Commencer le challenge',
-                  style: TextStyle(
+                child: Text(
+                  _isChallengeEnded() ? 'Challenge terminé' : 'Commencer le challenge',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -493,9 +528,9 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isParticipating ? null : _participateInChallenge,
+                onPressed: (_isParticipating || _isChallengeEnded()) ? null : _participateInChallenge,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
+                  backgroundColor: _isChallengeEnded() ? Colors.grey : primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -506,9 +541,9 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
                     ? const CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       )
-                    : const Text(
-                        'Participer au challenge',
-                        style: TextStyle(
+                    : Text(
+                        _isChallengeEnded() ? 'Challenge terminé' : 'Participer au challenge',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -569,6 +604,16 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
   }
 
   int _calculateTotalPoints(Challenge challenge) {
+    // Essayer d'abord de récupérer les métadonnées depuis le service
+    if (challenge.id != null) {
+      final metadata = _challengeService.getChallengeMetadata(challenge.id!);
+      if (metadata != null) {
+        print('[ChallengeDetailsScreen] Using metadata points: ${metadata.points}');
+        return metadata.points;
+      }
+    }
+    
+    // Fallback: calculer depuis questionsChallenge si disponible
     if (challenge.questionsChallenge == null) {
       return 0;
     }
@@ -578,6 +623,21 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
       totalPoints += question.points ?? 0;
     }
     return totalPoints;
+  }
+  
+  /// Récupérer le nombre de questions depuis les métadonnées
+  int _getQuestionsCount(Challenge challenge) {
+    // Essayer d'abord de récupérer les métadonnées depuis le service
+    if (challenge.id != null) {
+      final metadata = _challengeService.getChallengeMetadata(challenge.id!);
+      if (metadata != null) {
+        print('[ChallengeDetailsScreen] Using metadata nombreQuestions: ${metadata.nombreQuestions}');
+        return metadata.nombreQuestions;
+      }
+    }
+    
+    // Fallback: utiliser questionsChallenge si disponible
+    return challenge.questionsChallenge?.length ?? 0;
   }
   
   String _formatDuration(DateTime? startDate, DateTime? endDate) {
@@ -679,5 +739,12 @@ class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
         ],
       ),
     );
+  }
+  
+  /// Vérifier si le challenge est terminé
+  bool _isChallengeEnded() {
+    if (_challenge?.dateFin == null) return false;
+    final now = DateTime.now();
+    return now.isAfter(_challenge!.dateFin!);
   }
 }

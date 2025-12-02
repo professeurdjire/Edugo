@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/main/bibliotheque/bibliotheque.dart';
+import 'package:edugo/widgets/drag_and_drop_matching.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
 const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active)
@@ -422,118 +423,18 @@ class _BookQuizScreenState extends State<BookQuizScreen> {
   }
 
   Widget _buildMatchingContent(MatchingQuestion question) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Ligne des éléments de gauche et leurs réponses sélectionnées
-        Column(
-          children: question.leftItems.asMap().entries.map((entry) {
-            int index = entry.key;
-            String leftItem = entry.value;
-            String? selectedMatch = question.userMatches[leftItem];
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 15.0),
-              child: Row(
-                children: [
-                  // Élément de gauche
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
-                      decoration: BoxDecoration(
-                        color: _purpleMain.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        leftItem,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Réponse sélectionnée (cliquable pour effacer)
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        if (selectedMatch != null && !question.isAnswered) {
-                          setState(() {
-                            question.clearMatch(leftItem);
-                          });
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: selectedMatch != null ? _purpleMain : Colors.grey.shade300,
-                            width: selectedMatch != null ? 2 : 1,
-                          ),
-                        ),
-                        child: Text(
-                          selectedMatch ?? 'Sélectionnez',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: selectedMatch != null ? _colorBlack : Colors.grey,
-                            fontWeight: selectedMatch != null ? FontWeight.w500 : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-
-        const SizedBox(height: 20),
-
-        // Options disponibles en bas
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: question.rightItems.map((rightItem) {
-            bool isUsed = question.userMatches.values.contains(rightItem);
-
-            return GestureDetector(
-              onTap: isUsed ? null : () {
-                // Trouver le premier slot vide
-                for (String leftItem in question.leftItems) {
-                  if (question.userMatches[leftItem] == null) {
-                    setState(() {
-                      question.setMatch(leftItem, rightItem);
-                    });
-                    break;
-                  }
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                decoration: BoxDecoration(
-                  color: isUsed ? Colors.grey.shade200 : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isUsed ? Colors.grey.shade400 : _purpleMain,
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  rightItem,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isUsed ? Colors.grey : _colorBlack,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
+    return DragAndDropMatching(
+      leftItems: question.leftItems,
+      rightItems: question.rightItems,
+      correctMatches: question.correctMatches,
+      primaryColor: _purpleMain,
+      onMatchComplete: (isComplete) {
+        if (isComplete && !question.isAnswered) {
+          setState(() {
+            question.checkAnswer();
+          });
+        }
+      },
     );
   }
 

@@ -203,6 +203,14 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       print('Processing ${_availableChallenges!.length} challenges');
       newChallenges = _availableChallenges!.toList().map((challenge) {
         print('Processing challenge: ${challenge.titre}');
+        // Récupérer les métadonnées depuis ChallengeService
+        final challengeId = challenge.id;
+        final metadata = challengeId != null ? _challengeService.getChallengeMetadata(challengeId) : null;
+        final points = metadata?.points ?? 0;
+        final questionsCount = metadata?.nombreQuestions ?? 0;
+        
+        print('[ChallengeScreen] Challenge ${challengeId}: points=$points, questionsCount=$questionsCount');
+        
         return {
           'id': challenge.id,
           'title': challenge.titre ?? 'Challenge sans titre',
@@ -213,8 +221,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           'difficulty': challenge.typeChallenge?.toString() ?? 'Inconnu',
           'icon': Icons.help_outline,
           'color': primaryColor,
-          'pointDefi': _calculateTotalPoints(challenge),
-          'questionsCount': challenge.questionsChallenge?.length ?? 0,
+          'pointDefi': points,
+          'questionsCount': questionsCount,
           'startDate': challenge.dateDebut,
           'endDate': challenge.dateFin,
           'timeRemaining': _formatTimeRemaining(challenge.dateFin),

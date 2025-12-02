@@ -10,6 +10,7 @@ Serializers _$serializers =
     (Serializers().toBuilder()
           ..add(AssistantMessage.serializer)
           ..add(Badge.serializer)
+          ..add(BadgeResponse.serializer)
           ..add(BadgeTypeEnum.serializer)
           ..add(Challenge.serializer)
           ..add(ChallengeTypeChallengeEnum.serializer)
@@ -19,6 +20,7 @@ Serializers _$serializers =
           ..add(Defi.serializer)
           ..add(DefiDetailResponse.serializer)
           ..add(DefiResponse.serializer)
+          ..add(DetailResultat.serializer)
           ..add(Eleve.serializer)
           ..add(EleveDefi.serializer)
           ..add(EleveDefiResponse.serializer)
@@ -59,6 +61,7 @@ Serializers _$serializers =
           ..add(ReponseEleve.serializer)
           ..add(ReponsePossible.serializer)
           ..add(StatistiquesLivreResponse.serializer)
+          ..add(SubmitResultResponse.serializer)
           ..add(Suggestion.serializer)
           ..add(Tag.serializer)
           ..add(TypeQuestion.serializer)
@@ -89,6 +92,10 @@ Serializers _$serializers =
           ..addBuilderFactory(
             const FullType(BuiltList, const [const FullType(ConversionEleve)]),
             () => ListBuilder<ConversionEleve>(),
+          )
+          ..addBuilderFactory(
+            const FullType(BuiltList, const [const FullType(DetailResultat)]),
+            () => ListBuilder<DetailResultat>(),
           )
           ..addBuilderFactory(
             const FullType(BuiltList, const [const FullType(Eleve)]),

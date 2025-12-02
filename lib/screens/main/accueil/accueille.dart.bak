@@ -23,7 +23,6 @@ import 'package:edugo/services/badge_service.dart';
 import 'package:edugo/services/statistique_service.dart';
 import 'package:edugo/models/badge.dart' as BadgeModel;
 import 'package:edugo/models/badge_response.dart';
-import 'package:edugo/models/badge_eleve_response.dart';
 import 'package:edugo/screens/main/bibliotheque/bibliotheque.dart';
 import 'package:edugo/services/partenaire_service.dart';
 import 'package:edugo/models/partenaire.dart';
@@ -41,7 +40,17 @@ import 'package:built_value/json_object.dart';
 import 'dart:async';
 
 // --- CONSTANTES DE STYLES ---
-// Les couleurs sont maintenant gérées par ThemeService
+const Color _colorBlack = Color(0xFF000000);
+const Color _colorWhite = Color(0xFFFFFFFF);
+const Color _colorWarning = Color(0xFFFF9800);
+const Color _colorGold = Color(0xFFFFD200);
+const Color _colorBronze = Color(0xFFCD7F32);
+const Color _colorSilver = Color(0xFFC0C0C0);
+const Color _colorSuccessCheck = Color(0xFF32C832);
+const Color _colorBookIcon = Color(0xFF90A4AE);
+const Color _colorTrophyIcon = Color(0xFFE8981A);
+const Color _colorPartnerKhaki = Color(0xFF3B5998);
+const Color _colorPartnerGreen = Color(0xFF6AC259);
 const String _fontFamily = 'Roboto';
 
 // Modèle pour une lecture en cours
@@ -116,10 +125,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final int _totalBooksGoal = 5;
   final int _daysRemaining = 3;
 
-  List<Map<String, dynamic>> get _defaultRecentActivities => [
-    {'icon': Icons.check_circle, 'color': widget.themeService.activitySuccess, 'text': 'Quiz sur le livre Harry Potter à l\'école, il y a 2 jours'},
-    {'icon': Icons.book, 'color': widget.themeService.activityBook, 'text': 'Nouveau livre débuté, il y a 4 jours'},
-    {'icon': Icons.emoji_events, 'color': widget.themeService.activityTrophy, 'text': 'Dernière challenge participé, il y a 2 jours'},
+  final List<Map<String, dynamic>> _defaultRecentActivities = const [
+    {'icon': Icons.check_circle, 'color': _colorSuccessCheck, 'text': 'Quiz sur le livre Harry Potter à l\'école, il y a 2 jours'},
+    {'icon': Icons.book, 'color': _colorBookIcon, 'text': 'Nouveau livre débuté, il y a 4 jours'},
+    {'icon': Icons.emoji_events, 'color': _colorTrophyIcon, 'text': 'Dernière challenge participé, il y a 2 jours'},
   ];
 
   final List<CurrentReading> _defaultCurrentReadings = const [
@@ -139,7 +148,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // Badges et statistiques
   BuiltList<BadgeModel.Badge>? _badges; // Badges obtenus
   BuiltList<BadgeModel.Badge>? _allBadges; // Tous les badges disponibles
-  List<BadgeEleveResponse>? _allBadgesWithStatus; // Tous les badges avec statut d'obtention
   JsonObject? _statistiques;
   bool _isLoadingBadges = false;
   bool _isLoadingStats = false;
@@ -360,16 +368,14 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      // Charger les badges obtenus et tous les badges avec statut en parallèle
+      // Charger les badges obtenus et tous les badges disponibles en parallèle
       final results = await Future.wait([
         _badgeService.getBadges(_currentEleveId!),
         _badgeService.getAllBadges(),
-        _badgeService.getAllBadgesWithStatus(_currentEleveId!),
       ]);
       
       final earnedBadges = results[0] as BuiltList<BadgeModel.Badge>?;
       final allBadgesResponse = results[1] as BuiltList<BadgeResponse>?;
-      final allBadgesWithStatus = results[2] as List<BadgeEleveResponse>?;
       
       if (mounted) {
         setState(() {
@@ -382,8 +388,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 .toList();
             _allBadges = BuiltList<BadgeModel.Badge>(convertedBadges);
           }
-          // Stocker les badges avec statut
-          _allBadgesWithStatus = allBadgesWithStatus;
         });
       }
     } catch (e) {
@@ -707,10 +711,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Bienvenue',
                               style: TextStyle(
-                                color: widget.themeService.colorWhite,
+                                color: _colorWhite,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                                 fontFamily: _fontFamily,
@@ -718,8 +722,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             Text(
                               _userName,
-                              style: TextStyle(
-                                color: widget.themeService.colorWhite,
+                              style: const TextStyle(
+                                color: _colorWhite,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: _fontFamily,
@@ -754,13 +758,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.star, color: widget.themeService.badgeGold, size: 18),
+                                  const Icon(Icons.star, color: _colorGold, size: 18),
                                   const SizedBox(width: 5),
                                   Flexible(
                                     child: Text(
                                       '$_userPoints',
-                                      style: TextStyle(
-                                        color: widget.themeService.colorWhite,
+                                      style: const TextStyle(
+                                        color: _colorWhite,
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -800,9 +804,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               badgeSize: 18.0,
                               fontSize: 11.0,
                               padding: const EdgeInsets.all(2.0),
-                              child: Icon(
+                              child: const Icon(
                                 Icons.notifications,
-                                color: widget.themeService.badgeGold,
+                                color: _colorGold,
                                 size: 26,
                               ),
                             ),
@@ -841,7 +845,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return CircleAvatar(
       radius: 30,
-      backgroundColor: widget.themeService.colorWhite,
+      backgroundColor: _colorWhite,
       child: _userName != 'Chargement...' && _userName != 'Utilisateur'
           ? Text(
               _getUserInitials(),
@@ -882,7 +886,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: widget.themeService.colorWhite,
+          color: _colorWhite,
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
@@ -900,7 +904,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Row(
                   children: [
-                    Text('Défi du jour', style: TextStyle(color: widget.themeService.colorBlack, fontSize: 16, fontWeight: FontWeight.bold)),
+                    const Text('Défi du jour', style: TextStyle(color: _colorBlack, fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 5),
                     if (!_isChallengeCompleted && _defisDisponibles != null && _defisDisponibles!.isNotEmpty)
                       GestureDetector(
@@ -944,7 +948,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 value: _dailyChallengeProgress,
                 backgroundColor: Colors.grey.shade200,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                    _isChallengeCompleted ? primaryColor : widget.themeService.challengeWarning
+                    _isChallengeCompleted ? primaryColor : _colorWarning
                 ),
                 minHeight: 8,
               ),
@@ -962,10 +966,10 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            const Text(
               'Objectifs de Lecture',
               style: TextStyle(
-                color: widget.themeService.colorBlack,
+                color: _colorBlack,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -1019,8 +1023,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _isLoadingObjectif
                       ? 'Chargement...'
                       : _currentObjectif?.typeObjectif ?? 'Aucun objectif',
-                    style: TextStyle(
-                      color: widget.themeService.colorBlack,
+                    style: const TextStyle(
+                      color: _colorBlack,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1101,7 +1105,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Succès et Badges', style: TextStyle(color: widget.themeService.colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text('Succès et Badges', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
             TextButton(
               onPressed: () {
                 Navigator.push(
@@ -1135,7 +1139,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Activité Récentes', style: TextStyle(color: widget.themeService.colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text('Activité Récentes', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
             TextButton(
               onPressed: () {
                 Navigator.push(
@@ -1160,7 +1164,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Column(
             children: activities.map((activity) =>
-                _ActivityRow(icon: activity['icon'], color: activity['color'], text: activity['text'], themeService: widget.themeService)
+                _ActivityRow(icon: activity['icon'], color: activity['color'], text: activity['text'])
             ).toList(),
           ),
         ),
@@ -1169,108 +1173,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildBadgeItems(Color primaryColor) {
-    // Si on a tous les badges avec statut, filtrer pour n'afficher que les badges obtenus
-    if (_allBadgesWithStatus != null && _allBadgesWithStatus!.isNotEmpty) {
-      // Filtrer uniquement les badges obtenus
-      final obtainedBadges = _allBadgesWithStatus!
-          .where((badge) => badge.obtenu == true)
-          .take(3)
-          .toList();
+    // Si on a tous les badges disponibles, les afficher avec ceux obtenus débloqués
+    if (_allBadges != null && _allBadges!.isNotEmpty) {
+      final earnedBadgeIds = _badges?.map((b) => b.id).toSet() ?? <int>{};
       
-      if (obtainedBadges.isEmpty) {
-        // Si aucun badge obtenu, afficher un message ou retourner une liste vide
-        return [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Aucun badge obtenu pour le moment',
-              style: TextStyle(
-                color: widget.themeService.colorBlack.withOpacity(0.6),
-                fontSize: 14,
-                fontStyle: FontStyle.italic,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ];
-      }
-      
-      return obtainedBadges.map((BadgeEleveResponse badge) {
-        Color color;
-        // Déterminer la couleur selon le type de badge
-        switch (badge.type?.toUpperCase() ?? '') {
-          case 'OR':
-            color = widget.themeService.badgeGold;
-            break;
-          case 'ARGENT':
-            color = widget.themeService.badgeSilver;
-            break;
-          case 'BRONZE':
-            color = widget.themeService.badgeBronze;
-            break;
-          case 'PROGRESSION':
-            color = widget.themeService.badgeProgression; // Utiliser la couleur du thème
-            break;
-          case 'SPECIAL':
-          case 'CHALLENGE':
-          case 'CLASSEMENT':
-          case 'PARTICIPATION':
-            color = primaryColor;
-            break;
-          default:
-            color = primaryColor;
-        }
-        return _BadgeItem(
-          iconColor: color,
-          label: badge.nom ?? 'Badge',
-          isUnlocked: true, // Tous les badges affichés sont obtenus
-          themeService: widget.themeService,
-        );
-      }).toList();
-    }
-    
-    // Fallback: Si on a tous les badges disponibles, filtrer pour n'afficher que ceux obtenus
-    if (_allBadges != null && _allBadges!.isNotEmpty && _badges != null && _badges!.isNotEmpty) {
-      final earnedBadgeIds = _badges!.map((b) => b.id).toSet();
-      
-      // Filtrer uniquement les badges obtenus
-      final obtainedBadges = _allBadges!
-          .where((badge) => badge.id != null && earnedBadgeIds.contains(badge.id))
-          .take(3)
-          .toList();
-      
-      if (obtainedBadges.isEmpty) {
-        // Si aucun badge obtenu, afficher un message
-        return [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Aucun badge obtenu pour le moment',
-              style: TextStyle(
-                color: widget.themeService.colorBlack.withOpacity(0.6),
-                fontSize: 14,
-                fontStyle: FontStyle.italic,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ];
-      }
-      
-      return obtainedBadges.map((BadgeModel.Badge badge) {
+      return _allBadges!.take(3).map((BadgeModel.Badge badge) {
+        final isUnlocked = earnedBadgeIds.contains(badge.id);
         Color color;
         switch (badge.type) {
           case BadgeModel.BadgeTypeEnum.OR:
-            color = widget.themeService.badgeGold;
+            color = _colorGold;
             break;
           case BadgeModel.BadgeTypeEnum.ARGENT:
-            color = widget.themeService.badgeSilver;
+            color = _colorSilver;
             break;
           case BadgeModel.BadgeTypeEnum.BRONZE:
-            color = widget.themeService.badgeBronze;
-            break;
-          case BadgeModel.BadgeTypeEnum.PROGRESSION:
-            color = widget.themeService.badgeProgression; // Utiliser la couleur du thème
+            color = _colorBronze;
             break;
           default:
             color = primaryColor;
@@ -1278,28 +1196,26 @@ class _HomeScreenState extends State<HomeScreen> {
         return _BadgeItem(
           iconColor: color,
           label: badge.nom ?? 'Badge',
-          isUnlocked: true, // Tous les badges affichés sont obtenus
-          themeService: widget.themeService,
+          isUnlocked: isUnlocked,
         );
       }).toList();
     }
     
-    // Dernier fallback: Afficher uniquement les badges obtenus (sans badges verrouillés par défaut)
+    // Sinon, afficher les badges obtenus + des badges par défaut verrouillés
+    final items = <Widget>[];
+    
     if (_badges != null && _badges!.isNotEmpty) {
-      return _badges!.take(3).map((BadgeModel.Badge badge) {
+      items.addAll(_badges!.take(3).map((BadgeModel.Badge badge) {
         Color color;
         switch (badge.type) {
           case BadgeModel.BadgeTypeEnum.OR:
-            color = widget.themeService.badgeGold;
+            color = _colorGold;
             break;
           case BadgeModel.BadgeTypeEnum.ARGENT:
-            color = widget.themeService.badgeSilver;
+            color = _colorSilver;
             break;
           case BadgeModel.BadgeTypeEnum.BRONZE:
-            color = widget.themeService.badgeBronze;
-            break;
-          case BadgeModel.BadgeTypeEnum.PROGRESSION:
-            color = widget.themeService.badgeProgression; // Utiliser la couleur du thème
+            color = _colorBronze;
             break;
           default:
             color = primaryColor;
@@ -1307,27 +1223,30 @@ class _HomeScreenState extends State<HomeScreen> {
         return _BadgeItem(
           iconColor: color,
           label: badge.nom ?? 'Badge',
-          isUnlocked: true, // Tous les badges affichés sont obtenus
-          themeService: widget.themeService,
+          isUnlocked: true,
         );
-      }).toList();
+      }));
     }
     
-    // Si aucun badge obtenu, afficher un message
-    return [
-      Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Text(
-          'Aucun badge obtenu pour le moment',
-          style: TextStyle(
-            color: widget.themeService.colorBlack.withOpacity(0.6),
-            fontSize: 14,
-            fontStyle: FontStyle.italic,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    ];
+    // Ajouter des badges verrouillés pour compléter jusqu'à 3
+    final remaining = 3 - items.length;
+    if (remaining > 0) {
+      final defaultBadges = [
+        {'color': _colorGold, 'label': 'Génie math'},
+        {'color': _colorBronze, 'label': '20 question/10min'},
+        {'color': _colorSilver, 'label': 'Calcul mental'},
+      ];
+      for (int i = 0; i < remaining; i++) {
+        final badge = defaultBadges[i % defaultBadges.length];
+        items.add(_BadgeItem(
+          iconColor: badge['color'] as Color,
+          label: badge['label'] as String,
+          isUnlocked: false,
+        ));
+      }
+    }
+    
+    return items;
   }
 
   Widget _buildRecommendationsSection(Color primaryColor) {
@@ -1337,9 +1256,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            const Text(
               'Recommandation pour toi',
-              style: TextStyle(color: widget.themeService.colorBlack, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold),
             ),
             TextButton(
               onPressed: () {
@@ -1476,10 +1395,10 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            const Text(
               'Lectures',
               style: TextStyle(
-                color: widget.themeService.colorBlack,
+                color: _colorBlack,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -1520,7 +1439,6 @@ class _HomeScreenState extends State<HomeScreen> {
             (reading) => _ReadingProgressRow(
               reading: reading,
               primaryColor: primaryColor,
-              themeService: widget.themeService,
             ),
           ),
       ],
@@ -1579,10 +1497,10 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            const Text(
               'Nos partenaires éducatifs',
               style: TextStyle(
-                color: widget.themeService.colorBlack,
+                color: _colorBlack,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -1738,10 +1656,10 @@ class _GoalPopupState extends State<_GoalPopup> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Type Objectif',
               style: TextStyle(
-                color: widget.themeService.colorBlack,
+                color: _colorBlack,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -1774,10 +1692,10 @@ class _GoalPopupState extends State<_GoalPopup> {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
+            const Text(
               'Nombre de Livres',
               style: TextStyle(
-                color: widget.themeService.colorBlack,
+                color: _colorBlack,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -1810,8 +1728,8 @@ class _GoalPopupState extends State<_GoalPopup> {
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.themeService.colorWhite,
-                    foregroundColor: widget.themeService.colorBlack,
+                    backgroundColor: _colorWhite,
+                    foregroundColor: _colorBlack,
                     side: const BorderSide(color: Colors.grey),
                     padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -1823,18 +1741,18 @@ class _GoalPopupState extends State<_GoalPopup> {
                   onPressed: _isLoading ? null : _createObjectif,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
-                    foregroundColor: widget.themeService.colorWhite,
+                    foregroundColor: _colorWhite,
                     padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     elevation: 2,
                   ),
                   child: _isLoading
-                      ? SizedBox(
+                      ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(widget.themeService.colorWhite),
+                            valueColor: AlwaysStoppedAnimation<Color>(_colorWhite),
                           ),
                         )
                       : const Text('Définir', style: TextStyle(fontSize: 16)),
@@ -1942,10 +1860,10 @@ class _ChallengePopupState extends State<_ChallengePopup> {
       ),
       title: Column(
         children: [
-          Text(
+          const Text(
             'Défi Quotidien',
             style: TextStyle(
-              color: widget.themeService.colorBlack,
+              color: _colorBlack,
               fontWeight: FontWeight.bold,
               fontSize: 20,
             ),
@@ -1966,10 +1884,10 @@ class _ChallengePopupState extends State<_ChallengePopup> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Quelle est la formule chimique de l\'eau ?',
               style: TextStyle(
-                color: widget.themeService.colorBlack,
+                color: _colorBlack,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -2000,7 +1918,7 @@ class _ChallengePopupState extends State<_ChallengePopup> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
-                  foregroundColor: widget.themeService.colorWhite,
+                  foregroundColor: _colorWhite,
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 ),
@@ -2045,11 +1963,11 @@ class _GoodResultPopup extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Text(
+          const Text(
             'Félicitations ! vous avez gagné\n10 points',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: themeService.colorBlack,
+              color: _colorBlack,
               fontSize: 16,
             ),
           ),
@@ -2060,7 +1978,7 @@ class _GoodResultPopup extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryColor,
-              foregroundColor: themeService.colorWhite,
+              foregroundColor: _colorWhite,
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             ),
@@ -2104,10 +2022,10 @@ class _BadResultPopup extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Text(
+          const Text(
             'Question :\nQuelle est la formule chimique de l\'eau ?',
             style: TextStyle(
-              color: themeService.colorBlack,
+              color: _colorBlack,
               fontSize: 16,
             ),
           ),
@@ -2130,13 +2048,13 @@ class _BadResultPopup extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: themeService.readingProgressComplete.withOpacity(0.1),
+              color: Colors.green.shade50,
               borderRadius: BorderRadius.circular(5),
             ),
-            child: Text(
+            child: const Text(
               'Bonne réponse\nH2O',
               style: TextStyle(
-                color: themeService.readingProgressComplete,
+                color: Colors.green,
                 fontSize: 14,
               ),
             ),
@@ -2149,7 +2067,7 @@ class _BadResultPopup extends StatelessWidget {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
-                foregroundColor: themeService.colorWhite,
+                foregroundColor: _colorWhite,
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
@@ -2170,19 +2088,17 @@ class _BadgeItem extends StatelessWidget {
   final Color iconColor;
   final String label;
   final bool isUnlocked;
-  final ThemeService themeService;
   const _BadgeItem({
     required this.iconColor, 
     required this.label,
     this.isUnlocked = true,
-    required this.themeService,
   });
 
   @override
   Widget build(BuildContext context) {
     // Griser si non débloqué
     final effectiveColor = isUnlocked ? iconColor : Colors.grey.shade300;
-    final textColor = isUnlocked ? themeService.colorBlack : Colors.grey.shade400;
+    final textColor = isUnlocked ? _colorBlack : Colors.grey.shade400;
     
     return Column(
       children: [
@@ -2210,13 +2126,7 @@ class _ActivityRow extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String text;
-  final ThemeService themeService;
-  const _ActivityRow({
-    required this.icon,
-    required this.color,
-    required this.text,
-    required this.themeService,
-  });
+  const _ActivityRow({required this.icon, required this.color, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -2226,7 +2136,7 @@ class _ActivityRow extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(width: 15),
-          Expanded(child: Text(text, style: TextStyle(color: themeService.colorBlack, fontSize: 15))),
+          Expanded(child: Text(text, style: const TextStyle(color: _colorBlack, fontSize: 15))),
         ],
       ),
     );
@@ -2312,20 +2222,15 @@ class _RecommendationCard extends StatelessWidget {
 class _ReadingProgressRow extends StatelessWidget {
   final CurrentReading reading;
   final Color primaryColor;
-  final ThemeService themeService;
-  const _ReadingProgressRow({
-    required this.reading,
-    required this.primaryColor,
-    required this.themeService,
-  });
+  const _ReadingProgressRow({required this.reading, required this.primaryColor});
 
   @override
   Widget build(BuildContext context) {
     int percentage = (reading.progress * 100).toInt();
     final isFinished = reading.progress >= 1.0;
     Color progressColor = isFinished 
-        ? themeService.readingProgressComplete
-        : (reading.progress < 0.40 ? themeService.readingProgressLow : primaryColor);
+        ? Colors.green 
+        : (reading.progress < 0.40 ? Colors.orange : primaryColor);
 
     return GestureDetector(
       onTap: reading.livreId != null && reading.eleveId != null
@@ -2345,7 +2250,7 @@ class _ReadingProgressRow extends StatelessWidget {
                       Text(
                         reading.title,
                         style: TextStyle(
-                          color: themeService.colorBlack,
+                          color: _colorBlack,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                           decoration: isFinished ? TextDecoration.lineThrough : null,
@@ -2353,7 +2258,7 @@ class _ReadingProgressRow extends StatelessWidget {
                       ),
                       if (isFinished) ...[
                         const SizedBox(width: 8),
-                        Icon(Icons.check_circle, color: themeService.readingProgressComplete, size: 18),
+                        const Icon(Icons.check_circle, color: Colors.green, size: 18),
                       ],
                     ],
                   ),

@@ -1,5 +1,9 @@
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:edugo/services/auth_service.dart';
+import 'package:edugo/services/notification_routing_service.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class OneSignalService {
   static final OneSignalService _instance = OneSignalService._internal();
@@ -19,15 +23,18 @@ class OneSignalService {
     try {
       // ⚠️ IMPORTANT: Remplacez par votre App ID OneSignal
       // Vous pouvez le trouver dans votre dashboard OneSignal
-      const String oneSignalAppId = 'YOUR_ONESIGNAL_APP_ID';
+      const String oneSignalAppId = 'YOUR_ONESIGNAL_APP_ID'; // TODO: Remplacer par votre App ID
 
       // Initialiser OneSignal
       OneSignal.initialize(oneSignalAppId);
 
       // Demander la permission pour les notifications
-      OneSignal.Notifications.requestPermission(true);
+      final permission = await OneSignal.Notifications.requestPermission(true);
+      print('[OneSignalService] Permission granted: $permission');
 
       // Obtenir le Player ID (identifiant unique de l'appareil)
+      // Attendre un peu pour s'assurer que l'initialisation est terminée
+      await Future.delayed(const Duration(seconds: 2));
       _playerId = await OneSignal.User.pushSubscription.id;
       print('[OneSignalService] Player ID: $_playerId');
 
@@ -49,7 +56,12 @@ class OneSignalService {
     // Handler pour les notifications reçues en arrière-plan
     OneSignal.Notifications.addClickListener((event) {
       print('[OneSignalService] Notification clicked: ${event.notification.body}');
-      // Vous pouvez naviguer vers une page spécifique ici
+      // Les données supplémentaires sont directement accessibles via additionalData
+      final data = event.notification.additionalData;
+      if (data != null) {
+        print('[OneSignalService] Notification data: $data');
+        // TODO: Implémenter la navigation vers l'écran approprié
+      }
     });
 
     // Handler pour les notifications reçues en premier plan
@@ -76,6 +88,8 @@ class OneSignalService {
       } catch (e) {
         print('[OneSignalService] Error associating Player ID: $e');
       }
+    } else {
+      print('[OneSignalService] Cannot associate Player ID - eleveId: $eleveId, playerId: $_playerId');
     }
   }
 
@@ -100,5 +114,48 @@ class OneSignalService {
       print('[OneSignalService] Error sending test notification: $e');
     }
   }
-}
+  
+  /// Gérer la navigation en fonction des données de notification
+  void handleNotificationNavigation(BuildContext context, Map<String, dynamic> data) {
+    // Utiliser le service de routage pour gérer la navigation
+    NotificationRoutingService.handleNotificationNavigationFromPush(context, data);
+  }
 
+  /// Récupérer une notification en attente (si l'app a été ouverte via une notification)
+  Future<Map<String, dynamic>?> getPendingNotification() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pendingDataJson = prefs.getString('pending_notification');
+      if (pendingDataJson != null) {
+        return json.decode(pendingDataJson) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      print('[OneSignalService] Error getting pending notification: $e');
+    }
+    return null;
+  }
+
+  /// Effacer une notification en attente
+  Future<void> clearPendingNotification() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('pending_notification');
+    } catch (e) {
+      print('[OneSignalService] Error clearing pending notification: $e');
+    }
+  }
+
+  /// Traiter une notification en attente (si l'app a été ouverte via une notification)
+  Future<void> processPendingNotification(BuildContext context) async {
+    try {
+      final pendingData = await getPendingNotification();
+      if (pendingData != null && context.mounted) {
+        print('[OneSignalService] Processing pending notification: $pendingData');
+        handleNotificationNavigation(context, pendingData);
+        await clearPendingNotification();
+      }
+    } catch (e) {
+      print('[OneSignalService] Error processing pending notification: $e');
+    }
+  }
+}

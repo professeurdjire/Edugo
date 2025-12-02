@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:edugo/models/participation.dart';
+import 'package:edugo/models/leaderboard_entry.dart';
 import 'package:edugo/services/challenge_service.dart';
 import 'package:edugo/services/theme_service.dart';
-import 'package:edugo/models/challenge.dart';
+import 'package:edugo/services/auth_service.dart';
 
 class ChallengeLeaderboardScreen extends StatefulWidget {
   final int challengeId;
@@ -19,10 +19,11 @@ class ChallengeLeaderboardScreen extends StatefulWidget {
 }
 
 class _ChallengeLeaderboardScreenState extends State<ChallengeLeaderboardScreen> {
-  List<Participation> _leaderboard = [];
+  List<LeaderboardEntry> _leaderboard = [];
   bool _isLoading = true;
   final ChallengeService _challengeService = ChallengeService();
   final ThemeService _themeService = ThemeService();
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -37,27 +38,36 @@ class _ChallengeLeaderboardScreenState extends State<ChallengeLeaderboardScreen>
 
     try {
       final leaderboard = await _challengeService.getChallengeLeaderboard(widget.challengeId);
-      if (leaderboard != null && mounted) {
-        // Sort leaderboard by points in descending order
-        final sortedLeaderboard = List<Participation>.from(leaderboard)
-          ..sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
+      if (mounted) {
+        print('[ChallengeLeaderboardScreen] Loaded ${leaderboard.length} leaderboard entries');
+        
+        // Log pour déboguer - afficher toutes les informations
+        print('[ChallengeLeaderboardScreen] ========== LEADERBOARD DEBUG ==========');
+        for (var i = 0; i < leaderboard.length; i++) {
+          final entry = leaderboard[i];
+          print('[ChallengeLeaderboardScreen] Rank ${entry.rang}:');
+          print('  - Nom complet: ${entry.fullName}');
+          print('  - Eleve ID: ${entry.eleveId}');
+          print('  - Score: ${entry.points}');
+          print('  - Temps: ${entry.tempsPasse}s');
+          print('  - Date participation: ${entry.dateParticipation}');
+          print('  ---');
+        }
+        print('[ChallengeLeaderboardScreen] =======================================');
         
         setState(() {
-          _leaderboard = sortedLeaderboard;
-          _isLoading = false;
-        });
-      } else if (mounted) {
-        setState(() {
+          _leaderboard = leaderboard;
           _isLoading = false;
         });
       }
     } catch (e) {
+      print('[ChallengeLeaderboardScreen] Error loading leaderboard: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur lors du chargement du classement')),
+          SnackBar(content: Text('Erreur lors du chargement du classement: $e')),
         );
       }
     }
@@ -88,58 +98,59 @@ class _ChallengeLeaderboardScreenState extends State<ChallengeLeaderboardScreen>
               icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
               onPressed: () => Navigator.pop(context),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.black),
+                onPressed: _loadLeaderboard,
+                tooltip: 'Actualiser',
+              ),
+            ],
           ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Classement',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+      body: Column(
+        children: [
+          if (_leaderboard.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: _buildLeaderboardHeader(primaryColor),
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'Voici le classement des participants',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 20),
-            if (_leaderboard.isNotEmpty)
-              _buildLeaderboardHeader(primaryColor),
-            const SizedBox(height: 10),
-            Expanded(
-              child: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                    ),
-                  )
-                : _leaderboard.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Aucun participant pour le moment',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: _leaderboard.length,
-                        itemBuilder: (context, index) {
-                          final Participation participation = _leaderboard[index];
-                          return _buildLeaderboardItem(participation, index + 1, primaryColor);
-                        },
-                      ),
-            ),
+            const Divider(height: 1),
           ],
-        ),
+          Expanded(
+            child: _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                  ),
+                )
+              : _leaderboard.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.leaderboard, size: 64, color: Colors.grey.shade400),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Aucun participant avec score',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: _leaderboard.length,
+                      itemBuilder: (context, index) {
+                        final entry = _leaderboard[index];
+                        final currentUserId = _authService.currentUserId;
+                        final isCurrentStudent = currentUserId != null && currentUserId == entry.eleveId;
+                        return _buildLeaderboardItem(entry, primaryColor, isCurrentStudent);
+                      },
+                    ),
+          ),
+        ],
       ),
         );
       },
@@ -202,98 +213,93 @@ class _ChallengeLeaderboardScreenState extends State<ChallengeLeaderboardScreen>
     );
   }
   
-  Widget _buildLeaderboardItem(Participation participation, int rank, Color primaryColor) {
-    final bool isTopThree = rank <= 3;
-    final Color rankColor = rank == 1 
-        ? const Color(0xFFFFD700) 
-        : rank == 2 
-            ? const Color(0xFFC0C0C0) 
-            : rank == 3 
-                ? const Color(0xFFCD7F32) 
-                : Colors.grey;
+  Widget _buildLeaderboardItem(LeaderboardEntry entry, Color primaryColor, bool isHighlighted) {
+    final bool isTopThree = entry.rang <= 3;
+    
+    // Déterminer l'icône et la couleur selon le rang
+    IconData? rankIcon;
+    Color rankColor;
+    
+    if (entry.rang == 1) {
+      rankIcon = Icons.emoji_events;
+      rankColor = Colors.amber;
+    } else if (entry.rang == 2) {
+      rankIcon = Icons.workspace_premium;
+      rankColor = Colors.grey;
+    } else if (entry.rang == 3) {
+      rankIcon = Icons.military_tech;
+      rankColor = Colors.brown;
+    } else {
+      rankColor = Colors.grey.shade300;
+    }
     
     // Format time spent
-    final String timeSpent = _formatTime(participation.tempsPasse ?? 0);
+    final String timeSpent = _formatTime(entry.tempsPasse);
     
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: isHighlighted ? Colors.blue.shade50 : Colors.white,
+        border: isHighlighted 
+            ? Border.all(color: Colors.blue, width: 2) 
+            : Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            // Rank
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isTopThree ? rankColor : Colors.grey.shade300,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  '$rank',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isTopThree ? Colors.white : Colors.black,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Participant name - améliorer l'affichage
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getParticipantName(participation),
+      child: ListTile(
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: rankColor,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: rankIcon != null
+                ? Icon(rankIcon, color: Colors.white, size: 28)
+                : Text(
+                    '${entry.rang}',
                     style: const TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black87,
+                      color: Colors.white,
                     ),
                   ),
-                  if (participation.eleve?.email != null)
-                    Text(
-                      participation.eleve!.email!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
+          ),
+        ),
+        title: Text(
+          entry.fullName,
+          style: TextStyle(
+            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: Text(
+          'Temps: $timeSpent',
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${entry.points}',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
               ),
             ),
-            // Score
-            Expanded(
-              flex: 2,
-              child: Text(
-                '${participation.score ?? 0} pts',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: primaryColor,
-                ),
-                textAlign: TextAlign.end,
-              ),
-            ),
-            // Time spent
-            Expanded(
-              flex: 2,
-              child: Text(
-                timeSpent,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
-                textAlign: TextAlign.end,
-              ),
+            Text(
+              'points',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -302,36 +308,17 @@ class _ChallengeLeaderboardScreenState extends State<ChallengeLeaderboardScreen>
   }
   
   String _formatTime(int seconds) {
-    final Duration duration = Duration(seconds: seconds);
-    final int hours = duration.inHours;
-    final int minutes = duration.inMinutes.remainder(60);
-    final int secs = duration.inSeconds.remainder(60);
+    if (seconds <= 0) {
+      return '0s';
+    }
     
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    } else if (minutes > 0) {
+    final int minutes = seconds ~/ 60;
+    final int secs = seconds % 60;
+    
+    if (minutes > 0) {
       return '${minutes}m ${secs}s';
     } else {
       return '${secs}s';
     }
-  }
-  
-  String _getParticipantName(Participation participation) {
-    // Essayer d'abord avec l'objet eleve
-    if (participation.eleve != null) {
-      final prenom = participation.eleve!.prenom ?? '';
-      final nom = participation.eleve!.nom ?? '';
-      if (prenom.isNotEmpty || nom.isNotEmpty) {
-        return '${prenom.trim()} ${nom.trim()}'.trim();
-      }
-    }
-    
-    // Fallback: utiliser l'ID de l'élève si disponible
-    if (participation.eleve?.id != null) {
-      return 'Élève #${participation.eleve!.id}';
-    }
-    
-    // Dernier recours
-    return 'Participant inconnu';
   }
 }

@@ -9,12 +9,16 @@ import 'package:built_value/serializer.dart';
 import 'package:edugo/models/eleve.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb; // Add web detection
+import 'package:flutter/foundation.dart'; // Pour ValueNotifier
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
 
   late Dio _dio;
   Eleve? _currentEleve;
+  
+  // ValueNotifier pour notifier les changements de points
+  final ValueNotifier<int> pointsNotifier = ValueNotifier<int>(0);
 
   int? get currentUserId => _currentEleve?.id;
 
@@ -49,7 +53,7 @@ class AuthService {
           // ⚠️ IMPORTANT: Vérifiez que cette IP correspond à l'IP de votre machine (voir ipconfig)
           // L'appareil Android et votre PC doivent être sur le même réseau Wi-Fi
           // ⚠️ NOTE: Le backend Swagger contient deux fois /api, donc baseUrl = /api et endpoints = /api/... pour avoir /api/api/...
-          baseUrl = 'http://192.168.117.8:8080/api';
+          baseUrl = 'http://192.168.10.138:8080/api';
         }
       } else if (Platform.isIOS) {
         // iOS - utiliser localhost pour simulateur ou IP réseau pour appareil physique
@@ -229,6 +233,12 @@ class AuthService {
   // Stocker l'élève après connexion
   void setCurrentEleve(Eleve eleve) {
     _currentEleve = eleve;
+    // Mettre à jour le ValueNotifier des points pour notifier les écrans qui écoutent
+    final newPoints = eleve.pointAccumule ?? 0;
+    if (pointsNotifier.value != newPoints) {
+      pointsNotifier.value = newPoints;
+      print('[AuthService] Points mis à jour via ValueNotifier: $newPoints');
+    }
   }
 
   // Méthode login

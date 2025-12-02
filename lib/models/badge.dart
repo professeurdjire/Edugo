@@ -32,7 +32,7 @@ abstract class Badge implements Built<Badge, BadgeBuilder> {
 
   @BuiltValueField(wireName: r'type')
   BadgeTypeEnum? get type;
-  // enum typeEnum {  OR,  ARGENT,  BRONZE,  SPECIAL,  };
+  // enum typeEnum {  OR,  ARGENT,  BRONZE,  SPECIAL,  PROGRESSION,  };
 
   @BuiltValueField(wireName: r'icone')
   String? get icone;
@@ -209,6 +209,8 @@ class BadgeTypeEnum extends EnumClass {
   static const BadgeTypeEnum BRONZE = _$badgeTypeEnum_BRONZE;
   @BuiltValueEnumConst(wireName: r'SPECIAL')
   static const BadgeTypeEnum SPECIAL = _$badgeTypeEnum_SPECIAL;
+  @BuiltValueEnumConst(wireName: r'PROGRESSION')
+  static const BadgeTypeEnum PROGRESSION = _$badgeTypeEnum_PROGRESSION;
 
   static Serializer<BadgeTypeEnum> get serializer => _$badgeTypeEnumSerializer;
 

@@ -12,8 +12,22 @@ class QuestionService {
   factory QuestionService() => _instance;
 
   final AuthService _authService = AuthService();
+  
+  // Stockage des métadonnées d'appariement par ID de réponse
+  // Map<reponseId, Map<colonne, idAssocie>>
+  static final Map<int, Map<String, dynamic>> _matchingMetadata = {};
 
   QuestionService._internal();
+  
+  /// Récupérer les métadonnées d'appariement pour une réponse
+  static Map<String, dynamic>? getMatchingMetadata(int reponseId) {
+    return _matchingMetadata[reponseId];
+  }
+  
+  /// Nettoyer les métadonnées (utile pour libérer la mémoire)
+  static void clearMatchingMetadata() {
+    _matchingMetadata.clear();
+  }
 
   /// Normaliser les données d'une question avant désérialisation
   /// Le backend retourne:
@@ -69,6 +83,32 @@ class QuestionService {
           // Convertir libelle en libelleReponse si nécessaire
           if (reponse.containsKey('libelle') && !reponse.containsKey('libelleReponse')) {
             reponse['libelleReponse'] = reponse['libelle'];
+          }
+          // Préserver colonne et idAssocie pour les questions d'appariement
+          // Stocker ces métadonnées dans une Map statique accessible par ID de réponse
+          final reponseId = reponse['id'] as int?;
+          final libelle = reponse['libelle'] ?? reponse['libelleReponse'] ?? 'Sans libellé';
+          
+          if (reponseId != null) {
+            // Extraire colonne et idAssocie depuis les données brutes
+            final colonne = reponse['colonne'] as String?;
+            final idAssocie = reponse['idAssocie'] as int?;
+            
+            // Toujours stocker les métadonnées, même si elles sont null
+            _matchingMetadata[reponseId] = {
+              'colonne': colonne,
+              'idAssocie': idAssocie,
+            };
+            
+            if (colonne != null || idAssocie != null) {
+              print('[QuestionService] ✅ Stored matching metadata for reponse $reponseId: colonne=$colonne, idAssocie=$idAssocie, libelle="$libelle"');
+            } else {
+              print('[QuestionService] ⚠️ No colonne/idAssocie for reponse $reponseId, libelle="$libelle"');
+              // Afficher toutes les clés disponibles pour déboguer
+              print('[QuestionService] Available keys in reponse: ${reponse.keys.toList()}');
+            }
+          } else {
+            print('[QuestionService] ⚠️ No ID found for reponse with libelle="$libelle"');
           }
           return reponse;
         }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:edugo/services/theme_service.dart';
 import 'package:edugo/services/notification_service.dart';
 import 'package:edugo/services/auth_service.dart';
+import 'package:edugo/services/notification_routing_service.dart';
 import 'package:edugo/models/notification.dart' as NotificationModel;
 
 // --- CONSTANTES DE STYLES ---
@@ -228,6 +229,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   }
                 });
               }
+              
+              // Gérer la navigation en fonction des données de la notification
+              NotificationRoutingService.handleNotificationNavigation(context, notification);
             },
           ),
         );
@@ -241,36 +245,118 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final titre = notification.titre ?? 'Notification';
     final contenu = notification.contenu ?? '';
 
-    // Déterminer l'icône et la couleur selon le type
+    // Déterminer l'icône et la couleur selon le type (selon la documentation)
     IconData icon;
     Color color;
 
-    if (type.contains('SIGNAL') || type.contains('SIGNALEMENT')) {
-      // Notifications de signalement
-      icon = Icons.report;
-      color = Colors.redAccent;
-    } else if (type.contains('CHALLENGE')) {
-      icon = Icons.emoji_events;
-      color = _colorChallenge;
-    } else if (type.contains('QUIZ')) {
-      icon = Icons.question_answer;
-      color = primaryColor; // Quiz utilise la couleur du thème
-    } else if (type.contains('DEFI') || type.contains('DÉFI')) {
-      icon = Icons.volume_up;
-      color = _colorDefi;
-    } else if (type.contains('DATA') || type.contains('CONVERSION')) {
-      icon = Icons.public;
-      color = _colorData;
-    } else if (type.contains('BADGE') || type.contains('BADGE')) {
-      icon = Icons.stars;
-      color = _colorQuiz;
-    } else if (type.contains('EXERCICE') || type.contains('EXERCICE')) {
-      icon = Icons.assignment;
-      color = primaryColor;
-    } else {
-      // Type par défaut
-      icon = Icons.notifications;
-      color = primaryColor;
+    switch (type) {
+      case 'QUIZ_TERMINE':
+        icon = Icons.check_circle;
+        color = _colorQuiz; // Vert
+        break;
+        
+      case 'CHALLENGE_TERMINE':
+        icon = Icons.emoji_events;
+        color = _colorChallenge; // Orange
+        break;
+        
+      case 'DEFI_TERMINE':
+      case 'DÉFI_TERMINE':
+        icon = Icons.flag;
+        color = _colorDefi; // Bleu
+        break;
+        
+      case 'EXERCICE_CORRIGE':
+        icon = Icons.assignment_turned_in;
+        color = primaryColor;
+        break;
+        
+      case 'NOUVEAU_CHALLENGE':
+        icon = Icons.emoji_events_outlined;
+        color = _colorChallenge; // Orange
+        break;
+        
+      case 'NOUVEAU_DEFI':
+      case 'NOUVEAU_DÉFI':
+        icon = Icons.flag_outlined;
+        color = _colorDefi; // Bleu
+        break;
+        
+      case 'RAPPEL_DEADLINE':
+        icon = Icons.access_time;
+        color = Colors.orange;
+        break;
+        
+      case 'BADGE_OBTENU':
+        icon = Icons.stars;
+        color = Colors.amber;
+        break;
+        
+      case 'BADGE_PROGRESSION':
+        icon = Icons.trending_up;
+        color = Colors.purple;
+        break;
+        
+      case 'NOUVEAU_LIVRE':
+        icon = Icons.book;
+        color = Colors.brown;
+        break;
+        
+      case 'OBJECTIF_ATTEINT':
+        icon = Icons.celebration;
+        color = Colors.purple;
+        break;
+        
+      case 'MESSAGE_ADMIN':
+      case 'NOUVEAU_MESSAGE_ADMIN':
+        icon = Icons.announcement;
+        color = Colors.red;
+        break;
+        
+      case 'CLASSEMENT_AMELIORE':
+      case 'AMELIORATION_CLASSEMENT':
+        icon = Icons.trending_up;
+        color = Colors.green;
+        break;
+        
+      case 'NOUVEAU_QUIZ':
+        icon = Icons.quiz;
+        color = _colorQuiz; // Vert
+        break;
+        
+      case 'REPONSE_SUGGESTION':
+        icon = Icons.reply;
+        color = primaryColor;
+        break;
+        
+      default:
+        // Types génériques ou non reconnus
+        if (type.contains('SIGNAL') || type.contains('SIGNALEMENT')) {
+          icon = Icons.report;
+          color = Colors.redAccent;
+        } else if (type.contains('CHALLENGE')) {
+          icon = Icons.emoji_events;
+          color = _colorChallenge;
+        } else if (type.contains('QUIZ')) {
+          icon = Icons.question_answer;
+          color = _colorQuiz;
+        } else if (type.contains('DEFI') || type.contains('DÉFI')) {
+          icon = Icons.flag;
+          color = _colorDefi;
+        } else if (type.contains('EXERCICE') || type.contains('CORRIGE')) {
+          icon = Icons.assignment;
+          color = primaryColor;
+        } else if (type.contains('DATA') || type.contains('CONVERSION')) {
+          icon = Icons.public;
+          color = _colorData;
+        } else if (type.contains('BADGE')) {
+          icon = Icons.stars;
+          color = Colors.amber;
+        } else {
+          // Type par défaut
+          icon = Icons.notifications;
+          color = primaryColor;
+        }
     }
 
     return {
@@ -317,100 +403,61 @@ class _NotificationCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: primaryColor.withOpacity(0.1), // Ombre adaptée au thème
-              spreadRadius: 2,
-              blurRadius: 5,
-              offset: const Offset(0, 3),
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 0,
+              offset: const Offset(0, 1),
             ),
           ],
-          border: Border.all(
-            color: isRead 
-                ? primaryColor.withOpacity(0.1) 
-                : primaryColor.withOpacity(0.3), // Bordure plus visible si non lue
-            width: isRead ? 1 : 1.5,
-          ),
         ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icône de la notification
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Icône de notification
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 24),
             ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-
-          const SizedBox(width: 15),
-
-          // Contenu du texte
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: _colorBlack,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: _fontFamily,
+            const SizedBox(width: 12),
+            
+            // Contenu de la notification
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Titre
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                      color: _colorBlack,
+                      fontFamily: _fontFamily,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  body,
-                  style: TextStyle(
-                    color: primaryColor.withOpacity(0.7), // Texte du corps adapté au thème
-                    fontSize: 14,
-                    fontFamily: _fontFamily,
+                  const SizedBox(height: 4),
+                  
+                  // Corps
+                  Text(
+                    body,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
+                      color: Colors.grey.shade700,
+                      fontFamily: _fontFamily,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-      ),
-    );
-  }
-}
-
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final Color primaryColor;
-
-  const _NavBarItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.primaryColor
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isSelected ? primaryColor : _colorBlack.withOpacity(0.6),
-          size: 24,
+          ],
         ),
-        Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? primaryColor : _colorBlack.withOpacity(0.6),
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            fontFamily: _fontFamily,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

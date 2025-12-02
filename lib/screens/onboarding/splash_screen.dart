@@ -1,7 +1,5 @@
-import 'package:edugo/screens/main/mainScreen.dart';
 import 'package:edugo/screens/onboarding/onboarding_screen.dart';
 import 'package:edugo/screens/auth/login.dart';
-import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/theme_service.dart';
 import 'package:edugo/screens/profil/reenitialiserMotDePasse/nouveauMotDePasse.dart';
 import 'package:edugo/widgets/dynamic_logo.dart';
@@ -23,7 +21,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  final AuthService _authService = AuthService();
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -64,57 +61,28 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     }
     
     final prefs = await SharedPreferences.getInstance();
-    final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
-
+    
     if (!mounted) return;
 
-    if (!hasSeenOnboarding) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => OnboardingScreen(
-            themeService: widget.themeService,
-            onFinished: () async {
-              // Mark onboarding as completed
-              await prefs.setBool('hasSeenOnboarding', true);
-              if (!mounted) return;
-              // Redirect to login screen after onboarding
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (_) => LoginScreen(themeService: widget.themeService),
-                ),
-              );
-            },
-          ),
+    // Afficher l'onboarding à chaque démarrage
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => OnboardingScreen(
+          themeService: widget.themeService,
+          onFinished: () async {
+            // Marquer l'onboarding comme terminé (même si on l'affichera à chaque fois)
+            await prefs.setBool('hasSeenOnboarding', true);
+            if (!mounted) return;
+            // Rediriger vers l'écran de connexion après l'onboarding
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => LoginScreen(themeService: widget.themeService),
+              ),
+            );
+          },
         ),
-      );
-      return;
-    }
-
-    try {
-      final profile = await _authService.getCurrentUserProfile();
-      if (!mounted) return;
-
-      if (profile != null) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => MainScreen(themeService: widget.themeService),
-          ),
-        );
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => LoginScreen(themeService: widget.themeService),
-          ),
-        );
-      }
-    } catch (_) {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => LoginScreen(themeService: widget.themeService),
-        ),
-      );
-    }
+      ),
+    );
   }
 
   @override

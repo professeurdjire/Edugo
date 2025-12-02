@@ -8,7 +8,27 @@ import 'package:edugo/models/challenge.dart';
 import 'package:edugo/models/participation.dart';
 import 'package:edugo/models/submit_request.dart';
 import 'package:edugo/models/submit_result_response.dart';
+import 'package:edugo/models/leaderboard_entry.dart';
 import 'package:built_collection/built_collection.dart';
+
+/// Métadonnées d'un challenge (points et nombre de questions)
+/// Ces champs sont retournés par l'API mais ne sont pas dans le modèle Challenge auto-généré
+class ChallengeMetadata {
+  final int points;
+  final int nombreQuestions;
+
+  ChallengeMetadata({
+    required this.points,
+    required this.nombreQuestions,
+  });
+
+  factory ChallengeMetadata.fromJson(Map<String, dynamic> json) {
+    return ChallengeMetadata(
+      points: json['points'] as int? ?? 0,
+      nombreQuestions: json['nombreQuestions'] as int? ?? 0,
+    );
+  }
+}
 
 class ChallengeService {
   static final ChallengeService _instance = ChallengeService._internal();
@@ -41,15 +61,63 @@ class ChallengeService {
     }
   }
 
+  /// Map pour stocker les métadonnées (points et nombreQuestions) par challenge ID
+  final Map<int, ChallengeMetadata> _challengeMetadata = {};
+
+  /// Récupérer les métadonnées d'un challenge (points et nombreQuestions)
+  ChallengeMetadata? getChallengeMetadata(int challengeId) {
+    return _challengeMetadata[challengeId];
+  }
+
   /// Récupérer les challenges disponibles pour un élève
+  /// ⚠️ IMPORTANT: Les métadonnées (points et nombreQuestions) sont stockées dans _challengeMetadata
   Future<BuiltList<Challenge>?> getChallengesDisponibles(int eleveId) async {
     try {
       print('Fetching challenges for student ID: $eleveId');
-      final response = await _lveApi.getChallengesDisponibles(id: eleveId);
+      
+      // Utiliser dio directement pour accéder à la réponse JSON brute
+      final url = '/api/eleve/challenges/disponibles/$eleveId';
+      final response = await _authService.dio.get(url);
+      
       print('API response status code: ${response.statusCode}');
       if (response.statusCode == 200) {
-        print('Successfully fetched challenges. Data length: ${response.data?.length ?? 0}');
-        return response.data;
+        final List<dynamic> rawData = response.data as List<dynamic>;
+        print('Successfully fetched challenges. Data length: ${rawData.length}');
+        
+        // Désérialiser les challenges d'abord
+        final challenges = rawData.map((item) {
+          return standardSerializers.deserializeWith(
+            Challenge.serializer,
+            item,
+          ) as Challenge;
+        }).toList();
+        
+        // Extraire les métadonnées depuis la réponse JSON brute et calculer nombreQuestions
+        _challengeMetadata.clear();
+        for (var i = 0; i < rawData.length && i < challenges.length; i++) {
+          final item = rawData[i];
+          final challenge = challenges[i];
+          if (item is Map<String, dynamic>) {
+            final challengeId = item['id'] as int?;
+            if (challengeId != null) {
+              // Calculer nombreQuestions depuis les questions du challenge si disponible
+              final questionsCount = challenge.questionsChallenge?.length ?? 0;
+              final metadata = ChallengeMetadata.fromJson(item);
+              // Utiliser le nombreQuestions calculé si le backend ne le fournit pas
+              final finalNombreQuestions = metadata.nombreQuestions > 0 
+                  ? metadata.nombreQuestions 
+                  : questionsCount;
+              
+              _challengeMetadata[challengeId] = ChallengeMetadata(
+                points: metadata.points,
+                nombreQuestions: finalNombreQuestions,
+              );
+              print('[ChallengeService] Challenge $challengeId: points=${_challengeMetadata[challengeId]!.points}, nombreQuestions=${_challengeMetadata[challengeId]!.nombreQuestions} (from backend: ${metadata.nombreQuestions}, from questions: $questionsCount)');
+            }
+          }
+        }
+        
+        return BuiltList<Challenge>(challenges);
       } else {
         print('Error fetching available challenges: Status code ${response.statusCode}');
         print('Response data: ${response.data}');
@@ -61,11 +129,53 @@ class ChallengeService {
   }
 
   /// Récupérer les challenges auxquels l'élève a participé
+  /// ⚠️ IMPORTANT: Les métadonnées (points et nombreQuestions) sont stockées dans _challengeMetadata
   Future<BuiltList<Participation>?> getChallengesParticipes(int eleveId) async {
     try {
-      final response = await _lveApi.getChallengesParticipes(id: eleveId);
+      // Utiliser dio directement pour accéder à la réponse JSON brute
+      final url = '/api/eleve/challenges/participes/$eleveId';
+      final response = await _authService.dio.get(url);
+      
       if (response.statusCode == 200) {
-        return response.data;
+        final List<dynamic> rawData = response.data as List<dynamic>;
+        
+        // Désérialiser les participations d'abord
+        final participations = rawData.map((item) {
+          return standardSerializers.deserializeWith(
+            Participation.serializer,
+            item,
+          ) as Participation;
+        }).toList();
+        
+        // Extraire les métadonnées depuis les participations
+        // Les participations contiennent un objet challenge avec les métadonnées
+        for (var i = 0; i < rawData.length && i < participations.length; i++) {
+          final item = rawData[i];
+          final participation = participations[i];
+          if (item is Map<String, dynamic>) {
+            final challengeData = item['challenge'] as Map<String, dynamic>?;
+            if (challengeData != null) {
+              final challengeId = challengeData['id'] as int?;
+              if (challengeId != null) {
+                // Calculer nombreQuestions depuis les questions du challenge si disponible
+                final questionsCount = participation.challenge?.questionsChallenge?.length ?? 0;
+                final metadata = ChallengeMetadata.fromJson(challengeData);
+                // Utiliser le nombreQuestions calculé si le backend ne le fournit pas
+                final finalNombreQuestions = metadata.nombreQuestions > 0 
+                    ? metadata.nombreQuestions 
+                    : questionsCount;
+                
+                _challengeMetadata[challengeId] = ChallengeMetadata(
+                  points: metadata.points,
+                  nombreQuestions: finalNombreQuestions,
+                );
+                print('[ChallengeService] Challenge $challengeId (from participation): points=${_challengeMetadata[challengeId]!.points}, nombreQuestions=${_challengeMetadata[challengeId]!.nombreQuestions} (from backend: ${metadata.nombreQuestions}, from questions: $questionsCount)');
+              }
+            }
+          }
+        }
+        
+        return BuiltList<Participation>(participations);
       } else {
         print('Error fetching participated challenges: Status code ${response.statusCode}');
       }
@@ -76,11 +186,38 @@ class ChallengeService {
   }
 
   /// Récupérer un challenge par ID avec tous les détails
+  /// ⚠️ IMPORTANT: Les métadonnées (points et nombreQuestions) sont stockées dans _challengeMetadata
   Future<Challenge?> getChallengeById(int challengeId) async {
     try {
-      final response = await _lveApi.getChallengeById2(id: challengeId);
+      // Utiliser dio directement pour accéder à la réponse JSON brute
+      final url = '/api/eleve/challenges/$challengeId';
+      final response = await _authService.dio.get(url);
+      
       if (response.statusCode == 200) {
-        return response.data;
+        final Map<String, dynamic> rawData = response.data as Map<String, dynamic>;
+        
+        // Désérialiser le challenge d'abord
+        final challenge = standardSerializers.deserializeWith(
+          Challenge.serializer,
+          rawData,
+        ) as Challenge;
+        
+        // Extraire les métadonnées depuis la réponse JSON brute et calculer nombreQuestions
+        // Calculer nombreQuestions depuis les questions du challenge si disponible
+        final questionsCount = challenge.questionsChallenge?.length ?? 0;
+        final metadata = ChallengeMetadata.fromJson(rawData);
+        // Utiliser le nombreQuestions calculé si le backend ne le fournit pas
+        final finalNombreQuestions = metadata.nombreQuestions > 0 
+            ? metadata.nombreQuestions 
+            : questionsCount;
+        
+        _challengeMetadata[challengeId] = ChallengeMetadata(
+          points: metadata.points,
+          nombreQuestions: finalNombreQuestions,
+        );
+        print('[ChallengeService] Challenge $challengeId: points=${_challengeMetadata[challengeId]!.points}, nombreQuestions=${_challengeMetadata[challengeId]!.nombreQuestions} (from backend: ${metadata.nombreQuestions}, from questions: $questionsCount)');
+        
+        return challenge;
       } else {
         print('Error fetching challenge by ID: Status code ${response.statusCode}');
       }
@@ -344,8 +481,9 @@ class ChallengeService {
 
   /// Récupérer le leaderboard d'un challenge
   /// GET /api/challenges/{challengeId}/leaderboard
+  /// Retourne une liste de LeaderboardEntry triée par score décroissant
   /// Note: baseUrl contains /api, and endpoints need /api/api/... (double /api)
-  Future<BuiltList<Participation>?> getChallengeLeaderboard(int challengeId) async {
+  Future<List<LeaderboardEntry>> getChallengeLeaderboard(int challengeId) async {
     try {
       print('[ChallengeService] Fetching leaderboard for challenge $challengeId');
       
@@ -356,7 +494,7 @@ class ChallengeService {
       final token = _authService.getAuthToken();
       if (token == null) {
         print('[ChallengeService] ERROR: No token found for leaderboard request!');
-        return null;
+        return [];
       }
       
       final url = '/api/challenges/$challengeId/leaderboard';
@@ -373,49 +511,76 @@ class ChallengeService {
       );
       
       print('[ChallengeService] Leaderboard response status: ${response.statusCode}');
+      print('[ChallengeService] Leaderboard response data type: ${response.data.runtimeType}');
+      print('[ChallengeService] Leaderboard response data: ${response.data}');
       
       if (response.statusCode == 200) {
+        // Le backend retourne directement une liste de LeaderboardEntry
+        List<dynamic>? data;
+        
         if (response.data is List) {
-          final List<dynamic> data = response.data as List;
-          print('[ChallengeService] Leaderboard contains ${data.length} participants');
-          
-          final List<Participation> participations = [];
-          for (var item in data) {
-            try {
-              // Log pour déboguer la structure des données
-              if (item is Map) {
-                print('[ChallengeService] Participation item keys: ${item.keys.toList()}');
-                if (item.containsKey('eleve')) {
-                  print('[ChallengeService] Eleve data: ${item['eleve']}');
-                }
-              }
-              
-              final participation = standardSerializers.deserializeWith(
-                Participation.serializer, 
-                item
-              ) as Participation;
-              
-              // Vérifier que les données de l'élève sont présentes
-              if (participation.eleve != null) {
-                print('[ChallengeService] Participant: ${participation.eleve!.prenom} ${participation.eleve!.nom}, Score: ${participation.score}');
-              } else {
-                print('[ChallengeService] WARNING: Participation without eleve data: ID=${participation.id}');
-              }
-              
-              participations.add(participation);
-            } catch (e) {
-              print('[ChallengeService] Error deserializing participation: $e');
-              print('[ChallengeService] Item data: $item');
-            }
+          data = response.data as List;
+        } else if (response.data is Map) {
+          // Si la réponse est un objet avec une clé "participations" ou "leaderboard"
+          final Map<String, dynamic> mapData = response.data as Map<String, dynamic>;
+          if (mapData.containsKey('participations')) {
+            data = mapData['participations'] as List?;
+            print('[ChallengeService] Found leaderboard in Map key "participations"');
+          } else if (mapData.containsKey('leaderboard')) {
+            data = mapData['leaderboard'] as List?;
+            print('[ChallengeService] Found leaderboard in Map key "leaderboard"');
+          } else if (mapData.containsKey('data')) {
+            data = mapData['data'] as List?;
+            print('[ChallengeService] Found leaderboard in Map key "data"');
+          } else {
+            print('[ChallengeService] ⚠️ Response is a Map but no known key found. Keys: ${mapData.keys.toList()}');
+            print('[ChallengeService] Full Map data: $mapData');
           }
-          
-          print('[ChallengeService] Successfully loaded ${participations.length} participations');
-          return BuiltList<Participation>(participations);
-        } else {
-          print('[ChallengeService] Unexpected response data type: ${response.data.runtimeType}');
         }
+        
+        if (data == null) {
+          print('[ChallengeService] ⚠️ Could not extract list from response');
+          return [];
+        }
+        
+        print('[ChallengeService] Leaderboard contains ${data.length} participants');
+        
+        if (data.isEmpty) {
+          print('[ChallengeService] ⚠️ Leaderboard is empty. This might be normal if no one has participated yet.');
+          print('[ChallengeService] 💡 Tip: Check if the challenge has any participations with status TERMINE or VALIDE');
+          return [];
+        }
+        
+        final List<LeaderboardEntry> entries = [];
+        for (var i = 0; i < data.length; i++) {
+          final item = data[i];
+          try {
+            if (item is Map) {
+              print('[ChallengeService] Leaderboard entry $i: eleveId=${item['eleveId']}, nom=${item['nom']}, prenom=${item['prenom']}, points=${item['points']}, rang=${item['rang']}');
+            }
+            
+            final entry = LeaderboardEntry.fromJson(item as Map<String, dynamic>);
+            print('[ChallengeService] ✅ Successfully created LeaderboardEntry: ${entry.fullName} (ID: ${entry.eleveId}, Points: ${entry.points}, Rang: ${entry.rang})');
+            entries.add(entry);
+          } catch (e, stackTrace) {
+            print('[ChallengeService] ❌ Error deserializing leaderboard entry $i: $e');
+            print('[ChallengeService] Stack trace: $stackTrace');
+            print('[ChallengeService] Item data: $item');
+          }
+        }
+        
+        print('[ChallengeService] ✅ Successfully loaded ${entries.length} leaderboard entries out of ${data.length} items');
+        // Les données sont déjà triées par le backend, mais on peut les trier à nouveau pour être sûr
+        entries.sort((a, b) {
+          // Trier par score décroissant, puis par temps croissant en cas d'égalité
+          if (a.points != b.points) {
+            return b.points.compareTo(a.points);
+          }
+          return a.tempsPasse.compareTo(b.tempsPasse);
+        });
+        return entries;
       } else {
-        print('[ChallengeService] Unexpected status code: ${response.statusCode}');
+        print('[ChallengeService] ⚠️ Unexpected status code: ${response.statusCode}');
         print('[ChallengeService] Response data: ${response.data}');
       }
     } catch (e) {
@@ -427,7 +592,7 @@ class ChallengeService {
         print('[ChallengeService] DioException request path: ${e.requestOptions.uri.path}');
       }
     }
-    return null;
+    return [];
   }
 
   /// Récupérer les détails d'un challenge par ID

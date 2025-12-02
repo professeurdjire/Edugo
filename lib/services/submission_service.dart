@@ -3,10 +3,12 @@ import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/serializers.dart';
 import 'package:edugo/services/points_service.dart';
 import 'package:edugo/services/badge_service.dart';
+import 'package:edugo/services/question_service.dart';
 import 'package:edugo/models/submit_request.dart';
 import 'package:edugo/models/submit_result_response.dart';
 import 'package:edugo/models/question.dart';
 import 'package:edugo/models/reponse_eleve.dart';
+import 'package:edugo/models/reponse_possible.dart';
 import 'package:built_collection/built_collection.dart';
 
 /// Service unifié pour gérer les soumissions de quiz, exercices et challenges
@@ -184,14 +186,74 @@ class SubmissionService {
           'reponse': answer,
         });
       } else if (isAppariement && answer is Map<int, int>) {
-        // Pour les appariements, utiliser le format avec "appariements"
-        final List<Map<String, int>> appariements = answer.entries.map((e) => {
-          'leftId': e.key,
-          'rightId': e.value,
-        }).toList();
+        // Pour les appariements, le backend attend le format: [leftId1, rightId1, leftId2, rightId2, ...]
+        // Format: Les IDs pairs (indices 0, 2, 4, ...) = IDs de la colonne GAUCHE
+        //         Les IDs impairs (indices 1, 3, 5, ...) = IDs de la colonne DROITE
+        print('[SubmissionService] 🔗 Formatting matching question $questionId');
+        print('[SubmissionService] Raw matches: $answer');
+        
+        // Trouver la question pour accéder aux réponses et vérifier les idAssocie
+        final question = questions.firstWhere(
+          (q) => q.id == questionId,
+          orElse: () => Question((b) => b..id = questionId),
+        );
+        
+        // Récupérer toutes les réponses de gauche dans l'ordre
+        final leftItems = <ReponsePossible>[];
+        
+        if (question.reponsesPossibles != null) {
+          for (var reponse in question.reponsesPossibles!) {
+            if (reponse.id != null) {
+              final metadata = QuestionService.getMatchingMetadata(reponse.id!);
+              final colonne = metadata?['colonne'] as String?;
+              if (colonne != null && colonne.toString().toUpperCase().trim() == 'GAUCHE') {
+                leftItems.add(reponse);
+              }
+            }
+          }
+        }
+        
+        // Trier les items de gauche par ID pour avoir un ordre cohérent
+        leftItems.sort((a, b) => (a.id ?? 0).compareTo(b.id ?? 0));
+        
+        // Construire les paires au format attendu par le backend
+        final List<Map<String, int>> appariements = [];
+        
+        for (var leftItem in leftItems) {
+          final leftId = leftItem.id;
+          if (leftId != null) {
+            final rightId = answer[leftId]; // L'ID de droite associé à cet ID de gauche
+            
+            if (rightId != null) {
+              // Vérifier les métadonnées pour cette association
+              final leftMetadata = QuestionService.getMatchingMetadata(leftId);
+              final expectedRightId = leftMetadata?['idAssocie'] as int?;
+              
+              print('[SubmissionService]   Association: leftId=$leftId -> rightId=$rightId');
+              print('[SubmissionService]     Expected rightId (from idAssocie): $expectedRightId');
+              print('[SubmissionService]     ✅ Match correct: ${expectedRightId == rightId}');
+              
+              // Créer l'objet appariement
+              appariements.add({
+                'leftId': leftId,
+                'rightId': rightId,
+              });
+            }
+          }
+        }
+        final List<int> reponseIdsWithPairs = [];
+        for (var appariement in appariements) {
+          reponseIdsWithPairs.add(appariement['leftId']!);
+          reponseIdsWithPairs.add(appariement['rightId']!);
+        }
+        
+        print('[SubmissionService] ✅ Formatted reponseIds (pairs format): $reponseIdsWithPairs');
+        print('[SubmissionService]    Format: [leftId1, rightId1, leftId2, rightId2, ...]');
+        
+        // Envoyer les paires au format attendu par le backend
         reponses.add({
           'questionId': questionId,
-          'appariements': appariements,
+          'reponseIds': reponseIdsWithPairs, // [leftId1, rightId1, leftId2, rightId2, ...]
         });
       } else {
         // Pour QCM, QCU, VRAI_FAUX: utiliser reponseIds
@@ -227,6 +289,15 @@ class SubmissionService {
     }
     
     print('[SubmissionService] Created submission payload with ${reponses.length} responses');
+    
+    // Log détaillé du payload final pour debug
+    print('[SubmissionService] ========== PAYLOAD FINAL ==========');
+    print('[SubmissionService] eleveId: $eleveId');
+    for (var i = 0; i < reponses.length; i++) {
+      final reponse = reponses[i];
+      print('[SubmissionService] Response $i: $reponse');
+    }
+    print('[SubmissionService] ===================================');
     
     return {
       'eleveId': eleveId,
@@ -328,6 +399,18 @@ class SubmissionService {
         
         // Vérifier les badges
         await _badgeService.getBadges(eleveId);
+        
+        // Vérifier et attribuer les badges de progression si l'élève a atteint un seuil
+        final newPoints = await _pointsService.getPoints(eleveId);
+        if (newPoints != null && newPoints >= 100) {
+          print('[SubmissionService] 🔄 Vérification des badges de progression après soumission du quiz...');
+          print('[SubmissionService] 📊 Nouveaux points: $newPoints');
+          try {
+            await _badgeService.verifierEtAttribuerBadgesProgressionRetroactifs(eleveId);
+          } catch (e) {
+            print('[SubmissionService] ⚠️ Erreur lors de la vérification des badges de progression: $e');
+          }
+        }
 
         return result;
       } else {
@@ -495,6 +578,18 @@ class SubmissionService {
         
         // Vérifier les badges
         await _badgeService.getBadges(eleveId);
+        
+        // Vérifier et attribuer les badges de progression si l'élève a atteint un seuil
+        final newPoints = await _pointsService.getPoints(eleveId);
+        if (newPoints != null && newPoints >= 100) {
+          print('[SubmissionService] 🔄 Vérification des badges de progression après soumission du quiz...');
+          print('[SubmissionService] 📊 Nouveaux points: $newPoints');
+          try {
+            await _badgeService.verifierEtAttribuerBadgesProgressionRetroactifs(eleveId);
+          } catch (e) {
+            print('[SubmissionService] ⚠️ Erreur lors de la vérification des badges de progression: $e');
+          }
+        }
 
         return result;
       } else {
@@ -645,8 +740,23 @@ class SubmissionService {
         // Rafraîchir les points pour obtenir le nouveau total
         await _pointsService.refreshPoints(eleveId);
         
-        // Vérifier les badges (attribués automatiquement si pourcentage >= 80%)
+        // Vérifier les badges de challenge (attribués automatiquement si pourcentage >= 80%)
         await _badgeService.getBadges(eleveId);
+        
+        // Vérifier et attribuer les badges de progression si l'élève a atteint un seuil
+        // Le backend devrait le faire automatiquement, mais on force la vérification au cas où
+        final newPoints = await _pointsService.getPoints(eleveId);
+        if (newPoints != null && newPoints >= 100) {
+          print('[SubmissionService] 🔄 Vérification des badges de progression après soumission du challenge...');
+          print('[SubmissionService] 📊 Nouveaux points: $newPoints');
+          // Ne pas bloquer si la vérification échoue
+          try {
+            await _badgeService.verifierEtAttribuerBadgesProgressionRetroactifs(eleveId);
+          } catch (e) {
+            print('[SubmissionService] ⚠️ Erreur lors de la vérification des badges de progression: $e');
+            // Ne pas bloquer la soumission si la vérification échoue
+          }
+        }
 
         return result;
       } else {
@@ -787,6 +897,18 @@ class SubmissionService {
             
             // Vérifier les badges
             await _badgeService.getBadges(eleveId);
+            
+            // Vérifier et attribuer les badges de progression si l'élève a atteint un seuil
+            final newPoints = await _pointsService.getPoints(eleveId);
+            if (newPoints != null && newPoints >= 100) {
+              print('[SubmissionService] 🔄 Vérification des badges de progression après soumission du défi...');
+              print('[SubmissionService] 📊 Nouveaux points: $newPoints');
+              try {
+                await _badgeService.verifierEtAttribuerBadgesProgressionRetroactifs(eleveId);
+              } catch (e) {
+                print('[SubmissionService] ⚠️ Erreur lors de la vérification des badges de progression: $e');
+              }
+            }
 
             return result;
           }

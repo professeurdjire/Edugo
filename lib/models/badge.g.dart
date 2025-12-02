@@ -10,6 +10,9 @@ const BadgeTypeEnum _$badgeTypeEnum_OR = const BadgeTypeEnum._('OR');
 const BadgeTypeEnum _$badgeTypeEnum_ARGENT = const BadgeTypeEnum._('ARGENT');
 const BadgeTypeEnum _$badgeTypeEnum_BRONZE = const BadgeTypeEnum._('BRONZE');
 const BadgeTypeEnum _$badgeTypeEnum_SPECIAL = const BadgeTypeEnum._('SPECIAL');
+const BadgeTypeEnum _$badgeTypeEnum_PROGRESSION = const BadgeTypeEnum._(
+  'PROGRESSION',
+);
 
 BadgeTypeEnum _$badgeTypeEnumValueOf(String name) {
   switch (name) {
@@ -21,6 +24,8 @@ BadgeTypeEnum _$badgeTypeEnumValueOf(String name) {
       return _$badgeTypeEnum_BRONZE;
     case 'SPECIAL':
       return _$badgeTypeEnum_SPECIAL;
+    case 'PROGRESSION':
+      return _$badgeTypeEnum_PROGRESSION;
     default:
       throw ArgumentError(name);
   }
@@ -32,6 +37,7 @@ final BuiltSet<BadgeTypeEnum> _$badgeTypeEnumValues =
       _$badgeTypeEnum_ARGENT,
       _$badgeTypeEnum_BRONZE,
       _$badgeTypeEnum_SPECIAL,
+      _$badgeTypeEnum_PROGRESSION,
     ]);
 
 Serializer<BadgeTypeEnum> _$badgeTypeEnumSerializer =
@@ -43,12 +49,14 @@ class _$BadgeTypeEnumSerializer implements PrimitiveSerializer<BadgeTypeEnum> {
     'ARGENT': 'ARGENT',
     'BRONZE': 'BRONZE',
     'SPECIAL': 'SPECIAL',
+    'PROGRESSION': 'PROGRESSION',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
     'OR': 'OR',
     'ARGENT': 'ARGENT',
     'BRONZE': 'BRONZE',
     'SPECIAL': 'SPECIAL',
+    'PROGRESSION': 'PROGRESSION',
   };
 
   @override

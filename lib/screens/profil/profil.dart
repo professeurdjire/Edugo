@@ -5,6 +5,9 @@ import 'package:edugo/screens/profil/changerMotPasse.dart';
 import 'package:edugo/screens/profil/suggestion.dart';
 import 'package:edugo/services/auth_service.dart';
 import 'package:edugo/services/theme_service.dart';
+import 'package:edugo/services/badge_service.dart';
+import 'package:edugo/services/challenge_service.dart';
+import 'package:built_collection/built_collection.dart';
 
 class ProfilScreen extends StatefulWidget {
   final int? eleveId;
@@ -18,6 +21,12 @@ class ProfilScreen extends StatefulWidget {
 class _ProfilScreenState extends State<ProfilScreen> {
   final AuthService _authService = AuthService();
   final ThemeService _themeService = ThemeService();
+  final BadgeService _badgeService = BadgeService();
+  final ChallengeService _challengeService = ChallengeService();
+  
+  int _badgesCount = 0;
+  int _challengesWonCount = 0;
+  bool _isLoadingStats = true;
 
   @override
   void initState() {
@@ -28,7 +37,47 @@ class _ProfilScreenState extends State<ProfilScreen> {
   Future<void> _loadUserData() async {
     // S'assurer que les données utilisateur sont à jour
     await _authService.getCurrentUserProfile();
+    
+    // Charger les statistiques (badges et challenges remportés)
+    await _loadStatistics();
+    
     setState(() {});
+  }
+  
+  Future<void> _loadStatistics() async {
+    setState(() {
+      _isLoadingStats = true;
+    });
+    
+    try {
+      final eleveId = _authService.currentUserId ?? widget.eleveId;
+      if (eleveId != null) {
+        // Charger les badges
+        final badges = await _badgeService.getBadges(eleveId);
+        _badgesCount = badges?.length ?? 0;
+        print('[ProfilScreen] Loaded ${_badgesCount} badges');
+        
+        // Charger les challenges participés et compter ceux qui sont terminés/validés
+        final participations = await _challengeService.getChallengesParticipes(eleveId);
+        if (participations != null) {
+          _challengesWonCount = participations.where((p) {
+            final statut = p.statut?.toUpperCase() ?? '';
+            return statut == 'TERMINE' || statut == 'VALIDE';
+          }).length;
+          print('[ProfilScreen] Loaded ${_challengesWonCount} challenges won out of ${participations.length} participations');
+        } else {
+          _challengesWonCount = 0;
+        }
+      }
+    } catch (e) {
+      print('[ProfilScreen] Error loading statistics: $e');
+      _badgesCount = 0;
+      _challengesWonCount = 0;
+    } finally {
+      setState(() {
+        _isLoadingStats = false;
+      });
+    }
   }
 
   @override
@@ -164,7 +213,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           children: [
                             _StatItem(
                               icon: Icons.workspace_premium,
-                              value: "5",
+                              value: _isLoadingStats ? "..." : "$_badgesCount",
                               label: "Badges",
                               color: const Color(0xFFFFD700),
                             ),
@@ -176,7 +225,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                             ),
                             _StatItem(
                               icon: Icons.emoji_events_rounded,
-                              value: "7",
+                              value: _isLoadingStats ? "..." : "$_challengesWonCount",
                               label: "Challenges",
                               color: const Color(0xFF4CAF50),
                             ),

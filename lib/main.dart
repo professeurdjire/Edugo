@@ -147,7 +147,7 @@ class _MyAppState extends State<MyApp> {
       builder: (context, primaryColor, child) {
         return OfflineIndicator(
           child: MaterialApp(
-            title: 'EduGo',
+            title: 'EDUGO',
             theme: ThemeData(
               // Couleur principale dynamique
               primaryColor: primaryColor,

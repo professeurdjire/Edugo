@@ -44,41 +44,96 @@ class LivreService {
           final livres = data
               .map((json) {
                 try {
-                  // Handle image cover URL properly
-                  if (json is Map<String, dynamic> && json.containsKey('imageCouverture')) {
-                    final imageCover = json['imageCouverture'] as String?;
-                    // Check if image is valid (not null, not empty, and not the default placeholder)
-                    if (imageCover != null && 
-                        imageCover.isNotEmpty && 
-                        imageCover != "Chemin de l'image" &&
-                        !imageCover.contains("Chemin")) {
-                      // If it's already a full URL, use it as is
-                      if (imageCover.startsWith('http://') || imageCover.startsWith('https://')) {
-                        json['imageCouverture'] = imageCover;
-                      } else if (imageCover.startsWith('/')) {
-                        final baseUrl = _dio.options.baseUrl;
-                        // Remove trailing slash from baseUrl if present
-                        final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-                        // Remove '/api' prefix from imageCover if it exists (since baseUrl already contains /api)
-                        String cleanPath = imageCover;
-                        if (cleanPath.startsWith('/api/')) {
-                          cleanPath = cleanPath.substring(4); // Remove '/api'
+                  // Normaliser les données avant désérialisation
+                  if (json is Map<String, dynamic>) {
+                    // Handle image cover URL properly
+                    if (json.containsKey('imageCouverture')) {
+                      final imageCover = json['imageCouverture'] as String?;
+                      // Check if image is valid (not null, not empty, and not the default placeholder)
+                      if (imageCover != null && 
+                          imageCover.isNotEmpty && 
+                          imageCover != "Chemin de l'image" &&
+                          !imageCover.contains("Chemin")) {
+                        // If it's already a full URL, use it as is
+                        if (imageCover.startsWith('http://') || imageCover.startsWith('https://')) {
+                          json['imageCouverture'] = imageCover;
+                        } else if (imageCover.startsWith('/')) {
+                          final baseUrl = _dio.options.baseUrl;
+                          // Remove trailing slash from baseUrl if present
+                          final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+                          // Remove '/api' prefix from imageCover if it exists (since baseUrl already contains /api)
+                          String cleanPath = imageCover;
+                          if (cleanPath.startsWith('/api/')) {
+                            cleanPath = cleanPath.substring(4); // Remove '/api'
+                          }
+                          // Ensure cleanPath starts with /
+                          if (!cleanPath.startsWith('/')) {
+                            cleanPath = '/$cleanPath';
+                          }
+                          // Combine without double slashes
+                          json['imageCouverture'] = '$cleanBaseUrl$cleanPath';
+                        } else {
+                          // Relative path without leading slash
+                          final baseUrl = _dio.options.baseUrl;
+                          final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+                          json['imageCouverture'] = '$cleanBaseUrl/$imageCover';
                         }
-                        // Ensure cleanPath starts with /
-                        if (!cleanPath.startsWith('/')) {
-                          cleanPath = '/$cleanPath';
-                        }
-                        // Combine without double slashes
-                        json['imageCouverture'] = '$cleanBaseUrl$cleanPath';
                       } else {
-                        // Relative path without leading slash
-                        final baseUrl = _dio.options.baseUrl;
-                        final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-                        json['imageCouverture'] = '$cleanBaseUrl/$imageCover';
+                        // Set to null or empty string to use default image in UI
+                        json['imageCouverture'] = null;
                       }
+                    }
+                    
+                    // Normaliser la matière si elle est présente
+                    // Le backend envoie maintenant matiereNom directement dans le JSON
+                    if (json.containsKey('matiereNom') && json['matiereNom'] != null) {
+                      final matiereNom = json['matiereNom'] as String;
+                      final matiereId = json['matiereId'] as int?;
+                      
+                      // Créer ou mettre à jour l'objet matière avec le nom
+                      if (json.containsKey('matiere') && json['matiere'] is Map<String, dynamic>) {
+                        // Si l'objet matière existe déjà, ajouter le nom s'il manque
+                        final matiere = json['matiere'] as Map<String, dynamic>;
+                        if (!matiere.containsKey('nom') || matiere['nom'] == null) {
+                          matiere['nom'] = matiereNom;
+                        }
+                      } else {
+                        // Créer un nouvel objet matière avec l'ID et le nom
+                        json['matiere'] = {
+                          if (matiereId != null) 'id': matiereId,
+                          'nom': matiereNom,
+                        };
+                      }
+                      print('[LivreService] ✅ Livre ${json['id']} a une matière: $matiereNom (ID: $matiereId)');
+                    } else if (json.containsKey('matiere')) {
+                      final matiere = json['matiere'];
+                      if (matiere == null) {
+                        // Si la matière est null, essayer de la récupérer depuis matiereId
+                        if (json.containsKey('matiereId') && json['matiereId'] != null) {
+                          final matiereId = json['matiereId'];
+                          print('[LivreService] ⚠️ Livre ${json['id']} a matiereId=$matiereId mais matiere est null et pas de matiereNom');
+                          // Créer un objet matière minimal avec juste l'ID
+                          json['matiere'] = {'id': matiereId};
+                        }
+                      } else if (matiere is Map<String, dynamic>) {
+                        // Si c'est déjà un objet, vérifier qu'il a un nom
+                        if (!matiere.containsKey('nom') || matiere['nom'] == null) {
+                          print('[LivreService] ⚠️ Livre ${json['id']} a une matière sans nom: $matiere');
+                        } else {
+                          print('[LivreService] ✅ Livre ${json['id']} a une matière: ${matiere['nom']}');
+                        }
+                      } else if (matiere is int) {
+                        // Si c'est juste un ID, créer un objet matière
+                        json['matiere'] = {'id': matiere};
+                        print('[LivreService] ⚠️ Livre ${json['id']} a matiereId=$matiere mais pas d\'objet matière complet');
+                      }
+                    } else if (json.containsKey('matiereId') && json['matiereId'] != null) {
+                      // Si matiere n'existe pas mais matiereId existe, créer l'objet matière
+                      final matiereId = json['matiereId'];
+                      json['matiere'] = {'id': matiereId};
+                      print('[LivreService] ⚠️ Livre ${json['id']} a matiereId=$matiereId mais pas de champ matiere ni matiereNom');
                     } else {
-                      // Set to null or empty string to use default image in UI
-                      json['imageCouverture'] = null;
+                      print('[LivreService] ⚠️ Livre ${json['id']} n\'a ni matiere, ni matiereId, ni matiereNom');
                     }
                   }
                   
@@ -347,46 +402,108 @@ class LivreService {
         final List<dynamic> data = response.data;
         final livres = data
             .map((json) {
-              // Handle image cover URL properly
-              if (json is Map<String, dynamic> && json.containsKey('imageCouverture')) {
-                final imageCover = json['imageCouverture'] as String?;
-                if (imageCover != null && 
-                    imageCover.isNotEmpty && 
-                    imageCover != "Chemin de l'image" &&
-                    !imageCover.contains("Chemin")) {
-                  // If it's already a full URL, use it as is
-                  if (imageCover.startsWith('http://') || imageCover.startsWith('https://')) {
-                    json['imageCouverture'] = imageCover;
-                  } else if (imageCover.startsWith('/')) {
-                    final baseUrl = _dio.options.baseUrl;
-                    // Remove trailing slash from baseUrl if present
-                    final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-                    // Remove '/api' prefix from imageCover if it exists (since baseUrl already contains /api)
-                    String cleanPath = imageCover;
-                    if (cleanPath.startsWith('/api/')) {
-                      cleanPath = cleanPath.substring(4); // Remove '/api'
+              try {
+                // Normaliser les données avant désérialisation
+                if (json is Map<String, dynamic>) {
+                  // Handle image cover URL properly
+                  if (json.containsKey('imageCouverture')) {
+                    final imageCover = json['imageCouverture'] as String?;
+                    if (imageCover != null && 
+                        imageCover.isNotEmpty && 
+                        imageCover != "Chemin de l'image" &&
+                        !imageCover.contains("Chemin")) {
+                      // If it's already a full URL, use it as is
+                      if (imageCover.startsWith('http://') || imageCover.startsWith('https://')) {
+                        json['imageCouverture'] = imageCover;
+                      } else if (imageCover.startsWith('/')) {
+                        final baseUrl = _dio.options.baseUrl;
+                        // Remove trailing slash from baseUrl if present
+                        final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+                        // Remove '/api' prefix from imageCover if it exists (since baseUrl already contains /api)
+                        String cleanPath = imageCover;
+                        if (cleanPath.startsWith('/api/')) {
+                          cleanPath = cleanPath.substring(4); // Remove '/api'
+                        }
+                        // Ensure cleanPath starts with /
+                        if (!cleanPath.startsWith('/')) {
+                          cleanPath = '/$cleanPath';
+                        }
+                        // Combine without double slashes
+                        json['imageCouverture'] = '$cleanBaseUrl$cleanPath';
+                      } else {
+                        // Relative path without leading slash
+                        final baseUrl = _dio.options.baseUrl;
+                        final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+                        json['imageCouverture'] = '$cleanBaseUrl/$imageCover';
+                      }
+                    } else {
+                      // Set to null to use default image in UI
+                      json['imageCouverture'] = null;
                     }
-                    // Ensure cleanPath starts with /
-                    if (!cleanPath.startsWith('/')) {
-                      cleanPath = '/$cleanPath';
-                    }
-                    // Combine without double slashes
-                    json['imageCouverture'] = '$cleanBaseUrl$cleanPath';
-                  } else {
-                    // Relative path without leading slash
-                    final baseUrl = _dio.options.baseUrl;
-                    final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-                    json['imageCouverture'] = '$cleanBaseUrl/$imageCover';
                   }
-                } else {
-                  // Set to null to use default image in UI
-                  json['imageCouverture'] = null;
+                  
+                  // Normaliser la matière si elle est présente
+                  // Le backend envoie maintenant matiereNom directement dans le JSON
+                  if (json.containsKey('matiereNom') && json['matiereNom'] != null) {
+                    final matiereNom = json['matiereNom'] as String;
+                    final matiereId = json['matiereId'] as int?;
+                    
+                    // Créer ou mettre à jour l'objet matière avec le nom
+                    if (json.containsKey('matiere') && json['matiere'] is Map<String, dynamic>) {
+                      // Si l'objet matière existe déjà, ajouter le nom s'il manque
+                      final matiere = json['matiere'] as Map<String, dynamic>;
+                      if (!matiere.containsKey('nom') || matiere['nom'] == null) {
+                        matiere['nom'] = matiereNom;
+                      }
+                    } else {
+                      // Créer un nouvel objet matière avec l'ID et le nom
+                      json['matiere'] = {
+                        if (matiereId != null) 'id': matiereId,
+                        'nom': matiereNom,
+                      };
+                    }
+                    print('[LivreService] ✅ Livre ${json['id']} a une matière: $matiereNom (ID: $matiereId)');
+                  } else if (json.containsKey('matiere')) {
+                    final matiere = json['matiere'];
+                    if (matiere == null) {
+                      // Si la matière est null, essayer de la récupérer depuis matiereId
+                      if (json.containsKey('matiereId') && json['matiereId'] != null) {
+                        final matiereId = json['matiereId'];
+                        print('[LivreService] ⚠️ Livre ${json['id']} a matiereId=$matiereId mais matiere est null et pas de matiereNom');
+                        // Créer un objet matière minimal avec juste l'ID
+                        json['matiere'] = {'id': matiereId};
+                      }
+                    } else if (matiere is Map<String, dynamic>) {
+                      // Si c'est déjà un objet, vérifier qu'il a un nom
+                      if (!matiere.containsKey('nom') || matiere['nom'] == null) {
+                        print('[LivreService] ⚠️ Livre ${json['id']} a une matière sans nom: $matiere');
+                      } else {
+                        print('[LivreService] ✅ Livre ${json['id']} a une matière: ${matiere['nom']}');
+                      }
+                    } else if (matiere is int) {
+                      // Si c'est juste un ID, créer un objet matière
+                      json['matiere'] = {'id': matiere};
+                      print('[LivreService] ⚠️ Livre ${json['id']} a matiereId=$matiere mais pas d\'objet matière complet');
+                    }
+                  } else if (json.containsKey('matiereId') && json['matiereId'] != null) {
+                    // Si matiere n'existe pas mais matiereId existe, créer l'objet matière
+                    final matiereId = json['matiereId'];
+                    json['matiere'] = {'id': matiereId};
+                    print('[LivreService] ⚠️ Livre ${json['id']} a matiereId=$matiereId mais pas de champ matiere ni matiereNom');
+                  } else {
+                    print('[LivreService] ⚠️ Livre ${json['id']} n\'a ni matiere, ni matiereId, ni matiereNom');
+                  }
                 }
+                
+                return standardSerializers.deserializeWith(
+                  Livre.serializer,
+                  json,
+                );
+              } catch (e) {
+                print('[LivreService] ❌ Erreur lors de la normalisation/désérialisation du livre: $e');
+                print('[LivreService] JSON: $json');
+                return null;
               }
-              return standardSerializers.deserializeWith(
-                Livre.serializer,
-                json,
-              );
             })
             .whereType<Livre>()
             .toList();

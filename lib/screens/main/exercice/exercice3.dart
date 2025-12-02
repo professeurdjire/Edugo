@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/main/exercice/resultat.dart';
+import 'package:edugo/screens/main/accueil/accueille.dart';
 import 'package:edugo/services/exercise_service.dart';
 import 'package:edugo/services/question_service.dart';
 import 'package:edugo/services/submission_service.dart';
@@ -192,7 +193,14 @@ class _QuizScreenState extends State<QuizScreen> {
               eleveId: _currentEleveId, // Pour rafraîchir les points
             ),
           ),
-        );
+        ).then((_) {
+          // Rafraîchir la page d'accueil quand on revient
+          // pour mettre à jour les points affichés
+          if (mounted) {
+            print('[QuizScreen] User returned from ResultatScreen, refreshing home screen points...');
+            HomeScreen.refresh(context);
+          }
+        });
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
