@@ -43,18 +43,13 @@ class AuthService {
         baseUrl = 'http://localhost:8080/api';
       } else if (Platform.isAndroid) {
         // TODO: Définir IS_EMULATOR à true pour BlueStacks, false pour appareil physique
-        const bool IS_EMULATOR = false; // ← MODIFIER ICI: true pour BlueStacks, false pour appareil physique
+        const bool IS_EMULATOR = true; // ← MODIFIER ICI: true pour BlueStacks, false pour appareil physique
         
-        if (IS_EMULATOR) {
-          // BlueStacks ou autre émulateur Android - utilise 10.0.2.2 pour accéder au localhost de la machine hôte
-          baseUrl = 'http://10.0.2.2:8080/api';
-        } else {
           // Appareil Android physique - utilise l'IP réseau de la machine où tourne Spring Boot
           // ⚠️ IMPORTANT: Vérifiez que cette IP correspond à l'IP de votre machine (voir ipconfig)
           // L'appareil Android et votre PC doivent être sur le même réseau Wi-Fi
           // ⚠️ NOTE: Le backend Swagger contient deux fois /api, donc baseUrl = /api et endpoints = /api/... pour avoir /api/api/...
-          baseUrl = 'http://192.168.10.138:8080/api';
-        }
+           baseUrl = 'http://10.0.2.2:8080/api';
       } else if (Platform.isIOS) {
         // iOS - utiliser localhost pour simulateur ou IP réseau pour appareil physique
         baseUrl = 'http://192.168.10.117:8080/api';

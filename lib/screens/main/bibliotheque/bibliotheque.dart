@@ -676,7 +676,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           return _BookCard(
             title: book.titre ?? 'Livre sans titre',
             author: book.auteur ?? 'Auteur inconnu',
-            imagePath: book.imageCouverture ?? '',
+            imagePath: book.imageCouverture ?? 'assets/images/book1.png',
             progress: progressValue,
             category: book.matiere?.nom ?? 'Matière inconnue',
             pages: book.totalPages ?? 0,

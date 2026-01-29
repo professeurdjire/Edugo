@@ -1338,7 +1338,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Recommandation pour toi',
+              'Recommandation pour vous',
               style: TextStyle(color: widget.themeService.colorBlack, fontSize: 20, fontWeight: FontWeight.bold),
             ),
             TextButton(
@@ -1408,7 +1408,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           coverAsset: coverAsset ?? 'assets/images/book1.png',
                           livreId: book.id,
                         );
-                      }).toList(),
+                      }
+                      ).toList(),
                     ),
                   ),
       ],

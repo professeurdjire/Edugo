@@ -9,7 +9,7 @@ class ThemeService {
   ThemeService._internal();
 
   static const String _primaryColorKey = 'primary_color';
-  static const String _defaultPrimaryColor = '0xFFA885D8';
+  static const String _defaultPrimaryColor = '0xFFFF7900';
 
   final ValueNotifier<Color> primaryColorNotifier =
       ValueNotifier<Color>(Color(int.parse(_defaultPrimaryColor)));
