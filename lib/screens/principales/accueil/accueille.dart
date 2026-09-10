@@ -4,6 +4,7 @@ import 'package:edugo/screens/principales/accueil/activiteRecente.dart';
 import 'package:edugo/screens/principales/accueil/notification.dart';
 import 'package:edugo/screens/principales/accueil/partenaire.dart';
 import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
+import 'package:edugo/screens/main_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/profil/profil.dart';
 
@@ -93,7 +94,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 30),
                   
                   // 5. Recommandation pour toi
-                  _buildRecommendationsSection(),
+                  _buildRecommendationsSection(context),
 
                   const SizedBox(height: 30),
 
@@ -119,7 +120,7 @@ class HomeScreen extends StatelessWidget {
   // --- WIDGETS DE NOUVELLES SECTIONS (Ajoutées) ---
   // -------------------------------------------------------------------
   
-  Widget _buildRecommendationsSection() {
+  Widget _buildRecommendationsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -132,7 +133,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         TextButton(
-              onPressed: () {},
+              onPressed: () => MainNavigation.switchTab(context, 1),
               child: const Text(
                 'Voir tout',
                 style: TextStyle(

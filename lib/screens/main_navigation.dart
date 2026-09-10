@@ -9,6 +9,13 @@ import 'package:edugo/screens/principales/assistant/assistant1.dart';
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
+  /// Bascule la barre de navigation vers l'onglet [index] depuis un écran
+  /// enfant (0: Accueil, 1: Bibliothèque, 2: Challenge, 3: Exercice,
+  /// 4: Assistance). Sans effet si aucun MainNavigation n'est ancêtre.
+  static void switchTab(BuildContext context, int index) {
+    context.findAncestorStateOfType<_MainNavigationState>()?._onItemTapped(index);
+  }
+
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
