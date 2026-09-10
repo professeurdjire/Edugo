@@ -1,3 +1,4 @@
+import 'package:edugo/core/widgets/widgets.dart';
 import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/screens/main_navigation.dart';
 import 'package:flutter/material.dart';
@@ -260,7 +261,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
               validator: (v) => _requiredValidator(v, 'la ville'),
             ),
             const SizedBox(height: 40),
-            _buildPrimaryButton(text: 'Suivant', onPressed: _nextStep),
+            AppPrimaryButton(text: 'Suivant', onPressed: _nextStep),
             const SizedBox(height: 40),
           ],
         ),
@@ -309,7 +310,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _buildLabel('Niveau Scolaire de l\'enfant'),
+            const AppFieldLabel('Niveau Scolaire de l\'enfant'),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _niveauScolaire,
@@ -326,7 +327,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
                 fontSize: 16,
                 color: AppConst.textDark,
               ),
-              decoration: _inputDecoration(
+              decoration: appInputDecoration(
                 hint: 'Choisir le niveau d\'étude',
                 prefixIcon: Icons.school_outlined,
               ),
@@ -340,7 +341,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
               validator: (v) => _requiredValidator(v, 'la classe'),
             ),
             const SizedBox(height: 40),
-            _buildPrimaryButton(text: 'Suivant', onPressed: _nextStep),
+            AppPrimaryButton(text: 'Suivant', onPressed: _nextStep),
             const SizedBox(height: 40),
           ],
         ),
@@ -403,7 +404,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
               },
             ),
           ),
-          _buildPrimaryButton(text: 'S\'inscrire', onPressed: _submitRegistration),
+          AppPrimaryButton(text: 'S\'inscrire', onPressed: _submitRegistration),
           const SizedBox(height: 40),
         ],
       ),
@@ -452,54 +453,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
     return null;
   }
 
-  Widget _buildLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        color: AppConst.textDark,
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        fontFamily: AppConst.fontFamily,
-      ),
-    );
-  }
 
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData prefixIcon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(
-        color: AppConst.textGrey,
-        fontSize: 15,
-        fontFamily: AppConst.fontFamily,
-      ),
-      prefixIcon: Icon(prefixIcon, color: AppConst.purpleButton, size: 22),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: AppConst.purpleInputFill,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: AppConst.purpleButton, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-      ),
-    );
-  }
 
   Widget _buildTextField({
     required String label,
@@ -514,7 +468,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel(label),
+        AppFieldLabel(label),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
@@ -526,7 +480,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
             fontSize: 16,
             color: AppConst.textDark,
           ),
-          decoration: _inputDecoration(
+          decoration: appInputDecoration(
             hint: hint,
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
@@ -536,30 +490,4 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
     );
   }
 
-  Widget _buildPrimaryButton(
-      {required String text, required VoidCallback onPressed}) {
-    return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppConst.purpleButton,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0),
-          ),
-        ),
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppConst.fontFamily,
-          ),
-        ),
-      ),
-    );
-  }
 }

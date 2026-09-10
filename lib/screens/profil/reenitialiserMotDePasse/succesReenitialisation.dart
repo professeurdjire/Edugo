@@ -1,3 +1,4 @@
+import 'package:edugo/core/widgets/widgets.dart';
 import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/screens/connexion%20et%20inscriptions/login.dart';
 import 'package:flutter/material.dart';
@@ -59,34 +60,16 @@ class SuccesReenitialisation extends StatelessWidget {
               ),
               const SizedBox(height: 80),
 
-              SizedBox(
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const LoginScreen()),
-                      (route) => false,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConst.purpleButton,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15.0),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Se connecter maintenant',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppConst.fontFamily,
-                    ),
-                  ),
-                ),
+              AppPrimaryButton(
+                text: 'Se connecter maintenant',
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const LoginScreen()),
+                    (route) => false,
+                  );
+                },
               ),
             ],
           ),

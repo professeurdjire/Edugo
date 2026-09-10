@@ -1,3 +1,4 @@
+import 'package:edugo/core/widgets/widgets.dart';
 import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/screens/profil/reenitialiserMotDePasse/nouveauMotDePasse.dart';
 import 'package:flutter/material.dart';
@@ -167,15 +168,7 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
               ),
               const SizedBox(height: 40),
 
-              const Text(
-                'Adresse Email',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppConst.textDark,
-                  fontFamily: AppConst.fontFamily,
-                ),
-              ),
+              const AppFieldLabel('Adresse Email'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _emailController,
@@ -188,65 +181,18 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
                   fontSize: 16,
                   color: AppConst.textDark,
                 ),
-                decoration: InputDecoration(
-                  hintText: 'Entrez votre email',
-                  hintStyle: const TextStyle(
-                    color: AppConst.textGrey,
-                    fontSize: 15,
-                    fontFamily: AppConst.fontFamily,
-                  ),
-                  prefixIcon: const Icon(Icons.mail_outline_rounded,
-                      color: AppConst.purpleButton, size: 22),
-                  filled: true,
-                  fillColor: AppConst.purpleInputFill,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 16.0),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: const BorderSide(
-                        color: AppConst.purpleButton, width: 1.5),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide:
-                        const BorderSide(color: Colors.redAccent, width: 1.2),
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide:
-                        const BorderSide(color: Colors.redAccent, width: 1.5),
-                  ),
+                decoration: appInputDecoration(
+                  hint: 'Entrez votre email',
+                  prefixIcon: Icons.mail_outline_rounded,
                 ),
               ),
               const SizedBox(height: 50),
 
-              SizedBox(
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _handleSubmit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConst.purpleButton,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15.0),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    _emailSent
-                        ? 'Continuer'
-                        : 'Envoyer le lien de réinitialisation',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppConst.fontFamily,
-                    ),
-                  ),
-                ),
+              AppPrimaryButton(
+                text: _emailSent
+                    ? 'Continuer'
+                    : 'Envoyer le lien de réinitialisation',
+                onPressed: _handleSubmit,
               ),
             ],
           ),

@@ -1,3 +1,4 @@
+import 'package:edugo/core/widgets/widgets.dart';
 import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/screens/connexion%20et%20inscriptions/inscription.dart';
 import 'package:edugo/screens/main_navigation.dart';
@@ -113,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 36),
 
-                    _buildLabel('Adresse Email'),
+                    const AppFieldLabel('Adresse Email'),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _emailController,
@@ -125,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontSize: 16,
                         color: AppConst.textDark,
                       ),
-                      decoration: _inputDecoration(
+                      decoration: appInputDecoration(
                         hint: 'Entrez votre email',
                         prefixIcon: Icons.mail_outline_rounded,
                       ),
@@ -133,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 20),
 
-                    _buildLabel('Mot De Passe'),
+                    const AppFieldLabel('Mot De Passe'),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _passwordController,
@@ -146,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontSize: 16,
                         color: AppConst.textDark,
                       ),
-                      decoration: _inputDecoration(
+                      decoration: appInputDecoration(
                         hint: 'Entrez votre mot de passe',
                         prefixIcon: Icons.lock_outline_rounded,
                         suffixIcon: IconButton(
@@ -200,7 +201,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 32),
 
-                    _buildLoginButton(),
+                    AppPrimaryButton(
+                      text: 'Se Connecter',
+                      onPressed: _handleLogin,
+                      isLoading: _isLoading,
+                    ),
 
                     const SizedBox(height: 24),
 
@@ -223,89 +228,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        color: AppConst.textDark,
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        fontFamily: AppConst.fontFamily,
-      ),
-    );
-  }
 
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData prefixIcon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(
-        color: AppConst.textGrey,
-        fontSize: 15,
-        fontFamily: AppConst.fontFamily,
-      ),
-      prefixIcon: Icon(prefixIcon, color: AppConst.purpleButton, size: 22),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: AppConst.purpleInputFill,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: AppConst.purpleButton, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-      ),
-    );
-  }
 
-  Widget _buildLoginButton() {
-    return SizedBox(
-      height: 55,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleLogin,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppConst.purpleButton,
-          disabledBackgroundColor: AppConst.purpleButton.withOpacity(0.6),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0),
-          ),
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
-                ),
-              )
-            : const Text(
-                'Se Connecter',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppConst.fontFamily,
-                ),
-              ),
-      ),
-    );
-  }
 
   Widget _buildSignUpLink() {
     return Row(

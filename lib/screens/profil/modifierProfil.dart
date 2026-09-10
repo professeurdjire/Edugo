@@ -1,3 +1,4 @@
+import 'package:edugo/core/widgets/widgets.dart';
 import 'package:edugo/core/constants/constant.dart';
 import 'package:flutter/material.dart';
 
@@ -164,7 +165,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _buildProfileHeader(),
           const SizedBox(height: 30),
 
-          _buildLabel('Nom'),
+          const AppFieldLabel('Nom'),
           const SizedBox(height: 8),
           _buildTextField(
             controller: _nomController,
@@ -173,7 +174,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           const SizedBox(height: 20),
 
-          _buildLabel('Prénom'),
+          const AppFieldLabel('Prénom'),
           const SizedBox(height: 8),
           _buildTextField(
             controller: _prenomController,
@@ -182,7 +183,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           const SizedBox(height: 20),
 
-          _buildLabel('Téléphone'),
+          const AppFieldLabel('Téléphone'),
           const SizedBox(height: 8),
           _buildTextField(
             controller: _telephoneController,
@@ -193,7 +194,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           const SizedBox(height: 20),
 
-          _buildLabel('Ville'),
+          const AppFieldLabel('Ville'),
           const SizedBox(height: 8),
           _buildTextField(
             controller: _villeController,
@@ -219,7 +220,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _buildProfileHeader(),
           const SizedBox(height: 30),
 
-          _buildLabel('Adresse Email'),
+          const AppFieldLabel('Adresse Email'),
           const SizedBox(height: 8),
           _buildTextField(
             controller: _emailController,
@@ -230,7 +231,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           const SizedBox(height: 20),
 
-          _buildLabel('Niveau'),
+          const AppFieldLabel('Niveau'),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _selectedNiveau,
@@ -245,14 +246,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               fontSize: 16,
               color: AppConst.textDark,
             ),
-            decoration: _inputDecoration(
+            decoration: appInputDecoration(
               hint: 'Choisir le niveau d\'étude',
               prefixIcon: Icons.school_outlined,
             ),
           ),
           const SizedBox(height: 20),
 
-          _buildLabel('Classe'),
+          const AppFieldLabel('Classe'),
           const SizedBox(height: 8),
           _buildTextField(
             controller: _classeController,
@@ -285,52 +286,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        color: AppConst.textDark,
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        fontFamily: AppConst.fontFamily,
-      ),
-    );
-  }
 
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData prefixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(
-        color: AppConst.textGrey,
-        fontSize: 15,
-        fontFamily: AppConst.fontFamily,
-      ),
-      prefixIcon: Icon(prefixIcon, color: AppConst.purpleButton, size: 22),
-      filled: true,
-      fillColor: AppConst.purpleInputFill,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: AppConst.purpleButton, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-      ),
-    );
-  }
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -348,7 +304,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         fontSize: 16,
         color: AppConst.textDark,
       ),
-      decoration: _inputDecoration(hint: hint, prefixIcon: prefixIcon),
+      decoration: appInputDecoration(hint: hint, prefixIcon: prefixIcon),
     );
   }
 

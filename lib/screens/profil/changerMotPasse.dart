@@ -1,4 +1,5 @@
 import 'package:edugo/core/constants/constant.dart';
+import 'package:edugo/core/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -70,18 +71,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     Navigator.pop(context);
   }
 
-  Widget _buildLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        color: AppConst.textDark,
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        fontFamily: AppConst.fontFamily,
-      ),
-    );
-  }
-
   Widget _buildPasswordField({
     required TextEditingController controller,
     required String hint,
@@ -98,15 +87,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         fontSize: 16,
         color: AppConst.textDark,
       ),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(
-          color: AppConst.textGrey,
-          fontSize: 15,
-          fontFamily: AppConst.fontFamily,
-        ),
-        prefixIcon: const Icon(Icons.lock_outline_rounded,
-            color: AppConst.purpleButton, size: 22),
+      decoration: appInputDecoration(
+        hint: hint,
+        prefixIcon: Icons.lock_outline_rounded,
         suffixIcon: IconButton(
           icon: Icon(
             isVisible
@@ -116,26 +99,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             size: 22,
           ),
           onPressed: onToggleVisibility,
-        ),
-        filled: true,
-        fillColor: AppConst.purpleInputFill,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: AppConst.purpleButton, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
         ),
       ),
     );
@@ -188,7 +151,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
               const SizedBox(height: 40),
 
-              _buildLabel('Ancien mot de passe'),
+              const AppFieldLabel('Ancien mot de passe'),
               const SizedBox(height: 8),
               _buildPasswordField(
                 controller: _oldPasswordController,
@@ -202,7 +165,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
               const SizedBox(height: 20),
 
-              _buildLabel('Nouveau mot de passe'),
+              const AppFieldLabel('Nouveau mot de passe'),
               const SizedBox(height: 8),
               _buildPasswordField(
                 controller: _newPasswordController,
@@ -216,7 +179,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
               const SizedBox(height: 20),
 
-              _buildLabel('Confirmer le mot de passe'),
+              const AppFieldLabel('Confirmer le mot de passe'),
               const SizedBox(height: 8),
               _buildPasswordField(
                 controller: _confirmPasswordController,
@@ -231,27 +194,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
               const SizedBox(height: 40),
 
-              SizedBox(
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _handleSubmit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConst.purpleButton,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15.0),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Changer le mot de passe',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontFamily: AppConst.fontFamily,
-                    ),
-                  ),
-                ),
+              AppPrimaryButton(
+                text: 'Changer le mot de passe',
+                onPressed: _handleSubmit,
               ),
             ],
           ),
