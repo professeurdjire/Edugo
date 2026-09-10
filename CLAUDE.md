@@ -31,9 +31,15 @@ Aucune CI n'est configurée ; les revues de PR sont faites par CodeRabbit sur Gi
 - `lib/core/constants/constant.dart` — `AppConst` : palette unique (violet `purpleButton` 0xFFA582E5, `purpleDark` 0xFF7042C9, fond des champs `purpleInputFill` 0xFFF1EFFE, `textGrey` 0xFF5F5F72 choisi pour un contraste WCAG ≥ 4.5:1, `successGreen`), police Roboto. Ne pas réintroduire de couleurs codées en dur dans les écrans : ajouter une constante ici.
 - `lib/core/widgets/widgets.dart` — composants de formulaire partagés : `appInputDecoration()` (décoration commune des champs), `AppFieldLabel`, `AppPrimaryButton` (bouton violet pleine largeur, état `isLoading`). Tous les formulaires (connexion, inscription, profil, mots de passe) délèguent à ces composants.
 
-### Backend absent (volontairement)
+### Authentification et backend
 
-`lib/services/api/api.dart`, `notifications/notification.dart` et `storage/secure_storage.dart` sont vides : aucun backend n'est branché et aucune dépendance HTTP n'est déclarée. La connexion/inscription simulent la réussite puis naviguent — chaque point d'intégration porte un `TODO` référençant l'issue GitHub #3, qui décrit le travail d'authentification réelle. Ne pas « corriger » ces simulations sans brancher l'API.
+`lib/services/api/api.dart` (`AuthService`, `ApiConfig`, `ApiException`) et `lib/services/storage/secure_storage.dart` (`SecureStorageService`, jeton + profil via flutter_secure_storage) portent l'authentification. **Mode démo par défaut** : sans configuration, aucun appel réseau n'est fait et les opérations simulent une réussite. Pour brancher le vrai backend :
+
+```bash
+flutter run --dart-define=EDUGO_DEMO=false --dart-define=EDUGO_API_URL=https://votre-backend
+```
+
+Les endpoints attendus sont documentés en tête d'`AuthService` — à aligner avec l'API réelle (issue GitHub #3). Le démarrage passe par `StartupGate` (main.dart) : jeton présent → `MainNavigation`, sinon `WelcomeScreen`. La réinitialisation par lien e-mail (`nouveauMotDePasse`) attend le support des liens profonds. `lib/services/notifications/notification.dart` reste vide.
 
 `lib/models/eleve.dart` (`Eleve`, fromJson/toJson) est aligné sur les champs du formulaire d'inscription.
 

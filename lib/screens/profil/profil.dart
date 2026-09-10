@@ -3,6 +3,7 @@ import 'package:edugo/screens/connexion%20et%20inscriptions/login.dart';
 import 'package:edugo/screens/profil/changerMotPasse.dart';
 import 'package:edugo/screens/profil/modifierProfil.dart';
 import 'package:edugo/screens/profil/suggestion.dart';
+import 'package:edugo/services/api/api.dart';
 import 'package:flutter/material.dart';
 
 class ProfilScreen extends StatelessWidget {
@@ -36,8 +37,11 @@ class ProfilScreen extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogContext);
+              // Efface le jeton et le profil stockés localement
+              await AuthService.instance.logout();
+              if (!context.mounted) return;
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),

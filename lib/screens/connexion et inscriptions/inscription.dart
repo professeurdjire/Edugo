@@ -2,6 +2,7 @@ import 'package:edugo/core/widgets/widgets.dart';
 import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/models/eleve.dart';
 import 'package:edugo/screens/main_navigation.dart';
+import 'package:edugo/services/api/api.dart';
 import 'package:flutter/material.dart';
 
 class RegistrationStepperScreen extends StatefulWidget {
@@ -35,6 +36,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
 
   // Étape 3 : avatar
   int? _selectedAvatarIndex;
+  bool _isSubmitting = false;
 
   static const List<String> _niveaux = ['Primaire', 'Secondaire'];
 
@@ -89,7 +91,7 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
     }
   }
 
-  void _submitRegistration() {
+  Future<void> _submitRegistration() async {
     if (_selectedAvatarIndex == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -109,9 +111,24 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
       classe: _classeController.text.trim(),
       avatar: _avatars[_selectedAvatarIndex!],
     );
-    // TODO: envoyer `eleve` (et le mot de passe) à l'API d'inscription
-    // (voir issue #3), puis naviguer seulement après une réponse valide.
-    debugPrint('Inscription prête à envoyer : ${eleve.toJson()}');
+
+    setState(() => _isSubmitting = true);
+    try {
+      // En mode démo la réussite est simulée ; sinon l'API crée le compte.
+      await AuthService.instance.register(
+        eleve: eleve,
+        password: _passwordController.text,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+
+    if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const MainNavigation()),
@@ -418,7 +435,10 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
               },
             ),
           ),
-          AppPrimaryButton(text: 'S\'inscrire', onPressed: _submitRegistration),
+          AppPrimaryButton(
+              text: 'S\'inscrire',
+              onPressed: _submitRegistration,
+              isLoading: _isSubmitting),
           const SizedBox(height: 40),
         ],
       ),
