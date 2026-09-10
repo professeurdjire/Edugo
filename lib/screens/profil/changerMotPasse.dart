@@ -1,20 +1,6 @@
+import 'package:edugo/core/constants/constant.dart';
+import 'package:edugo/core/widgets/widgets.dart';
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: ChangePasswordScreen(),
-    );
-  }
-}
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -24,176 +10,196 @@ class ChangePasswordScreen extends StatefulWidget {
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
-  // --- Couleurs principales ---
-  final Color primaryColor = const Color(0xFF9370DB);
-  final Color lightPurpleBackground = const Color(0xFFF5F0FF);
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _oldPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
-  // --- Variables d’état pour afficher/masquer les mots de passe ---
   bool _oldPasswordVisible = false;
   bool _newPasswordVisible = false;
   bool _confirmPasswordVisible = false;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+  void dispose() {
+    _oldPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text(
-          'Changer le mot de passe',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
+  String? _validateOldPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer votre ancien mot de passe';
+    }
+    return null;
+  }
+
+  String? _validateNewPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un nouveau mot de passe';
+    }
+    if (value.length < 6) {
+      return 'Le mot de passe doit contenir au moins 6 caractères';
+    }
+    if (value == _oldPasswordController.text) {
+      return 'Le nouveau mot de passe doit être différent de l\'ancien';
+    }
+    return null;
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez confirmer le mot de passe';
+    }
+    if (value != _newPasswordController.text) {
+      return 'Les mots de passe ne correspondent pas';
+    }
+    return null;
+  }
+
+  void _handleSubmit() {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+    // TODO: appeler l'API de changement de mot de passe (voir issue #3)
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Mot de passe modifié avec succès'),
+        backgroundColor: AppConst.purpleDark,
       ),
+    );
+    Navigator.pop(context);
+  }
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            // Icône de cadenas
-            Center(
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: lightPurpleBackground,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.lock,
-                  size: 60,
-                  color: primaryColor,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 40),
-
-            // --- Ancien mot de passe ---
-            const Text(
-              'Ancien mot de passe',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            _buildPasswordField(
-              hint: '..........................',
-              backgroundColor: lightPurpleBackground,
-              obscureText: !_oldPasswordVisible,
-              onToggleVisibility: () {
-                setState(() => _oldPasswordVisible = !_oldPasswordVisible);
-              },
-              isVisible: _oldPasswordVisible,
-            ),
-
-            const SizedBox(height: 20),
-
-            // --- Nouveau mot de passe ---
-            const Text(
-              'Nouveau mot de passe',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            _buildPasswordField(
-              hint: '..........................',
-              backgroundColor: lightPurpleBackground,
-              obscureText: !_newPasswordVisible,
-              onToggleVisibility: () {
-                setState(() => _newPasswordVisible = !_newPasswordVisible);
-              },
-              isVisible: _newPasswordVisible,
-            ),
-
-            const SizedBox(height: 20),
-
-            // --- Confirmer le mot de passe ---
-            const Text(
-              'Confirmer le mot de passe',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            _buildPasswordField(
-              hint: '..........................',
-              backgroundColor: lightPurpleBackground,
-              obscureText: !_confirmPasswordVisible,
-              onToggleVisibility: () {
-                setState(() => _confirmPasswordVisible = !_confirmPasswordVisible);
-              },
-              isVisible: _confirmPasswordVisible,
-            ),
-
-            const SizedBox(height: 40),
-
-            // --- Bouton de validation ---
-            ElevatedButton(
-              onPressed: () {
-                // Logique pour changer le mot de passe
-              },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 55),
-                backgroundColor: primaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 3,
-              ),
-              child: const Text(
-                'Changer le mot de passe',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String hint,
+    required bool isVisible,
+    required VoidCallback onToggleVisibility,
+    required String? Function(String?) validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: !isVisible,
+      validator: validator,
+      style: const TextStyle(
+        fontFamily: AppConst.fontFamily,
+        fontSize: 16,
+        color: AppConst.textDark,
+      ),
+      decoration: appInputDecoration(
+        hint: hint,
+        prefixIcon: Icons.lock_outline_rounded,
+        suffixIcon: IconButton(
+          icon: Icon(
+            isVisible
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+            color: AppConst.textGrey,
+            size: 22,
+          ),
+          onPressed: onToggleVisibility,
         ),
       ),
     );
   }
 
-  // --- Widget réutilisable pour champ mot de passe ---
-  Widget _buildPasswordField({
-    required String hint,
-    required Color backgroundColor,
-    required bool obscureText,
-    required VoidCallback onToggleVisibility,
-    required bool isVisible,
-  }) {
-    return TextField(
-      obscureText: obscureText,
-      style: const TextStyle(fontSize: 18, letterSpacing: 3),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.grey, letterSpacing: 2),
-        filled: true,
-        fillColor: backgroundColor,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_sharp, color: AppConst.textDark),
+          onPressed: () => Navigator.pop(context),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF9370DB), width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        suffixIcon: IconButton(
-          icon: Icon(
-            isVisible ? Icons.visibility : Icons.visibility_off,
-            color: Colors.grey,
+        title: const Text(
+          'Changer le mot de passe',
+          style: TextStyle(
+            color: AppConst.textDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            fontFamily: AppConst.fontFamily,
           ),
-          onPressed: onToggleVisibility,
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: const BoxDecoration(
+                    color: AppConst.purpleInputFill,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.lock,
+                    size: 60,
+                    color: AppConst.purpleDark,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 40),
+
+              const AppFieldLabel('Ancien mot de passe'),
+              const SizedBox(height: 8),
+              _buildPasswordField(
+                controller: _oldPasswordController,
+                hint: 'Entrez votre ancien mot de passe',
+                isVisible: _oldPasswordVisible,
+                validator: _validateOldPassword,
+                onToggleVisibility: () {
+                  setState(() => _oldPasswordVisible = !_oldPasswordVisible);
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              const AppFieldLabel('Nouveau mot de passe'),
+              const SizedBox(height: 8),
+              _buildPasswordField(
+                controller: _newPasswordController,
+                hint: 'Entrez le nouveau mot de passe',
+                isVisible: _newPasswordVisible,
+                validator: _validateNewPassword,
+                onToggleVisibility: () {
+                  setState(() => _newPasswordVisible = !_newPasswordVisible);
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              const AppFieldLabel('Confirmer le mot de passe'),
+              const SizedBox(height: 8),
+              _buildPasswordField(
+                controller: _confirmPasswordController,
+                hint: 'Confirmez le nouveau mot de passe',
+                isVisible: _confirmPasswordVisible,
+                validator: _validateConfirmPassword,
+                onToggleVisibility: () {
+                  setState(
+                      () => _confirmPasswordVisible = !_confirmPasswordVisible);
+                },
+              ),
+
+              const SizedBox(height: 40),
+
+              AppPrimaryButton(
+                text: 'Changer le mot de passe',
+                onPressed: _handleSubmit,
+              ),
+            ],
+          ),
         ),
       ),
     );

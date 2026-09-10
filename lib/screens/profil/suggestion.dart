@@ -1,107 +1,149 @@
+import 'package:edugo/core/constants/constant.dart';
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SuggestionScreen extends StatefulWidget {
+  const SuggestionScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: SuggestionScreen(),
-    );
-  }
+  State<SuggestionScreen> createState() => _SuggestionScreenState();
 }
 
-class SuggestionScreen extends StatelessWidget {
-  const SuggestionScreen({super.key});
+class _SuggestionScreenState extends State<SuggestionScreen> {
+  final TextEditingController _messageController = TextEditingController();
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _handleSend() {
+    final String message = _messageController.text.trim();
+    if (message.isEmpty) return;
+    // TODO: envoyer la suggestion au backend (voir issue #3)
+    _messageController.clear();
+    FocusScope.of(context).unfocus();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Merci pour votre suggestion !'),
+        backgroundColor: AppConst.purpleDark,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // --- AppBar ---
       appBar: AppBar(
-        // Fond de la barre d'application assorti à l'image (mauve/violet clair)
-        backgroundColor: const Color(0xFFFFFFFF),
-        elevation: 0, // Enlève l'ombre de l'AppBar
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back_ios_sharp, color: AppConst.textDark),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Suggestion',
           style: TextStyle(
-            color: Colors.black,
+            color: AppConst.textDark,
             fontWeight: FontWeight.bold,
+            fontSize: 20,
+            fontFamily: AppConst.fontFamily,
           ),
         ),
         centerTitle: true,
       ),
-
-      // --- Corps de l'écran ---
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Espace principal pour le message de bienvenue
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Text(
-                  'Vos Suggestion sont les bienvenues !',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black.withOpacity(0.85),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: const BoxDecoration(
+                          color: AppConst.purpleInputFill,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.lightbulb_outline_rounded,
+                          size: 60,
+                          color: AppConst.purpleDark,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Vos suggestions sont les bienvenues !',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppConst.textDark,
+                          fontFamily: AppConst.fontFamily,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Aidez-nous à améliorer EDUGO en partageant vos idées.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppConst.textGrey,
+                          fontFamily: AppConst.fontFamily,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-          ),
 
-          // Champ de saisie de message (Input field)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.3),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
+            // Champ de saisie du message
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
               child: TextField(
+                controller: _messageController,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _handleSend(),
+                style: const TextStyle(
+                  fontFamily: AppConst.fontFamily,
+                  fontSize: 16,
+                  color: AppConst.textDark,
+                ),
                 decoration: InputDecoration(
-                  hintText: 'message',
-                  hintStyle: TextStyle(color: Colors.grey[600]),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
-                  border: InputBorder.none, // Enlève la bordure par défaut
+                  hintText: 'Écrivez votre suggestion...',
+                  hintStyle: const TextStyle(
+                    color: AppConst.textGrey,
+                    fontFamily: AppConst.fontFamily,
+                  ),
+                  filled: true,
+                  fillColor: AppConst.purpleInputFill,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20.0, vertical: 15.0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                    borderSide: const BorderSide(
+                        color: AppConst.purpleButton, width: 1.5),
+                  ),
                   suffixIcon: IconButton(
-                    icon: Icon(
-                      Icons.send,
-                      color: const Color(0xFF9370DB), // Couleur mauve pour l'icône
-                    ),
-                    onPressed: () {
-                      // Logique pour envoyer le message
-                    },
+                    icon: const Icon(Icons.send, color: AppConst.purpleDark),
+                    onPressed: _handleSend,
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

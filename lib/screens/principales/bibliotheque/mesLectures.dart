@@ -1,9 +1,10 @@
+import 'package:edugo/core/constants/constant.dart';
 import 'package:flutter/material.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal
+const Color _purpleMain = AppConst.purpleButton; // Violet principal
 const Color _colorBlack = Color(0xFF000000); // Texte noir
-const Color _colorGreen = Color(0xFF32C832); // Vert pour "Terminé"
+const Color _colorGreen = AppConst.successGreen; // Vert pour "Terminé"
 const String _fontFamily = 'Roboto'; // Police principale
 
 class MyReadingsScreen extends StatelessWidget {

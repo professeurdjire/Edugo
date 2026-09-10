@@ -1,13 +1,14 @@
+import 'package:edugo/core/constants/constant.dart';
 import 'package:flutter/material.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active)
+const Color _purpleMain = AppConst.purpleButton; // Violet principal (couleur active)
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const Color _colorEasy = Color(0xFFC0D99D);  // Vert clair pour Facile
 const Color _colorMedium = Color(0xFFB1A0D6); // Violet moyen pour Moyen
 const Color _colorHard = Color(0xFFD6A0A0);  // Rouge clair pour Difficile
 const Color _colorProgress = Color(0xFF5A4493); // Couleur foncée pour la progression
-const Color _colorCheck = Color(0xFF32C832);  // Vert pour icône de validation
+const Color _colorCheck = AppConst.successGreen;  // Vert pour icône de validation
 const String _fontFamily = 'Roboto'; // Police principale
 
 class ExerciseMatiereListScreen extends StatelessWidget {

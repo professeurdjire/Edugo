@@ -1,19 +1,24 @@
+import 'package:edugo/core/constants/constant.dart';
+import 'package:edugo/screens/conversionData/listeConversion.dart';
 import 'package:edugo/screens/principales/accueil/activiteRecente.dart';
+import 'package:edugo/screens/principales/accueil/badges.dart';
+import 'package:edugo/screens/principales/accueil/notification.dart';
 import 'package:edugo/screens/principales/accueil/partenaire.dart';
 import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
+import 'package:edugo/screens/main_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/profil/profil.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active/bouton)
-const Color _purpleHeader = Color(0xFFA885D8); // Violet pour l'en-tête
+const Color _purpleMain = AppConst.purpleButton; // Violet principal (couleur active/bouton)
+const Color _purpleHeader = AppConst.purpleButton; // Violet pour l'en-tête
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const Color _colorWhite = Color(0xFFFFFFFF);
 const Color _colorWarning = Color(0xFFFF9800); // Orange pour la barre de défi/score
 const Color _colorGold = Color(0xFFFFD700); // Or pour le badge
 const Color _colorBronze = Color(0xFFCD7F32); // Bronze pour le badge
 const Color _colorSilver = Color(0xFFC0C0C0); // Argent pour le badge
-const Color _colorSuccessCheck = Color(0xFF32C832); // Vert pour la coche
+const Color _colorSuccessCheck = AppConst.successGreen; // Vert pour la coche
 const Color _colorBookIcon = Color(0xFF90A4AE); // Gris-bleu pour l'icône de livre
 const Color _colorTrophyIcon = Color(0xFFE8981A); // Orange pour l'icône de trophée
 const Color _colorPartnerKhaki = Color(0xFF3B5998); // Bleu foncé pour Khan Academy
@@ -29,15 +34,21 @@ class CurrentReading {
   const CurrentReading({required this.title, this.author, required this.progress});
 }
 
-class HomeScreen extends StatelessWidget {
-   const HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
 
   // Données simulées (tirées des images précédentes)
   final String _userName = 'Haoua Haïdara';
   final int _userPoints = 1000;
   final double _dailyChallengeProgress = 1.0;
   final int _booksRead = 3;
-  final int _totalBooksGoal = 5;
+  int _totalBooksGoal = 5;
   final int _daysRemaining = 3;
 
   final List<Map<String, dynamic>> _recentActivities = const [
@@ -52,6 +63,70 @@ class HomeScreen extends StatelessWidget {
     CurrentReading(title: 'Le jardin invisible', progress: 0.45),
     CurrentReading(title: 'Le coeur se souvient', progress: 0.25),
   ];
+
+  void _showGoalDialog() {
+    int goal = _totalBooksGoal;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text(
+            'Objectif hebdomadaire',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: AppConst.fontFamily,
+            ),
+          ),
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.remove_circle_outline,
+                    color: _purpleMain, size: 32),
+                onPressed:
+                    goal > 1 ? () => setDialogState(() => goal--) : null,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '$goal livre${goal > 1 ? 's' : ''}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppConst.textDark,
+                    fontFamily: AppConst.fontFamily,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline,
+                    color: _purpleMain, size: 32),
+                onPressed:
+                    goal < 30 ? () => setDialogState(() => goal++) : null,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Annuler',
+                  style: TextStyle(color: AppConst.textGrey)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                setState(() => _totalBooksGoal = goal);
+              },
+              child: const Text('Valider',
+                  style: TextStyle(
+                      color: _purpleMain, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +165,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 30),
                   
                   // 5. Recommandation pour toi
-                  _buildRecommendationsSection(),
+                  _buildRecommendationsSection(context),
 
                   const SizedBox(height: 30),
 
@@ -116,7 +191,7 @@ class HomeScreen extends StatelessWidget {
   // --- WIDGETS DE NOUVELLES SECTIONS (Ajoutées) ---
   // -------------------------------------------------------------------
   
-  Widget _buildRecommendationsSection() {
+  Widget _buildRecommendationsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -129,7 +204,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         TextButton(
-              onPressed: () {},
+              onPressed: () => MainNavigation.switchTab(context, 1),
               child: const Text(
                 'Voir tout',
                 style: TextStyle(
@@ -331,22 +406,45 @@ class HomeScreen extends StatelessWidget {
                 ),
                 Column(
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          '$_userPoints',
-                          style: const TextStyle(
-                            color: _colorWhite,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const PointExchangeScreen()),
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          Text(
+                            '$_userPoints',
+                            style: const TextStyle(
+                              color: _colorWhite,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.star, color: _colorGold, size: 20),
-                        const SizedBox(width: 10),
-                      ],
+                          const SizedBox(width: 4),
+                          const Icon(Icons.star, color: _colorGold, size: 20),
+                          const SizedBox(width: 10),
+                        ],
+                      ),
                     ),
-                    const Icon(Icons.notifications, color: _colorGold, size: 24),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.notifications,
+                          color: _colorGold, size: 24),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const NotificationScreen()),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ],
@@ -415,7 +513,7 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Objectifs de Lectures', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: const Text('Définir un objectif', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
+            TextButton(onPressed: _showGoalDialog, child: const Text('Définir un objectif', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
           ],
         ),
         const SizedBox(height: 10),
@@ -474,7 +572,19 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Succès et Badges', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
+            TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const BadgesScreen()),
+                  );
+                },
+                child: const Text('Voir tout',
+                    style: TextStyle(
+                        color: _purpleMain,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500))),
           ],
         ),
         const SizedBox(height: 15),
@@ -498,9 +608,19 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Activité Récentes', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {
-
-            }, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
+            TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const RecentActivitiesScreen()),
+                  );
+                },
+                child: const Text('Voir tout',
+                    style: TextStyle(
+                        color: _purpleMain,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500))),
           ],
         ),
         const SizedBox(height: 15),
@@ -583,7 +703,7 @@ class _RecommendationCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               // Simuler une image de couverture
               image: const DecorationImage(
-                image: AssetImage('assets/book_cover_placeholder.png'),
+                image: AssetImage('assets/images/book1.png'),
                 fit: BoxFit.cover,
               ),
             ),
