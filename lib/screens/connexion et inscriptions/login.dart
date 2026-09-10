@@ -53,11 +53,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simulation d'un appel réseau en attendant le branchement de l'API
+    // TODO: remplacer par une vraie authentification backend (services/api)
+    // avant toute mise en production — la navigation ci-dessous est un
+    // placeholder tant que l'API n'existe pas.
     await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted) return;
     setState(() => _isLoading = false);
+
+    // Ne rien remplacer si l'utilisateur a navigué ailleurs entre-temps
+    if (ModalRoute.of(context)?.isCurrent != true) return;
 
     Navigator.pushReplacement(
       context,
@@ -165,14 +170,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MotPasseOublieA(),
-                            ),
-                          );
-                        },
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const MotPasseOublieA(),
+                                  ),
+                                );
+                              },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: Size.zero,
@@ -311,15 +319,22 @@ class _LoginScreenState extends State<LoginScreen> {
             fontFamily: AppConst.fontFamily,
           ),
         ),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const RegistrationStepperScreen(),
-              ),
-            );
-          },
+        TextButton(
+          onPressed: _isLoading
+              ? null
+              : () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RegistrationStepperScreen(),
+                    ),
+                  );
+                },
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
           child: const Text(
             'Inscrivez-vous',
             style: TextStyle(

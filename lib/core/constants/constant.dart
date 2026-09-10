@@ -16,8 +16,8 @@ class AppConst {
   // ⚫ Couleur du texte principal
   static const Color textDark = Color(0xFF1F1F2E);
 
-  // ⚪ Couleur du texte secondaire
-  static const Color textGrey = Color(0xFF8A8A9E);
+  // ⚪ Couleur du texte secondaire (contraste ≥ 4.5:1 sur blanc et purpleInputFill)
+  static const Color textGrey = Color(0xFF5F5F72);
 
   // 🔤 Police principale
   static const String fontFamily = 'Roboto';
