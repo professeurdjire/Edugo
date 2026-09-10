@@ -1,3 +1,4 @@
+import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/screens/principales/accueil/activiteRecente.dart';
 import 'package:edugo/screens/principales/accueil/partenaire.dart';
 import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
@@ -5,15 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:edugo/screens/profil/profil.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active/bouton)
-const Color _purpleHeader = Color(0xFFA885D8); // Violet pour l'en-tête
+const Color _purpleMain = AppConst.purpleButton; // Violet principal (couleur active/bouton)
+const Color _purpleHeader = AppConst.purpleButton; // Violet pour l'en-tête
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const Color _colorWhite = Color(0xFFFFFFFF);
 const Color _colorWarning = Color(0xFFFF9800); // Orange pour la barre de défi/score
 const Color _colorGold = Color(0xFFFFD700); // Or pour le badge
 const Color _colorBronze = Color(0xFFCD7F32); // Bronze pour le badge
 const Color _colorSilver = Color(0xFFC0C0C0); // Argent pour le badge
-const Color _colorSuccessCheck = Color(0xFF32C832); // Vert pour la coche
+const Color _colorSuccessCheck = AppConst.successGreen; // Vert pour la coche
 const Color _colorBookIcon = Color(0xFF90A4AE); // Gris-bleu pour l'icône de livre
 const Color _colorTrophyIcon = Color(0xFFE8981A); // Orange pour l'icône de trophée
 const Color _colorPartnerKhaki = Color(0xFF3B5998); // Bleu foncé pour Khan Academy

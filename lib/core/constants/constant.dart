@@ -19,6 +19,9 @@ class AppConst {
   // ⚪ Couleur du texte secondaire (contraste ≥ 4.5:1 sur blanc et purpleInputFill)
   static const Color textGrey = Color(0xFF5F5F72);
 
+  // ✅ Vert de succès (bonnes réponses, validations)
+  static const Color successGreen = Color(0xFF32C832);
+
   // 🔤 Police principale
   static const String fontFamily = 'Roboto';
 }

@@ -1,3 +1,4 @@
+import 'package:edugo/core/constants/constant.dart';
 import 'package:flutter/material.dart';
 
 // Vous pouvez nommer ce fichier 'point_exchange_screen.dart'
@@ -11,9 +12,9 @@ class PointExchangeScreen extends StatefulWidget {
 
 class _PointExchangeScreenState extends State<PointExchangeScreen> {
   // --- Palettes de Couleurs et Variables d'État ---
-  final Color primaryPurple = const Color(0xFFA885D8); // Couleur principale
+  final Color primaryPurple = AppConst.purpleButton; // Couleur principale
   final Color orangePoints = const Color(0xFFFF7900); // Couleur des points
-  final Color selectedBorderColor = const Color(0xFFA885D8);
+  final Color selectedBorderColor = AppConst.purpleButton;
   final Color unselectedCardColor = const Color(0xFFFFFFFF);
   final Color selectedCardColor = const Color(0xFFF3EDFC); // Fond plus clair
 
@@ -261,7 +262,7 @@ class _PointExchangeScreenState extends State<PointExchangeScreen> {
                   child: const Icon(
                     Icons.compare_arrows,
                     size: 40,
-                    color: Color(0xFFA885D8),
+                    color: AppConst.purpleButton,
                   ),
                 ),
                 const SizedBox(height: 20),

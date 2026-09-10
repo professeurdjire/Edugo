@@ -1,13 +1,14 @@
+import 'package:edugo/core/constants/constant.dart';
 import 'package:flutter/material.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur active/bouton)
+const Color _purpleMain = AppConst.purpleButton; // Violet principal (couleur active/bouton)
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const Color _colorScoreBackground = Color(0xFFFFF7E3); // Fond Jaune clair pour le score (comme un badge)
 const Color _colorTimeBackground = Color(0xFFF0F8FF); // Fond Bleu clair pour le temps
 const Color _colorCorrectBackground = Color(0xFFE8F5E9); // Fond Vert clair pour les bonnes
 const Color _colorIncorrectBackground = Color(0xFFFBE4E4); // Fond Rouge clair pour les mauvaises
-const Color _colorSuccess = Color(0xFF32C832); // Vert pour la validation
+const Color _colorSuccess = AppConst.successGreen; // Vert pour la validation
 const Color _colorFailure = Color(0xFFFF4500); // Rouge pour la croix
 const Color _colorOrange = Color(0xFFFF9800); // Orange pour la barre de score
 const String _fontFamily = 'Roboto'; // Police principale

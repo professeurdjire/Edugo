@@ -1,7 +1,8 @@
+import 'package:edugo/core/constants/constant.dart';
 import 'package:flutter/material.dart';
 
 // --- CONSTANTES DE COULEURS ET STYLES ---
-const Color _purpleMain = Color(0xFFA885D8); // Violet principal (couleur des icônes)
+const Color _purpleMain = AppConst.purpleButton; // Violet principal (couleur des icônes)
 const Color _colorBlack = Color(0xFF000000); // Texte noir
 const String _fontFamily = 'Roboto'; // Police principale
 
