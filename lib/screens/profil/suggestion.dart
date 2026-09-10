@@ -1,4 +1,5 @@
 import 'package:edugo/core/constants/constant.dart';
+import 'package:edugo/services/api/api.dart';
 import 'package:flutter/material.dart';
 
 class SuggestionScreen extends StatefulWidget {
@@ -10,6 +11,7 @@ class SuggestionScreen extends StatefulWidget {
 
 class _SuggestionScreenState extends State<SuggestionScreen> {
   final TextEditingController _messageController = TextEditingController();
+  bool _isSending = false;
 
   @override
   void dispose() {
@@ -17,10 +19,25 @@ class _SuggestionScreenState extends State<SuggestionScreen> {
     super.dispose();
   }
 
-  void _handleSend() {
+  Future<void> _handleSend() async {
     final String message = _messageController.text.trim();
-    if (message.isEmpty) return;
-    // TODO: envoyer la suggestion au backend (voir issue #3)
+    if (message.isEmpty || _isSending) return;
+
+    setState(() => _isSending = true);
+    try {
+      // En mode démo l'envoi est simulé ; sinon l'API reçoit la suggestion.
+      await AuthService.instance.sendSuggestion(message);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _isSending = false);
     _messageController.clear();
     FocusScope.of(context).unfocus();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -135,10 +152,23 @@ class _SuggestionScreenState extends State<SuggestionScreen> {
                     borderSide: const BorderSide(
                         color: AppConst.purpleButton, width: 1.5),
                   ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.send, color: AppConst.purpleDark),
-                    onPressed: _handleSend,
-                  ),
+                  suffixIcon: _isSending
+                      ? const Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: AppConst.purpleDark,
+                            ),
+                          ),
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.send,
+                              color: AppConst.purpleDark),
+                          onPressed: _handleSend,
+                        ),
                 ),
               ),
             ),

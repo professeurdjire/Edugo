@@ -1,6 +1,7 @@
 import 'package:edugo/core/widgets/widgets.dart';
 import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/screens/profil/reenitialiserMotDePasse/nouveauMotDePasse.dart';
+import 'package:edugo/services/api/api.dart';
 import 'package:flutter/material.dart';
 
 class MotPasseOublieA extends StatefulWidget {
@@ -14,8 +15,9 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
 
-  // Passe à true une fois le lien de réinitialisation « envoyé »
+  // Passe à true une fois le lien de réinitialisation envoyé
   bool _emailSent = false;
+  bool _isSending = false;
 
   // Couleurs du message de succès
   static const Color _successBackground = Color(0xFFE6FAE7);
@@ -38,12 +40,30 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
     return null;
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     FocusScope.of(context).unfocus();
     if (!_emailSent) {
       if (!_formKey.currentState!.validate()) return;
-      // Simulation de l'envoi du lien en attendant le branchement de l'API
-      setState(() => _emailSent = true);
+      setState(() => _isSending = true);
+      try {
+        // En mode démo l'envoi est simulé ; sinon l'API envoie le lien.
+        await AuthService.instance.requestPasswordReset(
+          email: _emailController.text.trim(),
+        );
+      } on ApiException catch (e) {
+        if (!mounted) return;
+        setState(() => _isSending = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(e.message), backgroundColor: Colors.redAccent),
+        );
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _isSending = false;
+        _emailSent = true;
+      });
     } else {
       Navigator.push(
         context,
@@ -193,6 +213,7 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
                     ? 'Continuer'
                     : 'Envoyer le lien de réinitialisation',
                 onPressed: _handleSubmit,
+                isLoading: _isSending,
               ),
             ],
           ),

@@ -3,6 +3,7 @@ import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/screens/connexion%20et%20inscriptions/inscription.dart';
 import 'package:edugo/screens/main_navigation.dart';
 import 'package:edugo/screens/profil/reenitialiserMotDePasse/reenitialisationA.dart';
+import 'package:edugo/services/api/api.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -54,10 +55,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // TODO: remplacer par une vraie authentification backend (services/api)
-    // avant toute mise en production — la navigation ci-dessous est un
-    // placeholder tant que l'API n'existe pas.
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      // En mode démo (ApiConfig.demoMode), la réussite est simulée ;
+      // sinon l'API EDUGO authentifie réellement les identifiants.
+      await AuthService.instance.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
 
     if (!mounted) return;
     setState(() => _isLoading = false);

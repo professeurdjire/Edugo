@@ -1,30 +1,51 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Tests de fumée des écrans d'entrée de l'application.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:edugo/main.dart';
+import 'package:edugo/screens/connexion%20et%20inscriptions/login.dart';
+import 'package:edugo/screens/presentations/presentation1.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('L\'écran de bienvenue affiche le titre et le bouton Commencer',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: WelcomeScreen()));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Bienvenue Sur EDUGO'), findsOneWidget);
+    expect(find.text('Commencer'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('La connexion exige un email et un mot de passe',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
+
+    await tester.tap(find.text('Se Connecter'));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Veuillez entrer votre adresse email'), findsOneWidget);
+    expect(find.text('Veuillez entrer votre mot de passe'), findsOneWidget);
+  });
+
+  testWidgets('La connexion rejette un email invalide',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
+
+    await tester.enterText(find.byType(TextFormField).first, 'pas-un-email');
+    await tester.tap(find.text('Se Connecter'));
+    await tester.pump();
+
+    expect(find.text('Adresse email invalide'), findsOneWidget);
+  });
+
+  testWidgets('La connexion rejette un mot de passe trop court',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
+
+    await tester.enterText(find.byType(TextFormField).at(1), '123');
+    await tester.tap(find.text('Se Connecter'));
+    await tester.pump();
+
+    expect(find.text('Le mot de passe doit contenir au moins 6 caractères'),
+        findsOneWidget);
   });
 }

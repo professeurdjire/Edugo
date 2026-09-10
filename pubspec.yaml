@@ -35,6 +35,11 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Client HTTP pour l'API EDUGO (authentification, issue #3)
+  http: ^1.2.0
+  # Stockage sécurisé du jeton de session
+  flutter_secure_storage: ^9.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

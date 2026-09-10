@@ -1,5 +1,6 @@
 import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/core/widgets/widgets.dart';
+import 'package:edugo/services/api/api.dart';
 import 'package:flutter/material.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  bool _isSubmitting = false;
   bool _oldPasswordVisible = false;
   bool _newPasswordVisible = false;
   bool _confirmPasswordVisible = false;
@@ -58,10 +60,28 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return null;
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    // TODO: appeler l'API de changement de mot de passe (voir issue #3)
+
+    setState(() => _isSubmitting = true);
+    try {
+      // En mode démo la réussite est simulée ; sinon l'API change le
+      // mot de passe de la session courante.
+      await AuthService.instance.changePassword(
+        oldPassword: _oldPasswordController.text,
+        newPassword: _newPasswordController.text,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Mot de passe modifié avec succès'),
@@ -197,6 +217,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               AppPrimaryButton(
                 text: 'Changer le mot de passe',
                 onPressed: _handleSubmit,
+                isLoading: _isSubmitting,
               ),
             ],
           ),

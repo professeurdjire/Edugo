@@ -6,6 +6,8 @@ import 'package:edugo/screens/principales/accueil/notification.dart';
 import 'package:edugo/screens/principales/accueil/partenaire.dart';
 import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
 import 'package:edugo/screens/main_navigation.dart';
+import 'package:edugo/models/eleve.dart';
+import 'package:edugo/services/api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/profil/profil.dart';
 
@@ -44,11 +46,27 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
 
   // Données simulées (tirées des images précédentes)
-  final String _userName = 'Haoua Haïdara';
+  String _userName = 'Haoua Haïdara';
   final int _userPoints = 1000;
   final double _dailyChallengeProgress = 1.0;
   final int _booksRead = 3;
   int _totalBooksGoal = 5;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  /// Affiche le nom de l'élève connecté quand un profil est stocké.
+  Future<void> _loadUser() async {
+    final Eleve? eleve = await AuthService.instance.currentEleve();
+    if (eleve == null || !mounted) return;
+    final String fullName = '${eleve.prenom} ${eleve.nom}'.trim();
+    if (fullName.isNotEmpty) {
+      setState(() => _userName = fullName);
+    }
+  }
   final int _daysRemaining = 3;
 
   final List<Map<String, dynamic>> _recentActivities = const [

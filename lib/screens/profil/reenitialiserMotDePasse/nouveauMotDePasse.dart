@@ -49,6 +49,9 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
   void _handleSubmit() {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
+    // TODO(issue #3) : la réinitialisation réelle exige le code/jeton reçu
+    // par e-mail (lien profond) ; à brancher quand le backend enverra le
+    // lien. En attendant, l'écran illustre le parcours.
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const SuccesReenitialisation()),

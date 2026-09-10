@@ -1,4 +1,6 @@
 import 'package:edugo/core/widgets/widgets.dart';
+import 'package:edugo/models/eleve.dart';
+import 'package:edugo/services/api/api.dart';
 import 'package:edugo/core/constants/constant.dart';
 import 'package:flutter/material.dart';
 
@@ -26,6 +28,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   static const List<String> _niveaux = ['Primaire', 'Secondaire'];
   String? _selectedNiveau;
 
+  Eleve? _eleve;
+  String? _avatar;
+  bool _isSaving = false;
+
+  // Mêmes avatars que l'inscription
+  static const List<String> _avatars = [
+    'assets/images/avatar1.png',
+    'assets/images/avatar2.png',
+    'assets/images/avatar3.png',
+    'assets/images/avatar4.png',
+    'assets/images/avatar5.png',
+    'assets/images/avatar6.png',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +50,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (_currentPage != next) {
         setState(() => _currentPage = next);
       }
+    });
+    _loadProfile();
+  }
+
+  /// Préremplit le formulaire avec le profil stocké localement.
+  Future<void> _loadProfile() async {
+    final Eleve? eleve = await AuthService.instance.currentEleve();
+    if (eleve == null || !mounted) return;
+    setState(() {
+      _eleve = eleve;
+      _avatar = eleve.avatar;
+      _nomController.text = eleve.nom;
+      _prenomController.text = eleve.prenom;
+      _telephoneController.text = eleve.telephone;
+      _villeController.text = eleve.ville;
+      _emailController.text = eleve.email;
+      _classeController.text = eleve.classe;
+      _selectedNiveau =
+          _niveaux.contains(eleve.niveauScolaire) ? eleve.niveauScolaire : null;
     });
   }
 
@@ -67,10 +102,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return null;
   }
 
-  void _handleSave() {
+  Future<void> _handleSave() async {
+    if (_isSaving) return;
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    // TODO: enregistrer les modifications via l'API (voir issue #3)
+
+    final Eleve updated = Eleve(
+      nom: _nomController.text.trim(),
+      prenom: _prenomController.text.trim(),
+      telephone: _telephoneController.text.trim(),
+      ville: _villeController.text.trim(),
+      email: _emailController.text.trim(),
+      niveauScolaire: _selectedNiveau ?? '',
+      classe: _classeController.text.trim(),
+      avatar: _avatar ?? _eleve?.avatar,
+    );
+
+    setState(() => _isSaving = true);
+    try {
+      // En mode démo, la mise à jour est enregistrée localement.
+      await AuthService.instance.updateProfile(updated);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Profil mis à jour'),
@@ -130,27 +191,93 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _buildProfileHeader() {
     return Center(
-      child: Stack(
-        alignment: Alignment.bottomRight,
-        children: [
-          const CircleAvatar(
-            radius: 50,
-            backgroundColor: AppConst.purpleInputFill,
-            backgroundImage: AssetImage('assets/images/avatar1.png'),
-          ),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
+      child: GestureDetector(
+        onTap: _pickAvatar,
+        child: Stack(
+          alignment: Alignment.bottomRight,
+          children: [
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: AppConst.purpleInputFill,
+              backgroundImage:
+                  AssetImage(_avatar ?? 'assets/images/avatar1.png'),
             ),
-            child: const Icon(
-              Icons.edit,
-              color: AppConst.purpleButton,
-              size: 20,
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.edit,
+                color: AppConst.purpleButton,
+                size: 20,
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Feuille de sélection d'avatar (mêmes choix qu'à l'inscription).
+  void _pickAvatar() {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Choisissez votre avatar',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppConst.textDark,
+                  fontFamily: AppConst.fontFamily,
+                ),
+              ),
+              const SizedBox(height: 16),
+              GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.9,
+                children: _avatars.map((path) {
+                  final bool isSelected = path == _avatar;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _avatar = path);
+                      Navigator.pop(sheetContext);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isSelected
+                              ? AppConst.purpleButton
+                              : Colors.transparent,
+                          width: 3,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: Image.asset(path, fit: BoxFit.cover),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
