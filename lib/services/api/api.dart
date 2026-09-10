@@ -47,6 +47,8 @@ class ApiException implements Exception {
 ///   POST /auth/mot-de-passe/oubli {email} -> 204
 ///   POST /auth/mot-de-passe       {ancien, nouveau} (Bearer) -> 204
 ///   POST /auth/logout             (Bearer) -> 204
+///   PUT  /eleves/moi              {eleve...} (Bearer) -> {eleve}
+///   POST /suggestions             {message} (Bearer) -> 204
 class AuthService {
   AuthService._();
 
@@ -169,6 +171,39 @@ class AuthService {
           _uri('/auth/mot-de-passe'),
           headers: await _headers(auth: true),
           body: jsonEncode({'ancien': oldPassword, 'nouveau': newPassword}),
+        ));
+    _decode(response);
+  }
+
+  /// Profil de l'élève connecté, tel que stocké localement.
+  Future<Eleve?> currentEleve() => _storage.readEleve();
+
+  /// Met à jour le profil de l'élève connecté (et le cache local).
+  Future<void> updateProfile(Eleve eleve) async {
+    if (ApiConfig.demoMode) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      await _storage.saveEleve(eleve);
+      return;
+    }
+    final response = await _send(() async => http.put(
+          _uri('/eleves/moi'),
+          headers: await _headers(auth: true),
+          body: jsonEncode(eleve.toJson()),
+        ));
+    _decode(response);
+    await _storage.saveEleve(eleve);
+  }
+
+  /// Envoie une suggestion d'amélioration.
+  Future<void> sendSuggestion(String message) async {
+    if (ApiConfig.demoMode) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      return;
+    }
+    final response = await _send(() async => http.post(
+          _uri('/suggestions'),
+          headers: await _headers(auth: true),
+          body: jsonEncode({'message': message}),
         ));
     _decode(response);
   }

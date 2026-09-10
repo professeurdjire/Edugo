@@ -1,4 +1,5 @@
 import 'package:edugo/core/constants/constant.dart';
+import 'package:edugo/models/eleve.dart';
 import 'package:edugo/screens/connexion%20et%20inscriptions/login.dart';
 import 'package:edugo/screens/profil/changerMotPasse.dart';
 import 'package:edugo/screens/profil/modifierProfil.dart';
@@ -96,29 +97,49 @@ class ProfilScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const CircleAvatar(
-                    radius: 45,
-                    backgroundColor: AppConst.purpleInputFill,
-                    backgroundImage: AssetImage('assets/images/avatar1.png'),
-                  ),
-                  const SizedBox(height: 10),
-
-                  const Text(
-                    'Haoua Haïdara',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppConst.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'haidarahaoua@gmail.com',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontFamily: AppConst.fontFamily,
-                    ),
+                  // Identité de l'élève connecté (valeurs de démonstration
+                  // tant qu'aucun profil n'est stocké)
+                  FutureBuilder<Eleve?>(
+                    future: AuthService.instance.currentEleve(),
+                    builder: (context, snapshot) {
+                      final Eleve? eleve = snapshot.data;
+                      final String fullName = eleve == null
+                          ? 'Haoua Haïdara'
+                          : '${eleve.prenom} ${eleve.nom}'.trim();
+                      final String email =
+                          (eleve != null && eleve.email.isNotEmpty)
+                              ? eleve.email
+                              : 'haidarahaoua@gmail.com';
+                      final String avatar =
+                          eleve?.avatar ?? 'assets/images/avatar1.png';
+                      return Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 45,
+                            backgroundColor: AppConst.purpleInputFill,
+                            backgroundImage: AssetImage(avatar),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            fullName.isEmpty ? 'Haoua Haïdara' : fullName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppConst.fontFamily,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            email,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontFamily: AppConst.fontFamily,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
 

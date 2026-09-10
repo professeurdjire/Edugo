@@ -1,4 +1,6 @@
 import 'package:edugo/core/widgets/widgets.dart';
+import 'package:edugo/models/eleve.dart';
+import 'package:edugo/services/api/api.dart';
 import 'package:edugo/core/constants/constant.dart';
 import 'package:flutter/material.dart';
 
@@ -26,6 +28,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   static const List<String> _niveaux = ['Primaire', 'Secondaire'];
   String? _selectedNiveau;
 
+  Eleve? _eleve;
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +39,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (_currentPage != next) {
         setState(() => _currentPage = next);
       }
+    });
+    _loadProfile();
+  }
+
+  /// Préremplit le formulaire avec le profil stocké localement.
+  Future<void> _loadProfile() async {
+    final Eleve? eleve = await AuthService.instance.currentEleve();
+    if (eleve == null || !mounted) return;
+    setState(() {
+      _eleve = eleve;
+      _nomController.text = eleve.nom;
+      _prenomController.text = eleve.prenom;
+      _telephoneController.text = eleve.telephone;
+      _villeController.text = eleve.ville;
+      _emailController.text = eleve.email;
+      _classeController.text = eleve.classe;
+      _selectedNiveau =
+          _niveaux.contains(eleve.niveauScolaire) ? eleve.niveauScolaire : null;
     });
   }
 
@@ -67,10 +90,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return null;
   }
 
-  void _handleSave() {
+  Future<void> _handleSave() async {
+    if (_isSaving) return;
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    // TODO: enregistrer les modifications via l'API (voir issue #3)
+
+    final Eleve updated = Eleve(
+      nom: _nomController.text.trim(),
+      prenom: _prenomController.text.trim(),
+      telephone: _telephoneController.text.trim(),
+      ville: _villeController.text.trim(),
+      email: _emailController.text.trim(),
+      niveauScolaire: _selectedNiveau ?? '',
+      classe: _classeController.text.trim(),
+      avatar: _eleve?.avatar,
+    );
+
+    setState(() => _isSaving = true);
+    try {
+      // En mode démo, la mise à jour est enregistrée localement.
+      await AuthService.instance.updateProfile(updated);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Profil mis à jour'),
