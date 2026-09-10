@@ -45,7 +45,8 @@ class ApiException implements Exception {
 ///   POST /auth/login              {email, motDePasse} -> {token, eleve}
 ///   POST /auth/register           {eleve..., motDePasse} -> {token, eleve}
 ///   POST /auth/mot-de-passe/oubli {email} -> 204
-///   POST /auth/mot-de-passe       {ancien, nouveau} (Bearer) -> 204
+///   POST /auth/mot-de-passe       {ancien, nouveau} (Bearer) -> {token}
+///                                 (les jetons antérieurs sont invalidés)
 ///   POST /auth/logout             (Bearer) -> 204
 ///   PUT  /eleves/moi              {eleve...} (Bearer) -> {eleve}
 ///   POST /suggestions             {message} (Bearer) -> 204
@@ -172,7 +173,10 @@ class AuthService {
           headers: await _headers(auth: true),
           body: jsonEncode({'ancien': oldPassword, 'nouveau': newPassword}),
         ));
-    _decode(response);
+    // Le backend invalide les jetons antérieurs et en renvoie un neuf.
+    final Map<String, dynamic> data = _decode(response);
+    final String? token = data['token'] as String?;
+    if (token != null) await _storage.saveToken(token);
   }
 
   /// Profil de l'élève connecté, tel que stocké localement.

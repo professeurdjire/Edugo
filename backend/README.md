@@ -18,7 +18,7 @@ Variables d'environnement (toutes optionnelles en développement) :
 |--------------|-------------------|---------------------------------------------|
 | `PORT`       | `3000`            | Port d'écoute                               |
 | `DB_FILE`    | `edugo.db`        | Fichier SQLite (créé automatiquement)       |
-| `JWT_SECRET` | secret de dev     | **À définir obligatoirement en production** |
+| `JWT_SECRET` | aléatoire par démarrage | **À définir en production** (sinon les sessions ne survivent pas aux redémarrages) |
 
 ## Brancher l'application Flutter
 
@@ -39,7 +39,7 @@ Alignés sur le client Flutter (`lib/services/api/api.dart`) :
 | POST    | `/auth/register`          | élève + `motDePasse`        | `{token, eleve}`  |
 | POST    | `/auth/login`             | `{email, motDePasse}`       | `{token, eleve}`  |
 | POST    | `/auth/mot-de-passe/oubli`| `{email}`                   | 204               |
-| POST    | `/auth/mot-de-passe`      | `{ancien, nouveau}` (Bearer)| 204               |
+| POST    | `/auth/mot-de-passe`      | `{ancien, nouveau}` (Bearer)| `{token}`         |
 | POST    | `/auth/logout`            | — (Bearer)                  | 204               |
 | PUT     | `/eleves/moi`             | champs de l'élève (Bearer)  | `{eleve}`         |
 | POST    | `/suggestions`            | `{message}` (Bearer)        | 204               |
@@ -48,18 +48,29 @@ Alignés sur le client Flutter (`lib/services/api/api.dart`) :
 Les erreurs renvoient `{message}` en français ; le client les affiche
 telles quelles.
 
+## Sécurité
+
+- Mots de passe hachés bcrypt ; comparaison factice pour les emails
+  inconnus au login (durée de traitement égalisée).
+- Chaque élève porte une **version de session** : changer de mot de
+  passe ou se déconnecter l'incrémente, ce qui invalide immédiatement
+  tous les jetons émis auparavant. Le changement de mot de passe renvoie
+  un jeton neuf (`{token}`) que le client stocke.
+- Les routes d'authentification non authentifiées sont **limitées en
+  débit** (30 requêtes / 15 min par IP par défaut).
+- Sans `JWT_SECRET`, un secret aléatoire est généré à chaque démarrage
+  (jamais de secret codé en dur).
+
 ## Limites connues
 
 - La réinitialisation par e-mail génère et stocke un code à 6 chiffres
-  mais **ne l'envoie pas** (aucun service d'e-mail branché) : il est
-  journalisé côté serveur. À compléter avec un envoi réel et l'endpoint
-  de consommation du code quand l'app supportera les liens profonds.
-- Les jetons JWT sont sans état : `/auth/logout` valide la session et
-  répond 204, la déconnexion effective étant la suppression du jeton
-  côté client.
+  (table `reinitialisations`, expiration 30 min) mais **ne l'envoie
+  pas** — aucun service d'e-mail n'est branché et le code n'est jamais
+  journalisé. À compléter avec un envoi réel et l'endpoint de
+  consommation du code quand l'app supportera les liens profonds.
 
 ## Tests
 
 ```bash
-npm test             # 12 tests d'intégration (base en mémoire)
+npm test             # 13 tests d'intégration (base en mémoire)
 ```

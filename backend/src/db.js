@@ -21,6 +21,7 @@ export function ouvrirBase(fichier) {
       classe TEXT NOT NULL DEFAULT '',
       avatar TEXT,
       mot_de_passe_hash TEXT NOT NULL,
+      version_session INTEGER NOT NULL DEFAULT 0,
       cree_le TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -37,6 +38,13 @@ export function ouvrirBase(fichier) {
       expire_le TEXT NOT NULL
     );
   `);
+
+  // Migration pour les bases créées avant l'ajout de version_session.
+  const colonnes = db.prepare("PRAGMA table_info(eleves)").all();
+  if (!colonnes.some((c) => c.name === 'version_session')) {
+    db.exec(
+      'ALTER TABLE eleves ADD COLUMN version_session INTEGER NOT NULL DEFAULT 0');
+  }
 
   return db;
 }

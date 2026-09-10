@@ -21,7 +21,11 @@ const corps = {
 let jeton;
 
 before(async () => {
-  const app = creerApplication({ fichierBase: ':memory:', secretJeton: 'test' });
+  const app = creerApplication({
+    fichierBase: ':memory:',
+    secretJeton: 'test',
+    limiteAuth: { max: 1000, fenetreMs: 60000 },
+  });
   await new Promise((resolve) => {
     serveur = app.listen(0, resolve);
   });
@@ -32,8 +36,8 @@ after(() => {
   serveur.close();
 });
 
-const poster = (chemin, donnees, jetonAuth) =>
-  fetch(base + chemin, {
+const poster = (chemin, donnees, jetonAuth, baseUrl = base) =>
+  fetch(baseUrl + chemin, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -78,11 +82,16 @@ test('la connexion réussit avec les bons identifiants', async () => {
   assert.equal(json.eleve.prenom, 'Haoua');
 });
 
-test('la connexion refuse un mauvais mot de passe', async () => {
-  const rep = await poster('/auth/login',
+test('la connexion refuse un mauvais mot de passe et un email inconnu', async () => {
+  const mauvais = await poster('/auth/login',
     { email: corps.email, motDePasse: 'mauvais' });
-  assert.equal(rep.status, 401);
-  assert.equal((await rep.json()).message, 'Email ou mot de passe incorrect.');
+  assert.equal(mauvais.status, 401);
+  assert.equal((await mauvais.json()).message,
+    'Email ou mot de passe incorrect.');
+
+  const inconnu = await poster('/auth/login',
+    { email: 'inconnu@example.com', motDePasse: 'nimporte' });
+  assert.equal(inconnu.status, 401);
 });
 
 test('la demande de réinitialisation répond 204, email connu ou non', async () => {
@@ -96,15 +105,26 @@ test('les routes protégées exigent un jeton', async () => {
   assert.equal((await poster('/suggestions', { message: 'coucou' })).status, 401);
 });
 
-test('le changement de mot de passe vérifie l\'ancien', async () => {
+test('le changement de mot de passe invalide l\'ancien jeton', async () => {
+  const ancienJeton = jeton;
+
   const mauvais = await poster('/auth/mot-de-passe',
     { ancien: 'mauvais', nouveau: 'nouveau123' }, jeton);
   assert.equal(mauvais.status, 400);
 
   const bon = await poster('/auth/mot-de-passe',
     { ancien: corps.motDePasse, nouveau: 'nouveau123' }, jeton);
-  assert.equal(bon.status, 204);
+  assert.equal(bon.status, 200);
+  const json = await bon.json();
+  assert.ok(json.token.length > 20);
+  jeton = json.token;
 
+  // Le jeton d'avant le changement doit être refusé...
+  const avecAncien = await poster('/suggestions',
+    { message: 'test' }, ancienJeton);
+  assert.equal(avecAncien.status, 401);
+
+  // ... et le nouveau mot de passe doit permettre de se reconnecter.
   const reconnexion = await poster('/auth/login',
     { email: corps.email, motDePasse: 'nouveau123' });
   assert.equal(reconnexion.status, 200);
@@ -135,7 +155,37 @@ test('une suggestion authentifiée est acceptée', async () => {
   assert.equal(rep.status, 204);
 });
 
-test('la déconnexion authentifiée répond 204', async () => {
+test('la déconnexion invalide le jeton', async () => {
   const rep = await poster('/auth/logout', {}, jeton);
   assert.equal(rep.status, 204);
+
+  const apres = await poster('/suggestions', { message: 'test' }, jeton);
+  assert.equal(apres.status, 401);
+});
+
+test('les routes d\'authentification sont limitées en débit', async () => {
+  const appLimitee = creerApplication({
+    fichierBase: ':memory:',
+    secretJeton: 'test',
+    limiteAuth: { max: 3, fenetreMs: 60000 },
+  });
+  const serveurLimite = await new Promise((resolve) => {
+    const s = appLimitee.listen(0, () => resolve(s));
+  });
+  const baseLimitee = `http://127.0.0.1:${serveurLimite.address().port}`;
+
+  try {
+    for (let i = 0; i < 3; i += 1) {
+      const rep = await poster('/auth/login',
+        { email: 'x@example.com', motDePasse: 'x' }, null, baseLimitee);
+      assert.equal(rep.status, 401);
+    }
+    const bloquee = await poster('/auth/login',
+      { email: 'x@example.com', motDePasse: 'x' }, null, baseLimitee);
+    assert.equal(bloquee.status, 429);
+    assert.equal((await bloquee.json()).message,
+      'Trop de tentatives, réessayez plus tard.');
+  } finally {
+    serveurLimite.close();
+  }
 });
