@@ -1,29 +1,49 @@
-
-import 'package:edugo/screens/principales/accueil/accueille.dart';
-import 'package:edugo/screens/principales/bibliotheque/bibliotheque.dart';
-import 'package:edugo/screens/principales/challenge/challenge.dart';
-import 'package:edugo/screens/principales/challenge/classement.dart';
-import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
-import 'package:edugo/screens/principales/accueil/partenaire.dart';
-import 'package:edugo/screens/principales/mainScreen.dart';
+import 'package:edugo/core/constants/constant.dart';
+import 'package:edugo/screens/main_navigation.dart';
 import 'package:flutter/material.dart';
-
-// Constantes de style pour les couleurs
-const Color _purpleMain = Color(0xFFA582E5); // Violet principal (logo, bouton, étape active)
-const Color _purpleLight = Color(0xFFF1EFFE); // Violet très clair (fond des champs)
-const Color _purpleStepInactive = Color(0xFFE8E8E8); // Gris clair pour les étapes inactives
-const String _fontFamily = 'Roboto'; // Police par défaut
 
 class RegistrationStepperScreen extends StatefulWidget {
   const RegistrationStepperScreen({super.key});
 
   @override
-  State<RegistrationStepperScreen> createState() => _RegistrationStepperScreenState();
+  State<RegistrationStepperScreen> createState() =>
+      _RegistrationStepperScreenState();
 }
 
 class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
   int _currentStep = 0;
-  late PageController _pageController;
+  late final PageController _pageController;
+
+  // Clés de formulaire par étape pour valider avant de passer à la suivante
+  final GlobalKey<FormState> _step1FormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _step2FormKey = GlobalKey<FormState>();
+
+  // Étape 1 : informations personnelles
+  final TextEditingController _nomController = TextEditingController();
+  final TextEditingController _prenomController = TextEditingController();
+  final TextEditingController _telephoneController = TextEditingController();
+  final TextEditingController _villeController = TextEditingController();
+
+  // Étape 2 : détails du compte
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _classeController = TextEditingController();
+  String? _niveauScolaire;
+  bool _obscurePassword = true;
+
+  // Étape 3 : avatar
+  int? _selectedAvatarIndex;
+
+  static const List<String> _niveaux = ['Primaire', 'Secondaire'];
+
+  static const List<String> _avatars = [
+    'assets/images/avatar1.png',
+    'assets/images/avatar2.png',
+    'assets/images/avatar3.png',
+    'assets/images/avatar4.png',
+    'assets/images/avatar5.png',
+    'assets/images/avatar6.png',
+  ];
 
   @override
   void initState() {
@@ -34,155 +54,160 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _nomController.dispose();
+    _prenomController.dispose();
+    _telephoneController.dispose();
+    _villeController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _classeController.dispose();
     super.dispose();
   }
 
-  // Fonction de navigation pour aller à l'étape suivante
-  void _nextStep() {
-    if (_currentStep < 2) {
-      setState(() {
-        _currentStep++;
-      });
-      _pageController.animateToPage(
-        _currentStep,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeIn,
-      );
-    } else {
-      // Fin du formulaire / Action d'inscription finale
-      debugPrint('Inscription Complète !');
-    }
+  void _goToStep(int step) {
+    setState(() => _currentStep = step);
+    _pageController.animateToPage(
+      step,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
-  // Fonction de navigation pour revenir à l'étape précédente
+  void _nextStep() {
+    if (_currentStep == 0 && !_step1FormKey.currentState!.validate()) return;
+    if (_currentStep == 1 && !_step2FormKey.currentState!.validate()) return;
+    if (_currentStep < 2) _goToStep(_currentStep + 1);
+  }
+
   void _previousStep() {
     if (_currentStep > 0) {
-      setState(() {
-        _currentStep--;
-      });
-      _pageController.animateToPage(
-        _currentStep,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      _goToStep(_currentStep - 1);
+    } else {
+      Navigator.pop(context);
     }
   }
 
-  // Liste des étapes (Pages)
-  List<Widget> get _steps {
-    return [
-      RegistrationStep1(onNext: _nextStep), // Inscription1.png
-      RegistrationStep2(onNext: _nextStep, onPrevious: _previousStep), // Inscription2.png
-      RegistrationStep3(onNext: _nextStep, onPrevious: _previousStep), // Inscription3.png
-    ];
+  void _submitRegistration() {
+    if (_selectedAvatarIndex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez choisir un avatar pour continuer'),
+          backgroundColor: AppConst.purpleDark,
+        ),
+      );
+      return;
+    }
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const MainNavigation()),
+      (route) => false,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // En-tête (Logo et Barre de Statut)
-          _buildHeader(context),
-          
-          // Indicateur de Progression (1, 2, 3)
-          _buildStepIndicator(),
-          
-          // Contenu des Pages (Champs/Avatars)
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(), // Désactiver le swipe
-              onPageChanged: (index) {
-                setState(() {
-                  _currentStep = index;
-                });
-              },
-              children: _steps,
-            ),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_sharp, color: AppConst.textDark),
+          onPressed: _previousStep,
+        ),
+        title: const Text(
+          'Inscription',
+          style: TextStyle(
+            color: AppConst.textDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            fontFamily: AppConst.fontFamily,
           ),
-        ],
+        ),
+        centerTitle: false,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 90,
+              fit: BoxFit.contain,
+            ),
+            _buildStepIndicator(),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (index) {
+                  setState(() => _currentStep = index);
+                },
+                children: [
+                  _buildStep1(),
+                  _buildStep2(),
+                  _buildStep3(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // Simule l'en-tête commun (Logo, Barre de Statut)
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(height: MediaQuery.of(context).size.height * 0.08),
-        
-        // Simulation de la barre de statut (20:20, icônes) - Réutilisé de la page de Connexion
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('20 : 20', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
-              const Row(
-                children: [
-                  Icon(Icons.wifi, color: Colors.black, size: 16),
-                  SizedBox(width: 4),
-                  Icon(Icons.battery_full, color: Colors.black, size: 16),
-                ],
-              ),
-            ],
-          ),
-        ),
-        
-        // Logo
-        const SizedBox(height: 10),
-        Image.asset(
-          'assets/images/logo.png', 
-          height: 100, 
-          fit: BoxFit.contain,
-        ),
-        const SizedBox(height: 30),
-      ],
-    );
-  }
-
-  // Simulateur du Stepper horizontal
+  // ----------------------------------------------------
+  // Indicateur de progression (1 — 2 — 3)
+  // ----------------------------------------------------
   Widget _buildStepIndicator() {
+    const Color inactiveColor = Color(0xFFE8E8E8);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: List.generate(3, (index) {
-          final isCompleted = index < _currentStep;
-          final isCurrent = index == _currentStep;
+          final bool isCompleted = index < _currentStep;
+          final bool isCurrent = index == _currentStep;
+          final bool isActive = isCompleted || isCurrent;
+
+          final Widget circle = AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: isActive ? AppConst.purpleButton : inactiveColor,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: isCompleted
+                ? const Icon(Icons.check, color: Colors.white, size: 18)
+                : Text(
+                    '${index + 1}',
+                    style: TextStyle(
+                      color: isActive ? Colors.white : AppConst.textGrey,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppConst.fontFamily,
+                    ),
+                  ),
+          );
+
+          if (index == 2) return circle;
           return Expanded(
             child: Row(
               children: [
-                // Numéro de l'étape
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: isCurrent || isCompleted ? _purpleMain : _purpleStepInactive,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${index + 1}',
-                    style: TextStyle(
-                      color: isCurrent || isCompleted ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                // Ligne de connexion (sauf après le dernier point)
-                if (index < 2)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Container(
-                        height: 2,
-                        color: isCompleted ? _purpleMain : _purpleStepInactive,
+                circle,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: isCompleted ? AppConst.purpleButton : inactiveColor,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
+                ),
               ],
             ),
           );
@@ -190,155 +215,180 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
       ),
     );
   }
-}
 
-// ----------------------------------------------------
-// 2. ÉTAPE 1: Informations Personnelles (Inscription1.png)
-// ----------------------------------------------------
-class RegistrationStep1 extends StatelessWidget {
-  final VoidCallback onNext;
-  const RegistrationStep1({super.key, required this.onNext});
-
-  @override
-  Widget build(BuildContext context) {
+  // ----------------------------------------------------
+  // Étape 1 : Informations personnelles
+  // ----------------------------------------------------
+  Widget _buildStep1() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildInputField(label: 'Nom de l\'enfant', hint: 'Entrer votre nom'),
-          const SizedBox(height: 25),
-          _buildInputField(label: 'Prenom de l\'enfant', hint: 'Entrer votre prenom'),
-          const SizedBox(height: 25),
-          _buildInputField(label: 'Téléphone', hint: 'Votre numéro de téléphone', keyboardType: TextInputType.phone),
-          const SizedBox(height: 25),
-          _buildInputField(label: 'Ville', hint: 'Précisez votre ville'),
-          
-          const SizedBox(height: 60),
-          _buildNextButton(text: 'Suivant', onPressed: onNext),
-          const SizedBox(height: 40),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      child: Form(
+        key: _step1FormKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTextField(
+              label: 'Nom de l\'enfant',
+              hint: 'Entrez le nom',
+              controller: _nomController,
+              prefixIcon: Icons.person_outline_rounded,
+              validator: (v) => _requiredValidator(v, 'le nom'),
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              label: 'Prénom de l\'enfant',
+              hint: 'Entrez le prénom',
+              controller: _prenomController,
+              prefixIcon: Icons.person_outline_rounded,
+              validator: (v) => _requiredValidator(v, 'le prénom'),
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              label: 'Téléphone',
+              hint: 'Votre numéro de téléphone',
+              controller: _telephoneController,
+              prefixIcon: Icons.phone_outlined,
+              keyboardType: TextInputType.phone,
+              validator: _validatePhone,
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              label: 'Ville',
+              hint: 'Précisez votre ville',
+              controller: _villeController,
+              prefixIcon: Icons.location_city_outlined,
+              validator: (v) => _requiredValidator(v, 'la ville'),
+            ),
+            const SizedBox(height: 40),
+            _buildPrimaryButton(text: 'Suivant', onPressed: _nextStep),
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }
-}
 
-// ----------------------------------------------------
-// 3. ÉTAPE 2: Détails du Compte (Inscription2.png)
-// ----------------------------------------------------
-class RegistrationStep2 extends StatelessWidget {
-  final VoidCallback onNext;
-  final VoidCallback onPrevious;
-  const RegistrationStep2({super.key, required this.onNext, required this.onPrevious});
-
-  @override
-  Widget build(BuildContext context) {
+  // ----------------------------------------------------
+  // Étape 2 : Détails du compte
+  // ----------------------------------------------------
+  Widget _buildStep2() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildInputField(
-            label: 'Adresse Email', 
-            hint: 'Entrer votre email',
-            suffixIcon: const Icon(Icons.email_outlined, color: _purpleMain), // Icône email
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 25),
-          _buildInputField(
-            label: 'Mot De Passe', 
-            hint: 'Entrer votre mot de passe', 
-            isPassword: true,
-            suffixIcon: const Icon(Icons.visibility_outlined, color: _purpleMain), // Icône œil
-          ),
-          const SizedBox(height: 25),
-          
-          // Niveau Scolaire (Simulé par un champ de texte simple pour l'aspect visuel)
-          _buildDropdownField(label: 'Niveau Scolaire de l\'enfant', hint: 'Choisir votre niveau d\'etude'),
-          const SizedBox(height: 25),
-          
-          // Classe Actuelle
-          _buildInputField(label: 'Classe actuelle de l\'enfant', hint: 'Précisez votre classe'),
-          
-          const SizedBox(height: 60),
-          _buildNextButton(text: 'Suivant', onPressed: onNext),
-          
-          // Optionnel : Bouton précédent pour plus de flexibilité
-          // TextButton(onPressed: onPrevious, child: const Text('Précédent')), 
-          const SizedBox(height: 40),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      child: Form(
+        key: _step2FormKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTextField(
+              label: 'Adresse Email',
+              hint: 'Entrez votre email',
+              controller: _emailController,
+              prefixIcon: Icons.mail_outline_rounded,
+              keyboardType: TextInputType.emailAddress,
+              validator: _validateEmail,
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              label: 'Mot De Passe',
+              hint: 'Entrez votre mot de passe',
+              controller: _passwordController,
+              prefixIcon: Icons.lock_outline_rounded,
+              obscureText: _obscurePassword,
+              validator: _validatePassword,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: AppConst.textGrey,
+                  size: 22,
+                ),
+                onPressed: () {
+                  setState(() => _obscurePassword = !_obscurePassword);
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildLabel('Niveau Scolaire de l\'enfant'),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _niveauScolaire,
+              items: _niveaux
+                  .map((n) => DropdownMenuItem(value: n, child: Text(n)))
+                  .toList(),
+              onChanged: (value) => setState(() => _niveauScolaire = value),
+              validator: (value) =>
+                  value == null ? 'Veuillez choisir un niveau' : null,
+              icon: const Icon(Icons.keyboard_arrow_down,
+                  color: AppConst.textGrey),
+              style: const TextStyle(
+                fontFamily: AppConst.fontFamily,
+                fontSize: 16,
+                color: AppConst.textDark,
+              ),
+              decoration: _inputDecoration(
+                hint: 'Choisir le niveau d\'étude',
+                prefixIcon: Icons.school_outlined,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              label: 'Classe actuelle de l\'enfant',
+              hint: 'Précisez la classe',
+              controller: _classeController,
+              prefixIcon: Icons.class_outlined,
+              validator: (v) => _requiredValidator(v, 'la classe'),
+            ),
+            const SizedBox(height: 40),
+            _buildPrimaryButton(text: 'Suivant', onPressed: _nextStep),
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }
-}
 
-// ----------------------------------------------------
-// 4. ÉTAPE 3: Choix de l'Avatar (Inscription3.png)
-// ----------------------------------------------------
-class RegistrationStep3 extends StatefulWidget {
-  final VoidCallback onNext;
-  final VoidCallback onPrevious;
-  const RegistrationStep3({super.key, required this.onNext, required this.onPrevious});
-
-  @override
-  State<RegistrationStep3> createState() => _RegistrationStep3State();
-}
-
-class _RegistrationStep3State extends State<RegistrationStep3> {
-  int? _selectedAvatarIndex;
-
-  // Liste des images d'avatars (Assurez-vous qu'elles sont dans les assets)
-  final List<String> _avatars = [
-    'assets/images/avatar1.png', // Avatar roux
-    'assets/images/avatar2.png', // Avatar asiatique homme
-    'assets/images/avatar3.png', // Avatar indienne femme
-    'assets/images/avatar4.png', // Avatar homme lunettes
-    'assets/images/avatar5.png', // Avatar femme tresse
-    'assets/images/avatar6.png', // Avatar homme lunettes jaune
-  ];
-
-  @override
-  Widget build(BuildContext context) {
+  // ----------------------------------------------------
+  // Étape 3 : Choix de l'avatar
+  // ----------------------------------------------------
+  Widget _buildStep3() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Choisissez Votre Avatar',
             style: TextStyle(
-              color: Colors.black,
+              color: AppConst.textDark,
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              fontFamily: _fontFamily,
+              fontFamily: AppConst.fontFamily,
             ),
           ),
           const SizedBox(height: 25),
-          
-          // Grille des Avatars
           Expanded(
             child: GridView.builder(
               padding: EdgeInsets.zero,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3, // 3 avatars par ligne
+                crossAxisCount: 3,
                 crossAxisSpacing: 10.0,
                 mainAxisSpacing: 20.0,
-                childAspectRatio: 0.75, // Ajustement pour la forme des avatars
+                childAspectRatio: 0.75,
               ),
               itemCount: _avatars.length,
               itemBuilder: (context, index) {
+                final bool isSelected = _selectedAvatarIndex == index;
                 return GestureDetector(
                   onTap: () {
-                    setState(() {
-                      _selectedAvatarIndex = index;
-                    });
+                    setState(() => _selectedAvatarIndex = index);
                   },
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
-                      // Bordure violette pour l'avatar sélectionné
-                      border: _selectedAvatarIndex == index
-                          ? Border.all(color: _purpleMain, width: 4.0)
-                          : null,
+                      border: isSelected
+                          ? Border.all(color: AppConst.purpleButton, width: 4.0)
+                          : Border.all(color: Colors.transparent, width: 4.0),
                       borderRadius: BorderRadius.circular(15.0),
                     ),
                     child: ClipRRect(
@@ -353,159 +403,163 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
               },
             ),
           ),
-          
-          // Bouton "S'inscrire"
-          _buildNextButton(text: 'S\'inscrire', onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) =>  MainScreen()),
-    );
-  },),
+          _buildPrimaryButton(text: 'S\'inscrire', onPressed: _submitRegistration),
           const SizedBox(height: 40),
         ],
       ),
     );
   }
+
+  // ----------------------------------------------------
+  // Widgets et validateurs communs
+  // ----------------------------------------------------
+  String? _requiredValidator(String? value, String champ) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Veuillez entrer $champ';
+    }
+    return null;
+  }
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Veuillez entrer le numéro de téléphone';
+    }
+    final String digits = value.replaceAll(RegExp(r'[\s\-\+]'), '');
+    if (digits.length < 8 || !RegExp(r'^\d+$').hasMatch(digits)) {
+      return 'Numéro de téléphone invalide';
+    }
+    return null;
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Veuillez entrer votre adresse email';
+    }
+    final RegExp emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(value.trim())) {
+      return 'Adresse email invalide';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un mot de passe';
+    }
+    if (value.length < 6) {
+      return 'Le mot de passe doit contenir au moins 6 caractères';
+    }
+    return null;
+  }
+
+  Widget _buildLabel(String label) {
+    return Text(
+      label,
+      style: const TextStyle(
+        color: AppConst.textDark,
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        fontFamily: AppConst.fontFamily,
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String hint,
+    required IconData prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(
+        color: AppConst.textGrey,
+        fontSize: 15,
+        fontFamily: AppConst.fontFamily,
+      ),
+      prefixIcon: Icon(prefixIcon, color: AppConst.purpleButton, size: 22),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: AppConst.purpleInputFill,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(color: AppConst.purpleButton, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required IconData prefixIcon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
+          validator: validator,
+          style: const TextStyle(
+            fontFamily: AppConst.fontFamily,
+            fontSize: 16,
+            color: AppConst.textDark,
+          ),
+          decoration: _inputDecoration(
+            hint: hint,
+            prefixIcon: prefixIcon,
+            suffixIcon: suffixIcon,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPrimaryButton(
+      {required String text, required VoidCallback onPressed}) {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppConst.purpleButton,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15.0),
+          ),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: AppConst.fontFamily,
+          ),
+        ),
+      ),
+    );
+  }
 }
-
-// ----------------------------------------------------
-// 5. WIDGETS UTILITAIRES (Communs aux étapes)
-// ----------------------------------------------------
-
-// Widget pour les champs de saisie (commun à toutes les pages)
-Widget _buildInputField({
-  required String label,
-  required String hint,
-  bool isPassword = false,
-  Widget? suffixIcon,
-  TextInputType keyboardType = TextInputType.text,
-}) {
-  const Color borderColor = Color(0xFFD1C4E9); // Bordure douce violette
-  const Color fillColor = Color(0xFFF5F5F5);   // Fond gris clair
-
-  final OutlineInputBorder borderStyle = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(12),
-    borderSide: const BorderSide(
-      color: borderColor,
-      width: 1.0,
-    ),
-  );
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: const TextStyle(
-          color: Colors.black,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          fontFamily: _fontFamily,
-        ),
-      ),
-      const SizedBox(height: 8),
-      TextField(
-        obscureText: isPassword,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.grey),
-          filled: true,
-          fillColor: fillColor,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          suffixIcon: suffixIcon,
-          enabledBorder: borderStyle,
-          focusedBorder: borderStyle,
-          border: borderStyle,
-        ),
-      ),
-    ],
-  );
-}
-
-
-// Widget pour simuler le champ de sélection (Dropdown)
-Widget _buildDropdownField({
-  required String label,
-  required String hint,
-}) {
-  const Color borderColor = Color(0xFFD1C4E9);
-  const Color fillColor = Color(0xFFF5F5F5);
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: const TextStyle(
-          color: Colors.black,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          fontFamily: _fontFamily,
-        ),
-      ),
-      const SizedBox(height: 8),
-      Container(
-        decoration: BoxDecoration(
-          color: fillColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1.0),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        height: 55,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              hint,
-              style: const TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-            const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-          ],
-        ),
-      ),
-    ],
-  );
-}
-
-
-// Widget pour le bouton "Suivant" ou "S'inscrire"
-Widget _buildNextButton({required String text, required VoidCallback onPressed}) {
-  return SizedBox(
-    width: double.infinity,
-    height: 55,
-    child: ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: _purpleMain,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15.0), 
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 15),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          fontFamily: _fontFamily,
-        ),
-      ),
-    ),
-  );
-}
-
-// ----------------------------------------------------
-// Point d'entrée pour le test :
-// ----------------------------------------------------
-/*
-void main() {
-  // Assurez-vous d'avoir configuré vos assets avant d'exécuter
-  runApp(const MaterialApp(
-    home: RegistrationStepperScreen(),
-    debugShowCheckedModeBanner: false,
-  ));
-}
-*/
