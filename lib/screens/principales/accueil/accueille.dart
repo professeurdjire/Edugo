@@ -1,6 +1,7 @@
 import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/screens/conversionData/listeConversion.dart';
 import 'package:edugo/screens/principales/accueil/activiteRecente.dart';
+import 'package:edugo/screens/principales/accueil/badges.dart';
 import 'package:edugo/screens/principales/accueil/notification.dart';
 import 'package:edugo/screens/principales/accueil/partenaire.dart';
 import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
@@ -33,15 +34,21 @@ class CurrentReading {
   const CurrentReading({required this.title, this.author, required this.progress});
 }
 
-class HomeScreen extends StatelessWidget {
-   const HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
 
   // Données simulées (tirées des images précédentes)
   final String _userName = 'Haoua Haïdara';
   final int _userPoints = 1000;
   final double _dailyChallengeProgress = 1.0;
   final int _booksRead = 3;
-  final int _totalBooksGoal = 5;
+  int _totalBooksGoal = 5;
   final int _daysRemaining = 3;
 
   final List<Map<String, dynamic>> _recentActivities = const [
@@ -56,6 +63,70 @@ class HomeScreen extends StatelessWidget {
     CurrentReading(title: 'Le jardin invisible', progress: 0.45),
     CurrentReading(title: 'Le coeur se souvient', progress: 0.25),
   ];
+
+  void _showGoalDialog() {
+    int goal = _totalBooksGoal;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text(
+            'Objectif hebdomadaire',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: AppConst.fontFamily,
+            ),
+          ),
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.remove_circle_outline,
+                    color: _purpleMain, size: 32),
+                onPressed:
+                    goal > 1 ? () => setDialogState(() => goal--) : null,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '$goal livre${goal > 1 ? 's' : ''}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppConst.textDark,
+                    fontFamily: AppConst.fontFamily,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline,
+                    color: _purpleMain, size: 32),
+                onPressed:
+                    goal < 30 ? () => setDialogState(() => goal++) : null,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Annuler',
+                  style: TextStyle(color: AppConst.textGrey)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                setState(() => _totalBooksGoal = goal);
+              },
+              child: const Text('Valider',
+                  style: TextStyle(
+                      color: _purpleMain, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -442,7 +513,7 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Objectifs de Lectures', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: const Text('Définir un objectif', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
+            TextButton(onPressed: _showGoalDialog, child: const Text('Définir un objectif', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
           ],
         ),
         const SizedBox(height: 10),
@@ -501,7 +572,19 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Succès et Badges', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
+            TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const BadgesScreen()),
+                  );
+                },
+                child: const Text('Voir tout',
+                    style: TextStyle(
+                        color: _purpleMain,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500))),
           ],
         ),
         const SizedBox(height: 15),
