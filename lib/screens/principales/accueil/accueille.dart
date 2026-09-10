@@ -1,5 +1,7 @@
 import 'package:edugo/core/constants/constant.dart';
+import 'package:edugo/screens/conversionData/listeConversion.dart';
 import 'package:edugo/screens/principales/accueil/activiteRecente.dart';
+import 'package:edugo/screens/principales/accueil/notification.dart';
 import 'package:edugo/screens/principales/accueil/partenaire.dart';
 import 'package:edugo/screens/principales/bibliotheque/mesLectures.dart';
 import 'package:flutter/material.dart';
@@ -332,22 +334,45 @@ class HomeScreen extends StatelessWidget {
                 ),
                 Column(
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          '$_userPoints',
-                          style: const TextStyle(
-                            color: _colorWhite,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const PointExchangeScreen()),
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          Text(
+                            '$_userPoints',
+                            style: const TextStyle(
+                              color: _colorWhite,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.star, color: _colorGold, size: 20),
-                        const SizedBox(width: 10),
-                      ],
+                          const SizedBox(width: 4),
+                          const Icon(Icons.star, color: _colorGold, size: 20),
+                          const SizedBox(width: 10),
+                        ],
+                      ),
                     ),
-                    const Icon(Icons.notifications, color: _colorGold, size: 24),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.notifications,
+                          color: _colorGold, size: 24),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const NotificationScreen()),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ],
@@ -499,9 +524,19 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Activité Récentes', style: TextStyle(color: _colorBlack, fontSize: 20, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {
-
-            }, child: const Text('Voir tout', style: TextStyle(color: _purpleMain, fontSize: 14, fontWeight: FontWeight.w500))),
+            TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const RecentActivitiesScreen()),
+                  );
+                },
+                child: const Text('Voir tout',
+                    style: TextStyle(
+                        color: _purpleMain,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500))),
           ],
         ),
         const SizedBox(height: 15),

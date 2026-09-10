@@ -1,5 +1,6 @@
 import 'package:edugo/core/widgets/widgets.dart';
 import 'package:edugo/core/constants/constant.dart';
+import 'package:edugo/models/eleve.dart';
 import 'package:edugo/screens/main_navigation.dart';
 import 'package:flutter/material.dart';
 
@@ -98,6 +99,19 @@ class _RegistrationStepperScreenState extends State<RegistrationStepperScreen> {
       );
       return;
     }
+    final Eleve eleve = Eleve(
+      nom: _nomController.text.trim(),
+      prenom: _prenomController.text.trim(),
+      telephone: _telephoneController.text.trim(),
+      ville: _villeController.text.trim(),
+      email: _emailController.text.trim(),
+      niveauScolaire: _niveauScolaire ?? '',
+      classe: _classeController.text.trim(),
+      avatar: _avatars[_selectedAvatarIndex!],
+    );
+    // TODO: envoyer `eleve` (et le mot de passe) à l'API d'inscription
+    // (voir issue #3), puis naviguer seulement après une réponse valide.
+    debugPrint('Inscription prête à envoyer : ${eleve.toJson()}');
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const MainNavigation()),
