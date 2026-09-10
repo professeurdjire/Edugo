@@ -1,6 +1,6 @@
+import 'package:edugo/core/constants/constant.dart';
+import 'package:edugo/screens/profil/reenitialiserMotDePasse/succesReenitialisation.dart';
 import 'package:flutter/material.dart';
-
-// Vous pouvez nommer ce fichier 'nouveauMotDePasse.dart'
 
 class NouveauMotPasse extends StatefulWidget {
   const NouveauMotPasse({super.key});
@@ -10,43 +10,104 @@ class NouveauMotPasse extends StatefulWidget {
 }
 
 class _NouveauMotPasseState extends State<NouveauMotPasse> {
-  // Variables d'état pour masquer/afficher les mots de passe
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
   bool _isNewPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
-  // Placeholder colors pour correspondre au design
-  final Color primaryPurple = const Color(0xFFA885D8);
-  final Color lightPurple = const Color(0xFFF3EDFC);
-  final Color iconColor = const Color(0xFF7042C9);
-  final Color inputFillColor = const Color(0xFFF8F8F8); // fond clair pour les champs
+  @override
+  void dispose() {
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
-  // Fonction de construction des champs de mot de passe
+  String? _validateNewPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un mot de passe';
+    }
+    if (value.length < 6) {
+      return 'Le mot de passe doit contenir au moins 6 caractères';
+    }
+    return null;
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez confirmer le mot de passe';
+    }
+    if (value != _newPasswordController.text) {
+      return 'Les mots de passe ne correspondent pas';
+    }
+    return null;
+  }
+
+  void _handleSubmit() {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const SuccesReenitialisation()),
+    );
+  }
+
   Widget _buildPasswordField({
+    required TextEditingController controller,
     required String hintText,
     required bool isVisible,
     required VoidCallback onVisibilityToggle,
+    required String? Function(String?) validator,
   }) {
-    return TextField(
+    return TextFormField(
+      controller: controller,
       obscureText: !isVisible,
+      validator: validator,
+      style: const TextStyle(
+        fontFamily: AppConst.fontFamily,
+        fontSize: 16,
+        color: AppConst.textDark,
+      ),
       decoration: InputDecoration(
         hintText: hintText,
-        filled: true,
-        fillColor: inputFillColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        hintStyle: const TextStyle(
+          color: AppConst.textGrey,
+          fontSize: 15,
+          fontFamily: AppConst.fontFamily,
+        ),
+        prefixIcon: const Icon(Icons.lock_outline_rounded,
+            color: AppConst.purpleButton, size: 22),
         suffixIcon: IconButton(
           icon: Icon(
-            isVisible ? Icons.visibility : Icons.visibility_off,
-            color: Colors.grey,
+            isVisible
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+            color: AppConst.textGrey,
+            size: 22,
           ),
           onPressed: onVisibilityToggle,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+        filled: true,
+        fillColor: AppConst.purpleInputFill,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: primaryPurple, width: 1.5),
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: const BorderSide(color: AppConst.purpleButton, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
         ),
       ),
     );
@@ -56,120 +117,118 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // App Bar
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back_ios_sharp, color: AppConst.textDark),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Nouveau mot de passe',
           style: TextStyle(
-            color: Colors.black,
+            color: AppConst.textDark,
             fontWeight: FontWeight.bold,
             fontSize: 20,
+            fontFamily: AppConst.fontFamily,
           ),
         ),
         centerTitle: false,
       ),
-
-      // Corps de la page
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            // Icône du cadenas
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 40),
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: lightPurple,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.lock_reset,
-                    size: 70,
-                    color: iconColor,
+        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 40),
+                  width: 140,
+                  height: 140,
+                  decoration: const BoxDecoration(
+                    color: AppConst.purpleInputFill,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.lock_reset,
+                      size: 70,
+                      color: AppConst.purpleDark,
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // Champ : Nouveau mot de passe
-            const Text(
-              'Nouveau mot de passe',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
+              const Text(
+                'Nouveau mot de passe',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppConst.textDark,
+                  fontFamily: AppConst.fontFamily,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            _buildPasswordField(
-              hintText: '......',
-              isVisible: _isNewPasswordVisible,
-              onVisibilityToggle: () {
-                setState(() {
-                  _isNewPasswordVisible = !_isNewPasswordVisible;
-                });
-              },
-            ),
-            const SizedBox(height: 30),
-
-            // Champ : Confirmer le mot de passe
-            const Text(
-              'Confirmer le mot de passe',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildPasswordField(
-              hintText: '......',
-              isVisible: _isConfirmPasswordVisible,
-              onVisibilityToggle: () {
-                setState(() {
-                  _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-                });
-              },
-            ),
-            const SizedBox(height: 70),
-
-            // Bouton : Réinitialiser mot de passe
-            SizedBox(
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () {
-                  print('Réinitialiser mot de passe button pressed');
+              const SizedBox(height: 8),
+              _buildPasswordField(
+                controller: _newPasswordController,
+                hintText: 'Entrez le nouveau mot de passe',
+                isVisible: _isNewPasswordVisible,
+                validator: _validateNewPassword,
+                onVisibilityToggle: () {
+                  setState(
+                      () => _isNewPasswordVisible = !_isNewPasswordVisible);
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryPurple,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  elevation: 0,
+              ),
+              const SizedBox(height: 25),
+
+              const Text(
+                'Confirmer le mot de passe',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppConst.textDark,
+                  fontFamily: AppConst.fontFamily,
                 ),
-                child: const Text(
-                  'Réinitialiser mot de passe',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+              ),
+              const SizedBox(height: 8),
+              _buildPasswordField(
+                controller: _confirmPasswordController,
+                hintText: 'Confirmez le mot de passe',
+                isVisible: _isConfirmPasswordVisible,
+                validator: _validateConfirmPassword,
+                onVisibilityToggle: () {
+                  setState(() =>
+                      _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
+                },
+              ),
+              const SizedBox(height: 60),
+
+              SizedBox(
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: _handleSubmit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConst.purpleButton,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.0),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Réinitialiser mot de passe',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppConst.fontFamily,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

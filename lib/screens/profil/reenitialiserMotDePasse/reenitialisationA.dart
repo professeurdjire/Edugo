@@ -1,160 +1,255 @@
+import 'package:edugo/core/constants/constant.dart';
+import 'package:edugo/screens/profil/reenitialiserMotDePasse/nouveauMotDePasse.dart';
 import 'package:flutter/material.dart';
 
-
-class MotPasseOublieA extends StatelessWidget {
+class MotPasseOublieA extends StatefulWidget {
   const MotPasseOublieA({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    //  Définition des couleurs utilisées sur l’écran
-    final Color primaryPurple = const Color(0xFFA885D8); // Violet principal (utilisé pour le bouton)
-    final Color lightPurple = const Color(0xFFF3EDFC);   // Violet clair (fond du cercle de l’icône)
-    final Color iconColor = const Color(0xFF7042C9);     // Couleur du cadenas
+  State<MotPasseOublieA> createState() => _MotPasseOublieAState();
+}
 
+class _MotPasseOublieAState extends State<MotPasseOublieA> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+
+  // Passe à true une fois le lien de réinitialisation « envoyé »
+  bool _emailSent = false;
+
+  // Couleurs du message de succès
+  static const Color _successBackground = Color(0xFFE6FAE7);
+  static const Color _successForeground = Color(0xFF1E8C23);
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Veuillez entrer votre adresse email';
+    }
+    final RegExp emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(value.trim())) {
+      return 'Adresse email invalide';
+    }
+    return null;
+  }
+
+  void _handleSubmit() {
+    FocusScope.of(context).unfocus();
+    if (!_emailSent) {
+      if (!_formKey.currentState!.validate()) return;
+      // Simulation de l'envoi du lien en attendant le branchement de l'API
+      setState(() => _emailSent = true);
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const NouveauMotPasse()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // Barre supérieure (AppBar)
       appBar: AppBar(
-        // Fond blanc pour un design épuré
         backgroundColor: Colors.white,
-        elevation: 0, // Supprime l’ombre sous la barre
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_sharp, color: Colors.black),
-          onPressed: () {
-            // Retour à l’écran précédent
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back_ios_sharp, color: AppConst.textDark),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Mot De Passe Oublié',
           style: TextStyle(
-            color: Colors.black,
+            color: AppConst.textDark,
             fontWeight: FontWeight.bold,
             fontSize: 20,
+            fontFamily: AppConst.fontFamily,
           ),
         ),
-        centerTitle: false, // Le titre est aligné à gauche
+        centerTitle: false,
       ),
-
-      // Corps principal de l’écran
       body: SingleChildScrollView(
-        // Permet de scroller si le contenu dépasse la taille de l’écran
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            // Section de l’icône (cadenas)
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 40),
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: lightPurple, // Cercle violet clair en fond
-                  shape: BoxShape.circle,
+        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              // Bannière de succès après l'envoi du lien
+              if (_emailSent)
+                Container(
+                  padding: const EdgeInsets.all(16.0),
+                  margin: const EdgeInsets.only(top: 16.0),
+                  decoration: BoxDecoration(
+                    color: _successBackground,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.check_circle_outline,
+                          color: _successForeground, size: 24),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'E-mail envoyé !',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: _successForeground,
+                                fontFamily: AppConst.fontFamily,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Un lien pour réinitialiser votre mot de passe a été envoyé. Pensez à vérifier votre dossier de spams.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: _successForeground,
+                                height: 1.4,
+                                fontFamily: AppConst.fontFamily,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.lock_reset, // Icône de réinitialisation du mot de passe
-                    size: 70,
-                    color: iconColor,
+
+              // Icône du cadenas
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 40),
+                  width: 140,
+                  height: 140,
+                  decoration: const BoxDecoration(
+                    color: AppConst.purpleInputFill,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.lock_reset,
+                      size: 70,
+                      color: AppConst.purpleDark,
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // Titre et description
-            const Text(
-              'Réinitialiser votre mot de passe',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+              const Text(
+                'Réinitialiser votre mot de passe',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppConst.textDark,
+                  fontFamily: AppConst.fontFamily,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Veuillez entrer votre adresse e-mail pour recevoir un code de vérification.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+              const SizedBox(height: 12),
+              const Text(
+                'Veuillez entrer votre adresse e-mail pour recevoir un lien de réinitialisation.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppConst.textGrey,
+                  fontFamily: AppConst.fontFamily,
+                ),
               ),
-            ),
-            const SizedBox(height: 40),
+              const SizedBox(height: 40),
 
-            // Label du champ d’e-mail
-            const Text(
-              'Adresse Email',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
+              const Text(
+                'Adresse Email',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppConst.textDark,
+                  fontFamily: AppConst.fontFamily,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-
-            // Champ de saisie pour l’adresse e-mail
-            TextFormField(
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                hintText: 'Entrer votre email',
-                hintStyle: const TextStyle(color: Colors.grey),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                // Style des bordures du champ
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                validator: _validateEmail,
+                enabled: !_emailSent,
+                onFieldSubmitted: (_) => _handleSubmit(),
+                style: const TextStyle(
+                  fontFamily: AppConst.fontFamily,
+                  fontSize: 16,
+                  color: AppConst.textDark,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: primaryPurple, width: 2),
-                ),
-                // Icône à droite du champ
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.only(right: 15.0),
-                  child: Icon(
-                    Icons.email_outlined,
-                    color: Colors.grey.shade400,
+                decoration: InputDecoration(
+                  hintText: 'Entrez votre email',
+                  hintStyle: const TextStyle(
+                    color: AppConst.textGrey,
+                    fontSize: 15,
+                    fontFamily: AppConst.fontFamily,
                   ),
-                ),
-                fillColor: Colors.white,
-                filled: true, // Fond blanc dans le champ
-              ),
-            ),
-            const SizedBox(height: 50),
-
-            // Bouton d’envoi du lien de réinitialisation
-            SizedBox(
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Action du bouton (à remplacer par un appel API plus tard)
-                  print('Bouton "Envoyer le lien" pressé');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryPurple, // Couleur de fond violette
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  prefixIcon: const Icon(Icons.mail_outline_rounded,
+                      color: AppConst.purpleButton, size: 22),
+                  filled: true,
+                  fillColor: AppConst.purpleInputFill,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 16.0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide.none,
                   ),
-                  elevation: 0, // Pas d’ombre
-                ),
-                child: const Text(
-                  'Envoyer le lien de réinitialisation',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: const BorderSide(
+                        color: AppConst.purpleButton, width: 1.5),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide:
+                        const BorderSide(color: Colors.redAccent, width: 1.2),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide:
+                        const BorderSide(color: Colors.redAccent, width: 1.5),
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 50),
+
+              SizedBox(
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: _handleSubmit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConst.purpleButton,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.0),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _emailSent
+                        ? 'Continuer'
+                        : 'Envoyer le lien de réinitialisation',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppConst.fontFamily,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
