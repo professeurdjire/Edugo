@@ -29,7 +29,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _selectedNiveau;
 
   Eleve? _eleve;
+  String? _avatar;
   bool _isSaving = false;
+
+  // Mêmes avatars que l'inscription
+  static const List<String> _avatars = [
+    'assets/images/avatar1.png',
+    'assets/images/avatar2.png',
+    'assets/images/avatar3.png',
+    'assets/images/avatar4.png',
+    'assets/images/avatar5.png',
+    'assets/images/avatar6.png',
+  ];
 
   @override
   void initState() {
@@ -49,6 +60,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (eleve == null || !mounted) return;
     setState(() {
       _eleve = eleve;
+      _avatar = eleve.avatar;
       _nomController.text = eleve.nom;
       _prenomController.text = eleve.prenom;
       _telephoneController.text = eleve.telephone;
@@ -103,7 +115,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       email: _emailController.text.trim(),
       niveauScolaire: _selectedNiveau ?? '',
       classe: _classeController.text.trim(),
-      avatar: _eleve?.avatar,
+      avatar: _avatar ?? _eleve?.avatar,
     );
 
     setState(() => _isSaving = true);
@@ -179,27 +191,93 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _buildProfileHeader() {
     return Center(
-      child: Stack(
-        alignment: Alignment.bottomRight,
-        children: [
-          const CircleAvatar(
-            radius: 50,
-            backgroundColor: AppConst.purpleInputFill,
-            backgroundImage: AssetImage('assets/images/avatar1.png'),
-          ),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
+      child: GestureDetector(
+        onTap: _pickAvatar,
+        child: Stack(
+          alignment: Alignment.bottomRight,
+          children: [
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: AppConst.purpleInputFill,
+              backgroundImage:
+                  AssetImage(_avatar ?? 'assets/images/avatar1.png'),
             ),
-            child: const Icon(
-              Icons.edit,
-              color: AppConst.purpleButton,
-              size: 20,
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.edit,
+                color: AppConst.purpleButton,
+                size: 20,
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Feuille de sélection d'avatar (mêmes choix qu'à l'inscription).
+  void _pickAvatar() {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Choisissez votre avatar',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppConst.textDark,
+                  fontFamily: AppConst.fontFamily,
+                ),
+              ),
+              const SizedBox(height: 16),
+              GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.9,
+                children: _avatars.map((path) {
+                  final bool isSelected = path == _avatar;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _avatar = path);
+                      Navigator.pop(sheetContext);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isSelected
+                              ? AppConst.purpleButton
+                              : Colors.transparent,
+                          width: 3,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: Image.asset(path, fit: BoxFit.cover),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
