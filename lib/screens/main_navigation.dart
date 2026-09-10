@@ -1,3 +1,4 @@
+import 'package:edugo/core/constants/constant.dart';
 import 'package:flutter/material.dart';
 import 'package:edugo/screens/principales/accueil/accueille.dart';
 import 'package:edugo/screens/principales/bibliotheque/bibliotheque.dart';
@@ -38,15 +39,24 @@ class _MainNavigationState extends State<MainNavigation> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFFA885D8),
-        unselectedItemColor: Colors.black,
+        selectedItemColor: AppConst.purpleButton,
+        unselectedItemColor: AppConst.textGrey,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontFamily: AppConst.fontFamily,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontFamily: AppConst.fontFamily,
+        ),
         onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Bibliotheque'),
-          BottomNavigationBarItem(icon: Icon(Icons.emoji_events_outlined), label: 'Challenge'),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Bibliothèque'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.emoji_events_outlined), label: 'Challenge'),
           BottomNavigationBarItem(icon: Icon(Icons.checklist), label: 'Exercice'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Assistance'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline), label: 'Assistance'),
         ],
       ),
     );
