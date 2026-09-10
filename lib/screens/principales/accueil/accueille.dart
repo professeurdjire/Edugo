@@ -583,7 +583,7 @@ class _RecommendationCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               // Simuler une image de couverture
               image: const DecorationImage(
-                image: AssetImage('assets/book_cover_placeholder.png'),
+                image: AssetImage('assets/images/book1.png'),
                 fit: BoxFit.cover,
               ),
             ),
