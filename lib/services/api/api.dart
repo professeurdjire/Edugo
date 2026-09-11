@@ -90,10 +90,12 @@ class AuthService {
     }
   }
 
-  Map<String, dynamic> _decode(http.Response response) {
+  /// [message401] adapte le message d'un 401 au contexte de l'appel
+  /// (identifiants pour le login, session expirée ailleurs).
+  Map<String, dynamic> _decode(http.Response response,
+      {String message401 = 'Email ou mot de passe incorrect.'}) {
     if (response.statusCode == 401) {
-      throw const ApiException('Email ou mot de passe incorrect.',
-          statusCode: 401);
+      throw ApiException(message401, statusCode: 401);
     }
     if (response.statusCode >= 400) {
       String message = 'Une erreur est survenue (${response.statusCode}).';
@@ -247,7 +249,8 @@ class AuthService {
           _uri('/livres'),
           headers: await _headers(auth: true),
         ));
-    final dynamic liste = _decode(response)['livres'];
+    final dynamic liste = _decode(response,
+        message401: 'Session expirée, reconnectez-vous.')['livres'];
     if (liste is! List) return const [];
     return liste
         .whereType<Map<String, dynamic>>()

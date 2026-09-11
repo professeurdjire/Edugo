@@ -55,6 +55,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
         _errorMessage = e.message;
         _isLoading = false;
       });
+    } catch (_) {
+      // Réponse inattendue (JSON invalide…) : ne pas laisser le
+      // chargement tourner indéfiniment.
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Impossible de charger les livres. Réessayez.';
+        _isLoading = false;
+      });
     }
   }
 
