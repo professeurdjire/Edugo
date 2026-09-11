@@ -82,8 +82,10 @@ docker compose up -d --build
 curl http://localhost:3000/sante        # {"ok":true}
 ```
 
-Placez ensuite un reverse proxy HTTPS (Caddy, Nginx + certbot…) devant
-le port 3000 — l'application mobile doit parler à l'API **en HTTPS**.
+Le port 3000 n'est publié que sur la boucle locale (`127.0.0.1`) : l'API
+n'est pas joignable en HTTP clair depuis Internet. Placez un reverse
+proxy HTTPS sur l'hôte (Caddy, Nginx + certbot…) devant
+`127.0.0.1:3000` — l'application mobile doit parler à l'API **en HTTPS**.
 
 ### Sur un hébergeur de conteneurs (Render, Railway, Fly.io…)
 
