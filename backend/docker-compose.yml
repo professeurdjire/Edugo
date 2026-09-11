@@ -1,0 +1,21 @@
+# Déploiement simple sur un serveur (VPS) :
+#   JWT_SECRET="$(openssl rand -hex 32)"   # à générer UNE fois, puis conserver
+#   echo "JWT_SECRET=$JWT_SECRET" > .env
+#   docker compose up -d --build
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      # Boucle locale uniquement : seul le reverse proxy HTTPS de l'hôte
+      # doit atteindre l'API (jamais d'HTTP clair exposé sur Internet).
+      - "127.0.0.1:3000:3000"
+    environment:
+      # Obligatoire en production : sans lui, un secret aléatoire est généré
+      # à chaque démarrage et toutes les sessions sont invalidées.
+      JWT_SECRET: ${JWT_SECRET:?Définissez JWT_SECRET (ex. openssl rand -hex 32)}
+    volumes:
+      - edugo-data:/data
+
+volumes:
+  edugo-data:
