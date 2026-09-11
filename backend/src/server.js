@@ -44,8 +44,13 @@ function creerLimiteur({ max, fenetreMs }) {
  *
  * `limiteAuth` ({max, fenetreMs}) règle le limiteur de débit des routes
  * d'authentification (30 requêtes / 15 min par IP par défaut).
+ *
+ * `envoyerCodeReinitialisation` (async (email, code) => …) envoie le code
+ * de réinitialisation ; null pour ne rien envoyer (le code reste en base).
  */
-export function creerApplication({ fichierBase, secretJeton, limiteAuth }) {
+export function creerApplication({
+  fichierBase, secretJeton, limiteAuth, envoyerCodeReinitialisation = null,
+}) {
   const db = ouvrirBase(fichierBase);
   const app = express();
   app.use(cors());
@@ -154,7 +159,7 @@ export function creerApplication({ fichierBase, secretJeton, limiteAuth }) {
 
   // POST /auth/mot-de-passe/oubli {email} -> 204
   // Répond toujours 204 pour ne pas révéler quels emails existent.
-  app.post('/auth/mot-de-passe/oubli', limiter, (req, res) => {
+  app.post('/auth/mot-de-passe/oubli', limiter, async (req, res) => {
     const { email } = req.body ?? {};
     if (typeof email === 'string' && chercherParEmail.get(email.trim())) {
       const code = crypto.randomInt(100000, 1000000).toString();
@@ -165,11 +170,50 @@ export function creerApplication({ fichierBase, secretJeton, limiteAuth }) {
       db.prepare(
         'INSERT INTO reinitialisations (email, code, expire_le) VALUES (?, ?, ?)')
         .run(email.trim(), code, expire);
-      // TODO: envoyer le code par e-mail (service d'envoi à brancher).
       // Le code n'est jamais journalisé : il vit uniquement dans la table
-      // reinitialisations, avec une expiration.
+      // reinitialisations (expiration 30 min) et dans l'e-mail envoyé.
+      if (envoyerCodeReinitialisation) {
+        try {
+          await envoyerCodeReinitialisation(email.trim(), code);
+        } catch {
+          // La réponse reste 204 : ne pas révéler l'échec d'envoi (et donc
+          // l'existence du compte) ; l'erreur est signalée sans le code.
+          console.error("[EDUGO] Échec d'envoi de l'e-mail de réinitialisation.");
+        }
+      }
       console.log('[EDUGO] Demande de réinitialisation traitée.');
     }
+    return res.status(204).end();
+  });
+
+  // POST /auth/mot-de-passe/reinitialiser {email, code, nouveau} -> 204
+  // Consomme le code reçu par e-mail : mot de passe remplacé, code effacé,
+  // jetons existants invalidés (version de session incrémentée).
+  app.post('/auth/mot-de-passe/reinitialiser', limiter, async (req, res) => {
+    const { email, code, nouveau } = req.body ?? {};
+    if (typeof nouveau !== 'string' || nouveau.length < 6) {
+      return res.status(400).json({
+        message: 'Le mot de passe doit contenir au moins 6 caractères.',
+      });
+    }
+    const demande =
+      typeof email === 'string' && typeof code === 'string'
+        ? db.prepare(
+            'SELECT * FROM reinitialisations WHERE email = ? AND code = ?')
+          .get(email.trim(), code.trim())
+        : null;
+    const eleve =
+      typeof email === 'string' ? chercherParEmail.get(email.trim()) : null;
+    if (!demande || !eleve ||
+        new Date(demande.expire_le).getTime() <= Date.now()) {
+      return res.status(400).json({ message: 'Code invalide ou expiré.' });
+    }
+    const hash = await bcrypt.hash(nouveau, TOURS_BCRYPT);
+    db.prepare('UPDATE eleves SET mot_de_passe_hash = ? WHERE id = ?')
+      .run(hash, eleve.id);
+    incrementerVersion.run(eleve.id);
+    db.prepare('DELETE FROM reinitialisations WHERE email = ?')
+      .run(email.trim());
     return res.status(204).end();
   });
 

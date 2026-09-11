@@ -1,10 +1,15 @@
 import 'package:edugo/core/widgets/widgets.dart';
 import 'package:edugo/core/constants/constant.dart';
 import 'package:edugo/screens/profil/reenitialiserMotDePasse/succesReenitialisation.dart';
+import 'package:edugo/services/api/api.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class NouveauMotPasse extends StatefulWidget {
-  const NouveauMotPasse({super.key});
+  /// Adresse e-mail à laquelle le code à 6 chiffres a été envoyé.
+  final String email;
+
+  const NouveauMotPasse({super.key, required this.email});
 
   @override
   State<NouveauMotPasse> createState() => _NouveauMotPasseState();
@@ -12,18 +17,31 @@ class NouveauMotPasse extends StatefulWidget {
 
 class _NouveauMotPasseState extends State<NouveauMotPasse> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _codeController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
   bool _isNewPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
+    _codeController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  String? _validateCode(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Veuillez entrer le code reçu par e-mail';
+    }
+    if (!RegExp(r'^\d{6}$').hasMatch(value.trim())) {
+      return 'Le code contient 6 chiffres';
+    }
+    return null;
   }
 
   String? _validateNewPassword(String? value) {
@@ -46,12 +64,28 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
     return null;
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    // TODO(issue #3) : la réinitialisation réelle exige le code/jeton reçu
-    // par e-mail (lien profond) ; à brancher quand le backend enverra le
-    // lien. En attendant, l'écran illustre le parcours.
+    setState(() => _isSubmitting = true);
+    try {
+      // En mode démo l'appel est simulé ; sinon le backend consomme le
+      // code (usage unique) et invalide les jetons existants.
+      await AuthService.instance.resetPasswordWithCode(
+        email: widget.email,
+        code: _codeController.text.trim(),
+        newPassword: _newPasswordController.text,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const SuccesReenitialisation()),
@@ -139,6 +173,40 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
                 ),
               ),
 
+              Text(
+                'Entrez le code à 6 chiffres envoyé à ${widget.email}.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppConst.textGrey,
+                  fontFamily: AppConst.fontFamily,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const AppFieldLabel('Code de réinitialisation'),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _codeController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                validator: _validateCode,
+                style: const TextStyle(
+                  fontFamily: AppConst.fontFamily,
+                  fontSize: 16,
+                  color: AppConst.textDark,
+                  letterSpacing: 4,
+                ),
+                decoration: appInputDecoration(
+                  hint: '000000',
+                  prefixIcon: Icons.pin_outlined,
+                ),
+              ),
+              const SizedBox(height: 25),
+
               const AppFieldLabel('Nouveau mot de passe'),
               const SizedBox(height: 8),
               _buildPasswordField(
@@ -170,6 +238,7 @@ class _NouveauMotPasseState extends State<NouveauMotPasse> {
               AppPrimaryButton(
                 text: 'Réinitialiser mot de passe',
                 onPressed: _handleSubmit,
+                isLoading: _isSubmitting,
               ),
             ],
           ),

@@ -20,11 +20,17 @@ const corps = {
 
 let jeton;
 
+// Codes de réinitialisation « envoyés » (capturés au lieu d'un vrai SMTP).
+const codesEnvoyes = [];
+
 before(async () => {
   const app = creerApplication({
     fichierBase: ':memory:',
     secretJeton: 'test',
     limiteAuth: { max: 1000, fenetreMs: 60000 },
+    envoyerCodeReinitialisation: async (email, code) => {
+      codesEnvoyes.push({ email, code });
+    },
   });
   await new Promise((resolve) => {
     serveur = app.listen(0, resolve);
@@ -99,6 +105,11 @@ test('la demande de réinitialisation répond 204, email connu ou non', async ()
     { email: corps.email })).status, 204);
   assert.equal((await poster('/auth/mot-de-passe/oubli',
     { email: 'inconnu@example.com' })).status, 204);
+
+  // Le code n'est envoyé qu'au compte existant, jamais à un inconnu.
+  assert.equal(codesEnvoyes.length, 1);
+  assert.equal(codesEnvoyes[0].email, corps.email);
+  assert.match(codesEnvoyes[0].code, /^\d{6}$/);
 });
 
 test('les routes protégées exigent un jeton', async () => {
@@ -161,6 +172,32 @@ test('la déconnexion invalide le jeton', async () => {
 
   const apres = await poster('/suggestions', { message: 'test' }, jeton);
   assert.equal(apres.status, 401);
+});
+
+test('le code reçu par e-mail réinitialise le mot de passe', async () => {
+  // Nouveau code (le mot de passe courant est « nouveau123 » à ce stade).
+  assert.equal((await poster('/auth/mot-de-passe/oubli',
+    { email: corps.email })).status, 204);
+  const { code } = codesEnvoyes[codesEnvoyes.length - 1];
+
+  // Mauvais code, ou mot de passe trop court : refusés.
+  const mauvaisCode = await poster('/auth/mot-de-passe/reinitialiser',
+    { email: corps.email, code: '000000', nouveau: 'reinit123' });
+  assert.equal(mauvaisCode.status, 400);
+  assert.equal((await mauvaisCode.json()).message, 'Code invalide ou expiré.');
+  assert.equal((await poster('/auth/mot-de-passe/reinitialiser',
+    { email: corps.email, code, nouveau: '123' })).status, 400);
+
+  // Bon code : 204, puis connexion avec le nouveau mot de passe.
+  assert.equal((await poster('/auth/mot-de-passe/reinitialiser',
+    { email: corps.email, code, nouveau: 'reinit123' })).status, 204);
+  const reconnexion = await poster('/auth/login',
+    { email: corps.email, motDePasse: 'reinit123' });
+  assert.equal(reconnexion.status, 200);
+
+  // Le code est à usage unique.
+  assert.equal((await poster('/auth/mot-de-passe/reinitialiser',
+    { email: corps.email, code, nouveau: 'autre1234' })).status, 400);
 });
 
 test('les routes d\'authentification sont limitées en débit', async () => {

@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 
+import { creerEnvoyeurCode } from './mailer.js';
 import { creerApplication } from './server.js';
 
 const port = Number(process.env.PORT ?? 3000);
@@ -17,7 +18,17 @@ if (!secretJeton) {
     'Définissez JWT_SECRET en production.');
 }
 
-const app = creerApplication({ fichierBase, secretJeton });
+const envoyerCodeReinitialisation = creerEnvoyeurCode();
+if (!envoyerCodeReinitialisation) {
+  console.warn(
+    '[EDUGO] SMTP non configuré (SMTP_HOST absent) : les codes de ' +
+    'réinitialisation sont stockés mais aucun e-mail ne part. Définissez ' +
+    'SMTP_HOST/SMTP_USER/SMTP_PASS/SMTP_FROM en production.');
+}
+
+const app = creerApplication({
+  fichierBase, secretJeton, envoyerCodeReinitialisation,
+});
 
 app.listen(port, () => {
   console.log(`[EDUGO] API démarrée sur http://localhost:${port} (base: ${fichierBase})`);

@@ -15,7 +15,7 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
 
-  // Passe à true une fois le lien de réinitialisation envoyé
+  // Passe à true une fois le code de réinitialisation envoyé
   bool _emailSent = false;
   bool _isSending = false;
 
@@ -46,7 +46,7 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
       if (!_formKey.currentState!.validate()) return;
       setState(() => _isSending = true);
       try {
-        // En mode démo l'envoi est simulé ; sinon l'API envoie le lien.
+        // En mode démo l'envoi est simulé ; sinon l'API envoie le code.
         await AuthService.instance.requestPasswordReset(
           email: _emailController.text.trim(),
         );
@@ -67,7 +67,10 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const NouveauMotPasse()),
+        MaterialPageRoute(
+          builder: (context) =>
+              NouveauMotPasse(email: _emailController.text.trim()),
+        ),
       );
     }
   }
@@ -131,7 +134,7 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'Un lien pour réinitialiser votre mot de passe a été envoyé. Pensez à vérifier votre dossier de spams.',
+                              'Un code à 6 chiffres vous a été envoyé pour réinitialiser votre mot de passe. Pensez à vérifier votre dossier de spams.',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: _successForeground,
@@ -178,7 +181,7 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Veuillez entrer votre adresse e-mail pour recevoir un lien de réinitialisation.',
+                'Veuillez entrer votre adresse e-mail pour recevoir un code de réinitialisation à 6 chiffres.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -211,7 +214,7 @@ class _MotPasseOublieAState extends State<MotPasseOublieA> {
               AppPrimaryButton(
                 text: _emailSent
                     ? 'Continuer'
-                    : 'Envoyer le lien de réinitialisation',
+                    : 'Envoyer le code de réinitialisation',
                 onPressed: _handleSubmit,
                 isLoading: _isSending,
               ),

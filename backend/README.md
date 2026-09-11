@@ -19,6 +19,10 @@ Variables d'environnement (toutes optionnelles en développement) :
 | `PORT`       | `3000`            | Port d'écoute                               |
 | `DB_FILE`    | `edugo.db`        | Fichier SQLite (créé automatiquement)       |
 | `JWT_SECRET` | aléatoire par démarrage | **À définir en production** (sinon les sessions ne survivent pas aux redémarrages) |
+| `SMTP_HOST`  | —                 | Serveur SMTP pour l'envoi des codes de réinitialisation (sans lui, rien ne part) |
+| `SMTP_PORT`  | `587`             | Port SMTP (`SMTP_SECURE=true` pour le port 465) |
+| `SMTP_USER` / `SMTP_PASS` | — | Identifiants SMTP (optionnels si le serveur n'exige pas d'authentification) |
+| `SMTP_FROM`  | `SMTP_USER`       | Adresse expéditrice affichée |
 
 ## Brancher l'application Flutter
 
@@ -39,6 +43,7 @@ Alignés sur le client Flutter (`lib/services/api/api.dart`) :
 | POST    | `/auth/register`          | élève + `motDePasse`        | `{token, eleve}`  |
 | POST    | `/auth/login`             | `{email, motDePasse}`       | `{token, eleve}`  |
 | POST    | `/auth/mot-de-passe/oubli`| `{email}`                   | 204               |
+| POST    | `/auth/mot-de-passe/reinitialiser` | `{email, code, nouveau}` | 204 (400 si code invalide/expiré) |
 | POST    | `/auth/mot-de-passe`      | `{ancien, nouveau}` (Bearer)| `{token}`         |
 | POST    | `/auth/logout`            | — (Bearer)                  | 204               |
 | PUT     | `/eleves/moi`             | champs de l'élève (Bearer)  | `{eleve}`         |
@@ -106,16 +111,18 @@ flutter build apk --dart-define=EDUGO_DEMO=false \
                   --dart-define=EDUGO_API_URL=https://votre-api.example
 ```
 
-## Limites connues
+## Réinitialisation du mot de passe
 
-- La réinitialisation par e-mail génère et stocke un code à 6 chiffres
-  (table `reinitialisations`, expiration 30 min) mais **ne l'envoie
-  pas** — aucun service d'e-mail n'est branché et le code n'est jamais
-  journalisé. À compléter avec un envoi réel et l'endpoint de
-  consommation du code quand l'app supportera les liens profonds.
+`/auth/mot-de-passe/oubli` génère un code à 6 chiffres (stocké dans la
+table `reinitialisations`, expiration 30 min, jamais journalisé) et
+l'envoie par e-mail **si SMTP est configuré** (variables `SMTP_*`
+ci-dessus). L'élève saisit ce code dans l'application ;
+`/auth/mot-de-passe/reinitialiser` le consomme (usage unique) : mot de
+passe remplacé et jetons existants invalidés. Sans configuration SMTP,
+le code est stocké mais rien ne part — à réserver au développement.
 
 ## Tests
 
 ```bash
-npm test             # 13 tests d'intégration (base en mémoire)
+npm test             # 14 tests d'intégration (base en mémoire)
 ```
