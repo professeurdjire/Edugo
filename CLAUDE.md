@@ -16,6 +16,14 @@ flutter test             # lancer les tests
 flutter test test/widget_test.dart   # un seul fichier de test
 ```
 
+Backend (dossier `backend/`, Node.js ≥ 18) :
+
+```bash
+cd backend && npm install
+npm start                # API sur http://localhost:3000
+npm test                 # tests d'intégration (node --test, base en mémoire)
+```
+
 Aucune CI n'est configurée ; les revues de PR sont faites par CodeRabbit sur GitHub.
 
 ## Architecture
@@ -39,7 +47,7 @@ Aucune CI n'est configurée ; les revues de PR sont faites par CodeRabbit sur Gi
 flutter run --dart-define=EDUGO_DEMO=false --dart-define=EDUGO_API_URL=https://votre-backend
 ```
 
-Les endpoints attendus sont documentés en tête d'`AuthService` — à aligner avec l'API réelle (issue GitHub #3). Le démarrage passe par `StartupGate` (main.dart) : jeton présent → `MainNavigation`, sinon `WelcomeScreen`. La réinitialisation par lien e-mail (`nouveauMotDePasse`) attend le support des liens profonds. `lib/services/notifications/notification.dart` reste vide.
+Le backend correspondant vit dans `backend/` (Express + SQLite + JWT, voir `backend/README.md`) : ses routes, champs et messages d'erreur sont alignés sur `AuthService` — toute évolution du contrat doit modifier les deux côtés et leurs tests. Le démarrage passe par `StartupGate` (main.dart) : jeton présent → `MainNavigation`, sinon `WelcomeScreen`. La réinitialisation par lien e-mail (`nouveauMotDePasse`) attend le support des liens profonds. `lib/services/notifications/notification.dart` reste vide.
 
 `lib/models/eleve.dart` (`Eleve`, fromJson/toJson) est aligné sur les champs du formulaire d'inscription.
 
