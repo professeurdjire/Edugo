@@ -24,6 +24,10 @@ npm start                # API sur http://localhost:3000
 npm test                 # tests d'intégration (node --test, base en mémoire)
 ```
 
+Déploiement du backend : `backend/Dockerfile` + `backend/docker-compose.yml`
+(voir « Déploiement » dans `backend/README.md`). En production, `JWT_SECRET`
+est obligatoire et la base SQLite vit dans le volume `/data`.
+
 Aucune CI n'est configurée ; les revues de PR sont faites par CodeRabbit sur GitHub.
 
 ## Architecture

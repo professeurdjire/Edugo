@@ -61,6 +61,49 @@ telles quelles.
 - Sans `JWT_SECRET`, un secret aléatoire est généré à chaque démarrage
   (jamais de secret codé en dur).
 
+## Déploiement
+
+L'API est fournie avec un `Dockerfile` et un `docker-compose.yml`.
+Deux impératifs en production :
+
+1. **`JWT_SECRET` doit être défini** (sinon un secret aléatoire est
+   généré à chaque démarrage et toutes les sessions sont invalidées) :
+   générez-le une fois avec `openssl rand -hex 32` et conservez-le.
+2. **`/data` doit être un volume persistant** : la base SQLite y vit
+   (`DB_FILE=/data/edugo.db` par défaut dans l'image) ; sans volume,
+   les comptes disparaissent à chaque redéploiement.
+
+### Sur un serveur (VPS) avec Docker
+
+```bash
+cd backend
+echo "JWT_SECRET=$(openssl rand -hex 32)" > .env
+docker compose up -d --build
+curl http://localhost:3000/sante        # {"ok":true}
+```
+
+Placez ensuite un reverse proxy HTTPS (Caddy, Nginx + certbot…) devant
+le port 3000 — l'application mobile doit parler à l'API **en HTTPS**.
+
+### Sur un hébergeur de conteneurs (Render, Railway, Fly.io…)
+
+- Racine du service : `backend/` (l'hébergeur détecte le `Dockerfile`).
+- Variables : `JWT_SECRET` (obligatoire) ; `PORT` est fourni par
+  l'hébergeur et l'API le respecte.
+- Attachez un **disque persistant** monté sur `/data`. SQLite impose
+  **une seule instance** (pas de mise à l'échelle horizontale) — pour
+  plusieurs instances, il faudra migrer vers un serveur de base de
+  données.
+
+### Côté application Flutter
+
+Une fois l'API en ligne, compilez l'application avec l'URL réelle :
+
+```bash
+flutter build apk --dart-define=EDUGO_DEMO=false \
+                  --dart-define=EDUGO_API_URL=https://votre-api.example
+```
+
 ## Limites connues
 
 - La réinitialisation par e-mail génère et stocke un code à 6 chiffres
