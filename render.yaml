@@ -1,0 +1,19 @@
+# Blueprint Render pour l'API EDUGO (https://render.com/docs/blueprint-spec).
+# Depuis le tableau de bord Render : New → Blueprint → ce dépôt.
+# JWT_SECRET est généré une fois par Render et conservé ; les variables
+# SMTP_* (envoi des codes de réinitialisation) s'ajoutent ensuite dans
+# l'onglet Environment du service — voir backend/README.md.
+services:
+  - type: web
+    name: edugo-api
+    runtime: docker
+    rootDir: backend
+    plan: starter # le disque persistant exige un plan payant (pas de plan free)
+    healthCheckPath: /sante
+    disk:
+      name: edugo-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
