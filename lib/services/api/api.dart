@@ -45,6 +45,8 @@ class ApiException implements Exception {
 ///   POST /auth/login              {email, motDePasse} -> {token, eleve}
 ///   POST /auth/register           {eleve..., motDePasse} -> {token, eleve}
 ///   POST /auth/mot-de-passe/oubli {email} -> 204
+///   POST /auth/mot-de-passe/reinitialiser {email, code, nouveau} -> 204
+///                                 (code à 6 chiffres reçu par e-mail)
 ///   POST /auth/mot-de-passe       {ancien, nouveau} (Bearer) -> {token}
 ///                                 (les jetons antérieurs sont invalidés)
 ///   POST /auth/logout             (Bearer) -> 204
@@ -158,6 +160,26 @@ class AuthService {
           _uri('/auth/mot-de-passe/oubli'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'email': email}),
+        ));
+    _decode(response);
+  }
+
+  /// Consomme le code à 6 chiffres reçu par e-mail pour définir un
+  /// nouveau mot de passe (les jetons existants sont invalidés).
+  Future<void> resetPasswordWithCode({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    if (ApiConfig.demoMode) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      return;
+    }
+    final response = await _send(() => http.post(
+          _uri('/auth/mot-de-passe/reinitialiser'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(
+              {'email': email, 'code': code, 'nouveau': newPassword}),
         ));
     _decode(response);
   }

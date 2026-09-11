@@ -14,6 +14,13 @@ services:
       # Obligatoire en production : sans lui, un secret aléatoire est généré
       # à chaque démarrage et toutes les sessions sont invalidées.
       JWT_SECRET: ${JWT_SECRET:?Définissez JWT_SECRET (ex. openssl rand -hex 32)}
+      # SMTP (optionnel) : envoi des codes de réinitialisation par e-mail.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     volumes:
       - edugo-data:/data
 
