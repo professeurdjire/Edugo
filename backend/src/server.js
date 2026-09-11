@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 
-import { eleveVersJson, ouvrirBase } from './db.js';
+import { eleveVersJson, livreVersJson, ouvrirBase } from './db.js';
 
 const DUREE_JETON = '30d';
 const DUREE_CODE_REINIT_MIN = 30;
@@ -288,6 +288,31 @@ export function creerApplication({
     );
 
     return res.json({ eleve: eleveVersJson(chercherParId.get(actuel.id)) });
+  });
+
+  // GET /livres (Bearer) -> {livres}
+  // Filtres optionnels : ?q= (titre ou auteur), ?niveau=, ?matiere=, ?classe=
+  app.get('/livres', exigerSession, (req, res) => {
+    const { q, niveau, matiere, classe } = req.query;
+    const clauses = [];
+    const valeurs = [];
+    if (typeof q === 'string' && q.trim() !== '') {
+      clauses.push('(titre LIKE ? OR auteur LIKE ?)');
+      const motif = `%${q.trim()}%`;
+      valeurs.push(motif, motif);
+    }
+    for (const [colonne, valeur] of [
+      ['niveau_scolaire', niveau], ['matiere', matiere], ['classe', classe],
+    ]) {
+      if (typeof valeur === 'string' && valeur.trim() !== '') {
+        clauses.push(`${colonne} = ?`);
+        valeurs.push(valeur.trim());
+      }
+    }
+    const condition = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : '';
+    const lignes = db.prepare(
+      `SELECT * FROM livres${condition} ORDER BY titre`).all(...valeurs);
+    return res.json({ livres: lignes.map(livreVersJson) });
   });
 
   // POST /suggestions {message} (Bearer) -> 204

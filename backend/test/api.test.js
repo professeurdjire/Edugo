@@ -200,6 +200,36 @@ test('le code reçu par e-mail réinitialise le mot de passe', async () => {
     { email: corps.email, code, nouveau: 'autre1234' })).status, 400);
 });
 
+test('le catalogue de livres est protégé, filtrable et recherché', async () => {
+  // Sans jeton : refusé.
+  assert.equal((await fetch(`${base}/livres`)).status, 401);
+
+  // Reconnexion (le mot de passe courant est « reinit123 » à ce stade).
+  const connexion = await poster('/auth/login',
+    { email: corps.email, motDePasse: 'reinit123' });
+  const jetonLivres = (await connexion.json()).token;
+  const lire = async (chemin) => {
+    const rep = await fetch(base + chemin,
+      { headers: { Authorization: `Bearer ${jetonLivres}` } });
+    assert.equal(rep.status, 200);
+    return (await rep.json()).livres;
+  };
+
+  const tous = await lire('/livres');
+  assert.ok(tous.length >= 6);
+  assert.ok(tous.every((l) => l.titre && l.niveauScolaire));
+
+  const primaire = await lire('/livres?niveau=Primaire');
+  assert.ok(primaire.length > 0);
+  assert.ok(primaire.every((l) => l.niveauScolaire === 'Primaire'));
+
+  const recherche = await lire('/livres?q=apn%C3%A9e');
+  assert.equal(recherche.length, 1);
+  assert.equal(recherche[0].titre, 'En apnée');
+
+  assert.equal((await lire('/livres?q=introuvable-xyz')).length, 0);
+});
+
 test('les routes d\'authentification sont limitées en débit', async () => {
   const appLimitee = creerApplication({
     fichierBase: ':memory:',

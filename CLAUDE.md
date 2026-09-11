@@ -55,6 +55,10 @@ Le backend correspondant vit dans `backend/` (Express + SQLite + JWT, voir `back
 
 `lib/models/eleve.dart` (`Eleve`, fromJson/toJson) est aligné sur les champs du formulaire d'inscription.
 
+### Catalogue de livres
+
+L'onglet Bibliothèque (`bibliotheque.dart`, `LibraryScreen`) charge le catalogue via `AuthService.fetchLivres()` (`GET /livres`, Bearer) — en mode démo, un catalogue local (`_livresDemo`, miroir de l'ensemencement backend dans `backend/src/db.js`) est renvoyé sans réseau. `lib/models/livre.dart` (`Livre.fromJson`) est aligné sur `livreVersJson` côté backend. Recherche et filtres (Niveau/Matières/Classe) se font côté client sur la liste chargée ; le backend accepte aussi `?q=&niveau=&matiere=&classe=`.
+
 ### Pièges spécifiques
 
 - Le dossier `lib/screens/connexion et inscriptions/` contient des espaces : les imports existants l'encodent en `connexion%20et%20inscriptions`. Conserver cette forme.
