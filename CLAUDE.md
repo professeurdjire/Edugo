@@ -28,7 +28,7 @@ Déploiement du backend : `backend/Dockerfile` + `backend/docker-compose.yml`
 (voir « Déploiement » dans `backend/README.md`). En production, `JWT_SECRET`
 est obligatoire et la base SQLite vit dans le volume `/data`.
 
-Aucune CI n'est configurée ; les revues de PR sont faites par CodeRabbit sur GitHub.
+CI : `.github/workflows/apk.yml` compile l'APK (release, signature de débogage) à chaque push sur `master` et publie les fichiers en Release GitHub (`apk-<n>`). Les revues de PR sont faites par CodeRabbit sur GitHub.
 
 ## Architecture
 

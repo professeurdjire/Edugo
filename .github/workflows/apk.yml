@@ -1,0 +1,56 @@
+# Compile l'APK EDUGO et le publie en Release GitHub téléchargeable
+# depuis un téléphone. Déclenché à chaque push sur master ou la branche
+# de travail, ou à la main (workflow_dispatch).
+name: APK EDUGO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, claude/login-design-lexwng]
+    paths-ignore:
+      - 'backend/**'
+      - '**.md'
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Un APK par architecture (arm64-v8a pour la quasi-totalité des
+      # téléphones récents, dont le Galaxy A16) + un APK universel.
+      - run: flutter build apk --release --split-per-abi
+      - run: flutter build apk --release
+
+      - name: Publier la Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: 'EDUGO APK — build ${{ github.run_number }}'
+          body: |
+            APK de l'application EDUGO compilé depuis `${{ github.ref_name }}` (`${{ github.sha }}`).
+
+            - **`app-arm64-v8a-release.apk`** : téléphones récents (Galaxy A16 inclus) — **c'est celui-là qu'il faut installer** dans la plupart des cas.
+            - `app-armeabi-v7a-release.apk` : anciens téléphones 32 bits.
+            - `app-release.apk` : universel (plus gros), si le premier ne s'installe pas.
+
+            Application en mode démo (aucun backend requis). Signature de débogage : autoriser l'installation de sources inconnues.
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-release.apk
