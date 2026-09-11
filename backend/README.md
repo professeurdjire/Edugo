@@ -94,6 +94,12 @@ proxy HTTPS sur l'hôte (Caddy, Nginx + certbot…) devant
 
 ### Sur un hébergeur de conteneurs (Render, Railway, Fly.io…)
 
+Pour **Render**, un blueprint est fourni : `render.yaml` à la racine du
+dépôt (New → Blueprint → ce dépôt). Il crée le service Docker depuis
+`backend/`, génère `JWT_SECRET` et attache un disque de 1 Go sur `/data`
+(plan payant requis pour le disque) ; ajoutez ensuite les variables
+`SMTP_*` dans l'onglet Environment. Pour un autre hébergeur :
+
 - Racine du service : `backend/` (l'hébergeur détecte le `Dockerfile`).
 - Variables : `JWT_SECRET` (obligatoire) ; `PORT` est fourni par
   l'hébergeur et l'API le respecte.
