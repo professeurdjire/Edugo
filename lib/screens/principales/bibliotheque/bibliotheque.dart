@@ -312,9 +312,38 @@ class _BookCard extends StatelessWidget {
 
   const _BookCard({required this.livre});
 
+  /// Couverture : URL réseau ou asset local, avec le même visuel de
+  /// secours dans les deux cas.
+  Widget _buildCouverture() {
+    final String image = livre.image ?? 'assets/images/book1.png';
+    Widget secours(BuildContext context, Object error, StackTrace? stack) {
+      return Container(
+        color: AppConst.purpleInputFill,
+        child: const Center(
+          child: Icon(Icons.menu_book_rounded,
+              size: 48, color: AppConst.purpleDark),
+        ),
+      );
+    }
+
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      return Image.network(
+        image,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: secours,
+      );
+    }
+    return Image.asset(
+      image,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: secours,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final String image = livre.image ?? 'assets/images/book1.png';
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -334,18 +363,7 @@ class _BookCard extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                image,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: AppConst.purpleInputFill,
-                  child: const Center(
-                    child: Icon(Icons.menu_book_rounded,
-                        size: 48, color: AppConst.purpleDark),
-                  ),
-                ),
-              ),
+              child: _buildCouverture(),
             ),
           ),
           Padding(
