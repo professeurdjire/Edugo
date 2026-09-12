@@ -47,6 +47,7 @@ Alignés sur le client Flutter (`lib/services/api/api.dart`) :
 | POST    | `/auth/mot-de-passe`      | `{ancien, nouveau}` (Bearer)| `{token}`         |
 | POST    | `/auth/logout`            | — (Bearer)                  | 204               |
 | PUT     | `/eleves/moi`             | champs de l'élève (Bearer)  | `{eleve}`         |
+| GET     | `/livres`                 | `?q=&niveau=&matiere=&classe=` (Bearer) | `{livres}` |
 | POST    | `/suggestions`            | `{message}` (Bearer)        | 204               |
 | GET     | `/sante`                  | —                           | `{ok: true}`      |
 
@@ -130,5 +131,5 @@ le code est stocké mais rien ne part — à réserver au développement.
 ## Tests
 
 ```bash
-npm test             # 14 tests d'intégration (base en mémoire)
+npm test             # 15 tests d'intégration (base en mémoire)
 ```

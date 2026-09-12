@@ -28,7 +28,7 @@ Déploiement du backend : `backend/Dockerfile` + `backend/docker-compose.yml`
 (voir « Déploiement » dans `backend/README.md`). En production, `JWT_SECRET`
 est obligatoire et la base SQLite vit dans le volume `/data`.
 
-Aucune CI n'est configurée ; les revues de PR sont faites par CodeRabbit sur GitHub.
+CI : `.github/workflows/apk.yml` compile l'APK (release, signature de débogage) à chaque push sur `master` et publie les fichiers en Release GitHub (`apk-<n>`). Les revues de PR sont faites par CodeRabbit sur GitHub.
 
 ## Architecture
 
@@ -54,6 +54,10 @@ flutter run --dart-define=EDUGO_DEMO=false --dart-define=EDUGO_API_URL=https://v
 Le backend correspondant vit dans `backend/` (Express + SQLite + JWT, voir `backend/README.md`) : ses routes, champs et messages d'erreur sont alignés sur `AuthService` — toute évolution du contrat doit modifier les deux côtés et leurs tests. Le démarrage passe par `StartupGate` (main.dart) : jeton présent → `MainNavigation`, sinon `WelcomeScreen`. La réinitialisation du mot de passe passe par un code à 6 chiffres envoyé par e-mail (SMTP à configurer côté backend, variables `SMTP_*`) et saisi dans `nouveauMotDePasse` — pas de lien profond. `lib/services/notifications/notification.dart` reste vide.
 
 `lib/models/eleve.dart` (`Eleve`, fromJson/toJson) est aligné sur les champs du formulaire d'inscription.
+
+### Catalogue de livres
+
+L'onglet Bibliothèque (`bibliotheque.dart`, `LibraryScreen`) charge le catalogue via `AuthService.fetchLivres()` (`GET /livres`, Bearer) — en mode démo, un catalogue local (`_livresDemo`, miroir de l'ensemencement backend dans `backend/src/db.js`) est renvoyé sans réseau. `lib/models/livre.dart` (`Livre.fromJson`) est aligné sur `livreVersJson` côté backend. Recherche et filtres (Niveau/Matières/Classe) se font côté client sur la liste chargée ; le backend accepte aussi `?q=&niveau=&matiere=&classe=`.
 
 ### Pièges spécifiques
 

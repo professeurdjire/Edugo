@@ -1,0 +1,88 @@
+# Compile l'APK EDUGO et le publie en Release GitHub téléchargeable
+# depuis un téléphone. Déclenché à chaque push sur master ou la branche
+# de travail, ou à la main (workflow_dispatch).
+#
+# Signature : si les secrets EDUGO_KEYSTORE_BASE64 / EDUGO_KEYSTORE_PASSWORD /
+# EDUGO_KEY_ALIAS / EDUGO_KEY_PASSWORD sont configurés, les APK sont signés
+# avec cette clé de release persistante (mises à jour installables d'un
+# build à l'autre) ; sinon, signature de débogage (certificat différent à
+# chaque build — réinstallation complète requise).
+#
+# Les actions sont épinglées sur des SHA de commit immuables (les tags
+# comme @v4 sont mutables) ; la version correspondante est en commentaire.
+name: APK EDUGO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, claude/login-design-lexwng]
+    paths-ignore:
+      - 'backend/**'
+      - '**.md'
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Le contexte `secrets` n'est pas utilisable dans un `if:` d'étape :
+      # le test se fait dans le script, via des variables d'environnement.
+      - name: Préparer la clé de signature de release (si configurée)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.EDUGO_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.EDUGO_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.EDUGO_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.EDUGO_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "Secrets EDUGO_KEYSTORE_* absents : signature de débogage."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/edugo-release.jks"
+          {
+            echo "EDUGO_KEYSTORE_PATH=$RUNNER_TEMP/edugo-release.jks"
+            echo "EDUGO_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "EDUGO_KEY_ALIAS=$KEY_ALIAS"
+            echo "EDUGO_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      # Un APK par architecture (arm64-v8a pour la quasi-totalité des
+      # téléphones récents, dont le Galaxy A16) + un APK universel.
+      - run: flutter build apk --release --split-per-abi
+      - run: flutter build apk --release
+
+      - name: Publier la Release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: 'EDUGO APK — build ${{ github.run_number }}'
+          body: |
+            APK de l'application EDUGO compilé depuis `${{ github.ref_name }}` (`${{ github.sha }}`).
+
+            - **`app-arm64-v8a-release.apk`** : téléphones récents (Galaxy A16 inclus) — **c'est celui-là qu'il faut installer** dans la plupart des cas.
+            - `app-armeabi-v7a-release.apk` : anciens téléphones 32 bits.
+            - `app-release.apk` : universel (plus gros), si le premier ne s'installe pas.
+
+            Application en mode démo (aucun backend requis). Installation : autoriser les sources inconnues. Sans clé de release configurée (secrets `EDUGO_KEYSTORE_*`), chaque build porte un certificat de débogage différent : désinstaller l'ancienne version avant d'installer la nouvelle.
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-release.apk

@@ -37,6 +37,17 @@ export function ouvrirBase(fichier) {
       code TEXT NOT NULL,
       expire_le TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS livres (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      titre TEXT NOT NULL,
+      auteur TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      niveau_scolaire TEXT NOT NULL DEFAULT '',
+      matiere TEXT NOT NULL DEFAULT '',
+      classe TEXT NOT NULL DEFAULT '',
+      image TEXT
+    );
   `);
 
   // Migration pour les bases créées avant l'ajout de version_session.
@@ -46,7 +57,84 @@ export function ouvrirBase(fichier) {
       'ALTER TABLE eleves ADD COLUMN version_session INTEGER NOT NULL DEFAULT 0');
   }
 
+  ensemencerLivres(db);
+
   return db;
+}
+
+/** Catalogue initial, inséré uniquement quand la table livres est vide. */
+function ensemencerLivres(db) {
+  const nombre = db.prepare('SELECT COUNT(*) AS n FROM livres').get().n;
+  if (nombre > 0) return;
+
+  const inserer = db.prepare(`
+    INSERT INTO livres
+      (titre, auteur, description, niveau_scolaire, matiere, classe, image)
+    VALUES
+      (@titre, @auteur, @description, @niveau, @matiere, @classe, @image)
+  `);
+  const livres = [
+    {
+      titre: 'Le jardin invisible',
+      auteur: 'C.S. Lewis',
+      description: 'Une aventure fantastique au cœur d\'un jardin secret.',
+      niveau: 'Primaire', matiere: 'Français', classe: 'CM1',
+      image: 'assets/images/book1.png',
+    },
+    {
+      titre: 'Le cœur se souvient',
+      auteur: 'C.S. Lewis',
+      description: 'Un récit touchant sur la mémoire et l\'amitié.',
+      niveau: 'Primaire', matiere: 'Français', classe: 'CM2',
+      image: 'assets/images/book1.png',
+    },
+    {
+      titre: 'Libre comme l\'air',
+      auteur: 'C.S. Lewis',
+      description: 'Le voyage d\'un jeune héros en quête de liberté.',
+      niveau: 'Secondaire', matiere: 'Français', classe: '6ème',
+      image: 'assets/images/book1.png',
+    },
+    {
+      titre: 'En apnée',
+      auteur: 'C.S. Lewis',
+      description: 'Plongée dans les profondeurs d\'un océan mystérieux.',
+      niveau: 'Secondaire', matiere: 'Sciences', classe: '5ème',
+      image: 'assets/images/book1.png',
+    },
+    {
+      titre: 'Les mathématiques amusantes',
+      auteur: 'A. Diarra',
+      description: 'Découvrir les nombres et la géométrie en s\'amusant.',
+      niveau: 'Primaire', matiere: 'Mathématiques', classe: 'CE2',
+      image: 'assets/images/book1.png',
+    },
+    {
+      titre: 'Histoire du Mali',
+      auteur: 'M. Konaté',
+      description: 'Des grands empires à l\'indépendance, l\'histoire du pays.',
+      niveau: 'Secondaire', matiere: 'Histoire', classe: '4ème',
+      image: 'assets/images/book1.png',
+    },
+  ];
+  const tout = db.transaction(() => {
+    for (const livre of livres) inserer.run(livre);
+  });
+  tout();
+}
+
+/** Représentation JSON d'un livre, alignée sur le modèle Flutter (Livre). */
+export function livreVersJson(ligne) {
+  return {
+    id: ligne.id,
+    titre: ligne.titre,
+    auteur: ligne.auteur,
+    description: ligne.description,
+    niveauScolaire: ligne.niveau_scolaire,
+    matiere: ligne.matiere,
+    classe: ligne.classe,
+    ...(ligne.image ? { image: ligne.image } : {}),
+  };
 }
 
 /** Représentation JSON d'un élève, alignée sur le modèle Flutter (Eleve). */

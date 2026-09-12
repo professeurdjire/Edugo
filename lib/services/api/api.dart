@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:edugo/models/eleve.dart';
+import 'package:edugo/models/livre.dart';
 import 'package:edugo/services/storage/secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -51,6 +52,7 @@ class ApiException implements Exception {
 ///                                 (les jetons antérieurs sont invalidés)
 ///   POST /auth/logout             (Bearer) -> 204
 ///   PUT  /eleves/moi              {eleve...} (Bearer) -> {eleve}
+///   GET  /livres                  ?q=&niveau=&matiere=&classe= (Bearer) -> {livres}
 ///   POST /suggestions             {message} (Bearer) -> 204
 class AuthService {
   AuthService._();
@@ -88,10 +90,12 @@ class AuthService {
     }
   }
 
-  Map<String, dynamic> _decode(http.Response response) {
+  /// [message401] adapte le message d'un 401 au contexte de l'appel
+  /// (identifiants pour le login, session expirée ailleurs).
+  Map<String, dynamic> _decode(http.Response response,
+      {String message401 = 'Email ou mot de passe incorrect.'}) {
     if (response.statusCode == 401) {
-      throw const ApiException('Email ou mot de passe incorrect.',
-          statusCode: 401);
+      throw ApiException(message401, statusCode: 401);
     }
     if (response.statusCode >= 400) {
       String message = 'Une erreur est survenue (${response.statusCode}).';
@@ -233,6 +237,79 @@ class AuthService {
         ));
     _decode(response);
   }
+
+  /// Catalogue complet des livres (le filtrage se fait côté écran).
+  /// En mode démo, renvoie un catalogue local sans appel réseau.
+  Future<List<Livre>> fetchLivres() async {
+    if (ApiConfig.demoMode) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      return _livresDemo;
+    }
+    final response = await _send(() async => http.get(
+          _uri('/livres'),
+          headers: await _headers(auth: true),
+        ));
+    final dynamic liste = _decode(response,
+        message401: 'Session expirée, reconnectez-vous.')['livres'];
+    if (liste is! List) return const [];
+    return liste
+        .whereType<Map<String, dynamic>>()
+        .map(Livre.fromJson)
+        .toList();
+  }
+
+  /// Catalogue affiché en mode démo (miroir de l'ensemencement backend).
+  static const List<Livre> _livresDemo = [
+    Livre(
+        titre: 'Le jardin invisible',
+        auteur: 'C.S. Lewis',
+        description: 'Une aventure fantastique au cœur d\'un jardin secret.',
+        niveauScolaire: 'Primaire',
+        matiere: 'Français',
+        classe: 'CM1',
+        image: 'assets/images/book1.png'),
+    Livre(
+        titre: 'Le cœur se souvient',
+        auteur: 'C.S. Lewis',
+        description: 'Un récit touchant sur la mémoire et l\'amitié.',
+        niveauScolaire: 'Primaire',
+        matiere: 'Français',
+        classe: 'CM2',
+        image: 'assets/images/book1.png'),
+    Livre(
+        titre: 'Libre comme l\'air',
+        auteur: 'C.S. Lewis',
+        description: 'Le voyage d\'un jeune héros en quête de liberté.',
+        niveauScolaire: 'Secondaire',
+        matiere: 'Français',
+        classe: '6ème',
+        image: 'assets/images/book1.png'),
+    Livre(
+        titre: 'En apnée',
+        auteur: 'C.S. Lewis',
+        description: 'Plongée dans les profondeurs d\'un océan mystérieux.',
+        niveauScolaire: 'Secondaire',
+        matiere: 'Sciences',
+        classe: '5ème',
+        image: 'assets/images/book1.png'),
+    Livre(
+        titre: 'Les mathématiques amusantes',
+        auteur: 'A. Diarra',
+        description: 'Découvrir les nombres et la géométrie en s\'amusant.',
+        niveauScolaire: 'Primaire',
+        matiere: 'Mathématiques',
+        classe: 'CE2',
+        image: 'assets/images/book1.png'),
+    Livre(
+        titre: 'Histoire du Mali',
+        auteur: 'M. Konaté',
+        description:
+            'Des grands empires à l\'indépendance, l\'histoire du pays.',
+        niveauScolaire: 'Secondaire',
+        matiere: 'Histoire',
+        classe: '4ème',
+        image: 'assets/images/book1.png'),
+  ];
 
   /// Déconnexion : efface la session locale (et notifie le backend
   /// silencieusement quand il est branché).

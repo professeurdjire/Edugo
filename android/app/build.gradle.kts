@@ -31,11 +31,27 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        // Clé de release persistante fournie par la CI (secrets
+        // EDUGO_KEYSTORE_*) : indispensable pour que les mises à jour
+        // s'installent par-dessus les builds précédents.
+        val cheminKeystore = System.getenv("EDUGO_KEYSTORE_PATH")
+        if (!cheminKeystore.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(cheminKeystore)
+                storePassword = System.getenv("EDUGO_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("EDUGO_KEY_ALIAS")
+                keyPassword = System.getenv("EDUGO_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Clé de release si fournie, sinon signature de débogage
+            // (développement local et CI sans secrets).
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
     }
 }
