@@ -43,15 +43,25 @@ jobs:
 
       - run: flutter pub get
 
+      # Le contexte `secrets` n'est pas utilisable dans un `if:` d'étape :
+      # le test se fait dans le script, via des variables d'environnement.
       - name: Préparer la clé de signature de release (si configurée)
-        if: ${{ secrets.EDUGO_KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.EDUGO_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.EDUGO_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.EDUGO_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.EDUGO_KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.EDUGO_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/edugo-release.jks"
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "Secrets EDUGO_KEYSTORE_* absents : signature de débogage."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/edugo-release.jks"
           {
             echo "EDUGO_KEYSTORE_PATH=$RUNNER_TEMP/edugo-release.jks"
-            echo "EDUGO_KEYSTORE_PASSWORD=${{ secrets.EDUGO_KEYSTORE_PASSWORD }}"
-            echo "EDUGO_KEY_ALIAS=${{ secrets.EDUGO_KEY_ALIAS }}"
-            echo "EDUGO_KEY_PASSWORD=${{ secrets.EDUGO_KEY_PASSWORD }}"
+            echo "EDUGO_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "EDUGO_KEY_ALIAS=$KEY_ALIAS"
+            echo "EDUGO_KEY_PASSWORD=$KEY_PASSWORD"
           } >> "$GITHUB_ENV"
 
       # Un APK par architecture (arm64-v8a pour la quasi-totalité des
